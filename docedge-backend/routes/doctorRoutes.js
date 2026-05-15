@@ -1,0 +1,24 @@
+const express = require('express');
+const router = express.Router();
+const { createDoctor, getAllDoctors,doctorLogin } = require('../controllers/doctorController');
+const {protect, isAdmin,protectD}=require("../middleware/authMiddleware")
+//const { updateProfile, changePassword, updateSettings } = require('../controllers/doctorSettingsController');
+const { 
+    getDoctorProfile,
+    updateDoctorProfile,
+    changePassword,
+    updateDoctorSettings
+} = require('../controllers/doctorSettingsController');
+
+// Ye routes SuperAdmin dashboard se hit honge
+router.post('/create',protect,isAdmin, createDoctor);
+router.get('/all',protect,isAdmin, getAllDoctors);
+router.post('/login/:slug', doctorLogin);
+
+/////////////////////////////
+router.get('/:slug/profile', getDoctorProfile);
+router.put('/:slug/profile/update', protectD, updateDoctorProfile);
+router.put('/:slug/settings/update', protectD, updateDoctorSettings);
+router.put('/:slug/change-password', protectD, changePassword);
+
+module.exports = router;
