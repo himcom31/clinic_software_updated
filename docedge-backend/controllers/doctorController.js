@@ -74,7 +74,7 @@ exports.createDoctor = async (req, res) => {
       html: `
         <h1>Hello Dr. ${name},</h1>
         <p>Aapka clinic management portal setup is completed.</p>
-        <p><b>Login URL:</b> https://docedge.com/${slug}/admin</p>
+        <p><b>Login URL:</b> https://docedge.tbskit.cloud/${slug}/login</p>
         <p><b>Username:</b> ${email}</p>
         <p><b>Password:</b> ${password}</p>
         <br>
