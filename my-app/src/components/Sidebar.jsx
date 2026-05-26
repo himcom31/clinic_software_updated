@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom';
 const Sidebar = ({ isOpen, setIsSidebarOpen }) => {
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = '/login';
+    window.location.href = '/admin/login';
   };
 
   // NavLink ki active styling ka common function
