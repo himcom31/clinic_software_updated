@@ -5,15 +5,10 @@ import {
   Save, Building2, User, Phone, MapPin, Award, Loader2,
   Camera, Stethoscope, Hash, Globe, Mail, Clock,
   Calendar, PenTool, CheckCircle2, AlertCircle, BadgeCheck,
-  IndianRupee, RefreshCw, Plus, Trash2, UserPlus, GripVertical
+  IndianRupee, RefreshCw
 } from 'lucide-react';
+
 const BASE_URL = import.meta.env.VITE_API_URL;
-
-
-
-
-// ── Default blank doctor entry ────────────────────────────────────────────────
-const blankDoctor = () => ({ doctorName: '', degree: '', specialization: '' });
 
 const ClinicDetailsForm = () => {
   const { slug } = useParams();
@@ -26,24 +21,24 @@ const ClinicDetailsForm = () => {
   const [logoFile, setLogoFile]       = useState(null);
   const [sigFile, setSigFile]         = useState(null);
 
-  // ── Multi-doctor list ─────────────────────────────────────────────────────
-  const [doctors, setDoctors] = useState([blankDoctor()]);
-
   const [formData, setFormData] = useState({
-    doctorId: '',
-    clinicName: '',
-    regNumber: '',
-    mobile: '',
-    email: '',
-    website: '',
-    address: '',
-    themeColor: '#2563eb',
-    openAt: '',
-    closeAt: '',
-    weeklyOff: 'No Weekly Off',
-    branchName: 'Main Branch',
-    isMainBranch: true,
-    consultationFee: '',
+    doctorId:            '',
+    clinicName:          '',
+    doctorName:          '',
+    degree:              '',
+    specialization:      '',
+    regNumber:           '',
+    mobile:              '',
+    email:               '',
+    website:             '',
+    address:             '',
+    themeColor:          '#2563eb',
+    openAt:              '',
+    closeAt:             '',
+    weeklyOff:           'No Weekly Off',
+    branchName:          'Main Branch',
+    isMainBranch:        true,
+    consultationFee:     '',
     appointmentValidity: ''
   });
 
@@ -56,12 +51,16 @@ const ClinicDetailsForm = () => {
       setFetching(true);
       try {
         const res = await axios.get(`${BASE_URL}/api/clinic/${slug}/clinicData`);
+
         if (res.data.success && res.data.data) {
           const p = res.data.data;
 
           setFormData({
             doctorId:            dId || p.doctorId || '',
             clinicName:          p.clinicName || '',
+            doctorName:          p.doctorName || '',
+            degree:              p.degree || '',
+            specialization:      p.specialization || '',
             regNumber:           p.regNumber || '',
             mobile:              p.mobile || '',
             email:               p.email || '',
@@ -77,21 +76,17 @@ const ClinicDetailsForm = () => {
             appointmentValidity: p.appointmentValidity ?? ''
           });
 
-          // Populate doctors list
-          if (p.doctors && p.doctors.length > 0) {
-            setDoctors(p.doctors.map(d => ({
-              doctorName:     d.doctorName || '',
-              degree:         d.degree || '',
-              specialization: d.specialization || ''
-            })));
-          }
-
           if (p.logo)      setLogoPreview(`${BASE_URL}${p.logo}`);
           if (p.signature) setSigPreview(`${BASE_URL}${p.signature}`);
         } else {
           if (dId) setFormData(prev => ({ ...prev, doctorId: dId }));
         }
-      } catch {
+      } catch (err) {
+        if (err.response?.status === 404) {
+          console.info("No clinic profile yet — starting fresh.");
+        } else {
+          console.error("Failed to fetch clinic profile:", err.message);
+        }
         if (dId) setFormData(prev => ({ ...prev, doctorId: dId }));
       } finally {
         setFetching(false);
@@ -100,18 +95,6 @@ const ClinicDetailsForm = () => {
 
     fetchProfile();
   }, [slug]);
-
-  // ── Doctor list helpers ───────────────────────────────────────────────────
-  const addDoctor = () => setDoctors(prev => [...prev, blankDoctor()]);
-
-  const removeDoctor = (index) => {
-    if (doctors.length === 1) return; // keep at least one
-    setDoctors(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateDoctor = (index, field, value) => {
-    setDoctors(prev => prev.map((d, i) => i === index ? { ...d, [field]: value } : d));
-  };
 
   // ── Image helpers ─────────────────────────────────────────────────────────
   const clearLogo = (e) => { e.stopPropagation(); setLogoPreview(null); setLogoFile(null); };
@@ -124,10 +107,16 @@ const ClinicDetailsForm = () => {
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    // Quick validation
-    const hasEmptyName = doctors.some(d => !d.doctorName.trim());
-    if (hasEmptyName) {
-      alert("Each doctor entry must have a name.");
+    if (!formData.doctorName.trim()) {
+      alert("Doctor name is required.");
+      return;
+    }
+    if (!formData.clinicName.trim()) {
+      alert("Clinic name is required.");
+      return;
+    }
+    if (!formData.doctorId) {
+      alert("Session expired. Please log in again.");
       return;
     }
 
@@ -136,30 +125,33 @@ const ClinicDetailsForm = () => {
 
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
 
-    // Send doctors array as JSON string (FormData only supports string/blob)
-    data.append('doctors', JSON.stringify(doctors));
-
     if (logoFile) data.append('logo', logoFile);
     if (sigFile)  data.append('signature', sigFile);
 
     try {
-      const res = await axios.post(`${BASE_URL}/api/clinic/${slug}/update`, data);
+      const res = await axios.post(
+        `${BASE_URL}/api/clinic/${slug}/update`,
+        data,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
       if (res.data.success) {
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
+      } else {
+        alert("Save failed: " + res.data.message);
       }
     } catch (err) {
-      alert("Update Failed: " + (err.response?.data?.message || "Server Error"));
+      console.error("SAVE ERROR:", err.response);
+      alert("Update Failed: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
   };
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const inputStyle      = "w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 pl-11 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-sm";
-  const inputStyleNoIcon = "w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-sm";
-  const labelStyle      = "text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5 block ml-1";
-  const sectionTitle    = "text-sm font-black text-slate-800 uppercase tracking-tight flex items-center gap-2 mb-5";
+  const inputStyle       = "w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 pl-11 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-sm";
+  const labelStyle       = "text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5 block ml-1";
+  const sectionTitle     = "text-sm font-black text-slate-800 uppercase tracking-tight flex items-center gap-2 mb-5";
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
   if (fetching) {
@@ -207,11 +199,12 @@ const ClinicDetailsForm = () => {
         {/* LEFT COLUMN */}
         <div className="lg:col-span-8 space-y-8">
 
-          {/* ── CLINIC NAME & REG ────────────────────────────────────────── */}
+          {/* ── CLINIC DETAILS ───────────────────────────────────────────── */}
           <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
             <h2 className={sectionTitle}><Building2 className="text-blue-600" size={18} /> Clinic Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
               <div className="relative md:col-span-2">
                 <label className={labelStyle}>Full Clinic Name</label>
                 <Building2 className="absolute left-4 top-[38px] text-slate-400" size={16} />
@@ -259,13 +252,58 @@ const ClinicDetailsForm = () => {
                   onChange={e => setFormData({ ...formData, regNumber: e.target.value })}
                 />
               </div>
+
             </div>
           </div>
 
-          
+          {/* ── DOCTOR DETAILS ───────────────────────────────────────────── */}
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+            <h2 className={sectionTitle}><Stethoscope className="text-blue-600" size={18} /> Doctor Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+              <div className="relative md:col-span-1">
+                <label className={labelStyle}>Doctor Name *</label>
+                <User className="absolute left-4 top-[38px] text-slate-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="Dr. Full Name"
+                  className={inputStyle}
+                  value={formData.doctorName}
+                  onChange={e => setFormData({ ...formData, doctorName: e.target.value })}
+                />
+              </div>
+
+              <div className="relative">
+                <label className={labelStyle}>Degree</label>
+                <Award className="absolute left-4 top-[38px] text-slate-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="e.g. MBBS, MD"
+                  className={inputStyle}
+                  value={formData.degree}
+                  onChange={e => setFormData({ ...formData, degree: e.target.value })}
+                />
+              </div>
+
+              <div className="relative">
+                <label className={labelStyle}>Specialization</label>
+                <Stethoscope className="absolute left-4 top-[38px] text-slate-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="e.g. Cardiologist"
+                  className={inputStyle}
+                  value={formData.specialization}
+                  onChange={e => setFormData({ ...formData, specialization: e.target.value })}
+                />
+              </div>
+
+            </div>
+          </div>
 
           {/* ── CONTACT & TIMING ──────────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
             {/* Contact Card */}
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">
               <h2 className={sectionTitle}><Phone className="text-blue-600" size={18} /> Contact Matrix</h2>
@@ -333,6 +371,7 @@ const ClinicDetailsForm = () => {
                 </select>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -342,6 +381,7 @@ const ClinicDetailsForm = () => {
             <h2 className={sectionTitle}><Camera className="text-blue-600" size={18} /> Visual Assets</h2>
 
             <div className="space-y-6">
+
               {/* Logo Upload */}
               <div className="group">
                 <label className={labelStyle}>Institutional Logo</label>
@@ -402,9 +442,11 @@ const ClinicDetailsForm = () => {
                   Logo and Signature will be used for all printed prescriptions and medical bills.
                 </p>
               </div>
+
             </div>
           </div>
         </div>
+
       </div>
 
       {/* SUCCESS TOAST */}
@@ -419,6 +461,7 @@ const ClinicDetailsForm = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

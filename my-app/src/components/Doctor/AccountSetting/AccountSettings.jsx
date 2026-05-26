@@ -46,7 +46,7 @@ const AccountSettings = () => {
 };
     const fetchDoctorData = async () => {
         try {
-            const res = await api.get('/profile');
+            const res = await api.get('/profileDoc');
             if (res.data.success) {
                 setDoctor(res.data.data);
                 setFormData(res.data.data);

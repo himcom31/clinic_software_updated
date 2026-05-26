@@ -18,83 +18,67 @@ exports.upsertClinicProfile = async (req, res) => {
         const data = req.body;
         const { collectionName, ClinicModel } = getClinicModel(slug);
 
-        // ── Parse doctors array sent from frontend ────────────────────────────
-        // Frontend sends it as JSON string (FormData limitation)
-        let doctors = [];
-        if (data.doctors) {
-            try {
-                doctors = JSON.parse(data.doctors);
-            } catch {
-                doctors = [];
-            }
-        }
-
-        // Ensure at least one doctor entry exists
-        if (!Array.isArray(doctors) || doctors.length === 0) {
+        // ── Validate doctorId ─────────────────────────────────────────────────
+        if (!data.doctorId || !mongoose.Types.ObjectId.isValid(data.doctorId)) {
             return res.status(400).json({
                 success: false,
-                message: "At least one doctor entry is required."
+                message: "Invalid or missing doctorId. Please log in again."
             });
         }
 
-        // Validate each doctor entry has a name
-        for (const doc of doctors) {
-            if (!doc.doctorName || doc.doctorName.trim() === '') {
-                return res.status(400).json({
-                    success: false,
-                    message: "Each doctor entry must have a name."
-                });
-            }
+        // ── Validate doctor name ──────────────────────────────────────────────
+        if (!data.doctorName || !data.doctorName.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Doctor name is required."
+            });
         }
 
-        // Handle file uploads
-        let logoPath = data.logo;
-        let sigPath = data.signature;
+        // ── Validate clinic name ──────────────────────────────────────────────
+        if (!data.clinicName || !data.clinicName.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Clinic name is required."
+            });
+        }
+
+        // ── Handle file uploads ───────────────────────────────────────────────
+        let logoPath = data.logo || '';
+        let sigPath  = data.signature || '';
         if (req.files) {
             if (req.files['logo'])      logoPath = `/uploads/logos/${req.files['logo'][0].filename}`;
             if (req.files['signature']) sigPath  = `/uploads/signatures/${req.files['signature'][0].filename}`;
         }
 
-        // Build profile payload
-        // Legacy single fields are populated from first doctor for backward compatibility
+        // ── Build profile payload ─────────────────────────────────────────────
         const profileData = {
-            doctorId: new mongoose.Types.ObjectId(data.doctorId),
-            clinicName: data.clinicName,
-
-            // ── Multi-doctor array ────────────────────────────────────────────
-            doctors: doctors.map(d => ({
-                doctorName: d.doctorName.trim(),
-                degree: (d.degree || '').trim(),
-                specialization: (d.specialization || '').trim(),
-            })),
-
-            // Legacy compat: mirror first doctor
-            doctorName: doctors[0].doctorName.trim(),
-            degree: (doctors[0].degree || '').trim(),
-            specialization: (doctors[0].specialization || '').trim(),
-
-            regNumber: data.regNumber,
-            mobile: data.mobile,
-            email: data.email,
-            website: data.website,
-            address: data.address,
-            logo: logoPath,
-            signature: sigPath,
-            themeColor: data.themeColor,
+            doctorId:       new mongoose.Types.ObjectId(data.doctorId),
+            clinicName:     data.clinicName.trim(),
+            doctorName:     data.doctorName.trim(),
+            degree:         (data.degree || '').trim(),
+            specialization: (data.specialization || '').trim(),
+            regNumber:      data.regNumber  || '',
+            mobile:         data.mobile     || '',
+            email:          data.email      || '',
+            website:        data.website    || '',
+            address:        data.address    || '',
+            logo:           logoPath,
+            signature:      sigPath,
+            themeColor:     data.themeColor || '#2563eb',
             timing: {
-                openAt: data.openAt || '',
-                closeAt: data.closeAt || '',
+                openAt:    data.openAt    || '',
+                closeAt:   data.closeAt   || '',
                 weeklyOff: data.weeklyOff || ''
             },
-            consultationFee: Number(data.consultationFee) || 0,
+            consultationFee:     Number(data.consultationFee)     || 0,
             appointmentValidity: Number(data.appointmentValidity) || 7,
-            branchName: data.branchName || 'Main Branch',
+            branchName:   data.branchName   || 'Main Branch',
             isMainBranch: data.isMainBranch === 'true' || data.isMainBranch === true,
-            updatedAt: Date.now()
+            updatedAt:    Date.now()
         };
 
         const filter = {
-            doctorId: profileData.doctorId,
+            doctorId:   profileData.doctorId,
             branchName: profileData.branchName
         };
 
@@ -130,22 +114,24 @@ exports.getClinicProfile = async (req, res) => {
         const profile = await ClinicModel.findOne().sort({ updatedAt: -1 }).lean();
 
         if (!profile) {
-            return res.status(404).json({
+            return res.status(200).json({
                 success: false,
-                message: "Clinic profile not found for this slug."
+                message: "No clinic profile found for this slug."
             });
         }
 
         res.status(200).json({
             success: true,
             data: {
-                consultationFee: profile.consultationFee,
+                consultationFee:     profile.consultationFee,
                 appointmentValidity: profile.appointmentValidity,
-                clinicName: profile.clinicName,
-                // Include doctors array in lightweight response too
-                doctors: profile.doctors || []
+                clinicName:          profile.clinicName,
+                doctorName:          profile.doctorName  || '',
+                degree:              profile.degree       || '',
+                specialization:      profile.specialization || ''
             }
         });
+
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -159,24 +145,12 @@ exports.getClinicProfile1 = async (req, res) => {
 
         const profile = await ClinicModel.findOne().sort({ updatedAt: -1 }).lean();
 
+        // Return 200 with success: false so frontend doesn't throw on new setup
         if (!profile) {
-            return res.status(404).json({
+            return res.status(200).json({
                 success: false,
-                message: "Clinic profile not found."
+                message: "No clinic profile found — new setup."
             });
-        }
-
-        // ── Backward compat: if old record has no doctors array, build one from legacy fields ──
-        if (!profile.doctors || profile.doctors.length === 0) {
-            profile.doctors = [];
-            if (profile.doctorName) {
-                profile.doctors.push({
-                    _id: 'legacy',
-                    doctorName: profile.doctorName,
-                    degree: profile.degree || '',
-                    specialization: profile.specialization || ''
-                });
-            }
         }
 
         res.status(200).json({

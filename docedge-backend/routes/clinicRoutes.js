@@ -77,7 +77,7 @@ router.post('/:slug/update', cpUpload, upsertClinicProfile);
 
 router.post('/:slug/save-form',saveFormStructure)
 router.get('/:slug/get-form',getFormStructure)
-router.get('/:slug/clinicData',getClinicProfile1)
+router.get('/:slug/clinicData', getClinicProfile1);
 router.post('/:slug/create-table',   createTableCollection);   // ← NEW
 
 

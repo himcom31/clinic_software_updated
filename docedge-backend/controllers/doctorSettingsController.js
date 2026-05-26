@@ -15,6 +15,27 @@ exports.getDoctorProfile = async (req, res) => {
     }
 };
 
+exports.getDoctorProfile_doc = async (req, res) => {
+    try {
+        const { slug } = req.params;
+
+        // ✅ Find by slug directly — no req.user dependency
+        const doctor = await Doctor.findOne({ slug });
+
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: "Doctor not found" });
+        }
+
+        // ✅ Never send password field
+        const { password, ...safeData } = doctor.toObject();
+
+        res.status(200).json({ success: true, data: safeData });
+    } catch (err) {
+        console.error("GET_PROFILE_ERROR:", err);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
 // 2. UPDATE PROFILE - Name, specialization update
 exports.updateDoctorProfile = async (req, res) => {
     try {

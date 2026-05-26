@@ -1,67 +1,76 @@
 const mongoose = require('mongoose');
 
-const doctorEntrySchema = new mongoose.Schema({
-    doctorName: { type: String, required: true },
-    degree: { type: String },
-    specialization: { type: String },
-}, { _id: true });
-
 const clinicProfileSchema = new mongoose.Schema({
-    // Connection Link
-    doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
 
-    // Basic Details
-    clinicName: { type: String, required: true },
-
-    // ── Multi-Doctor Support ──────────────────────────────────────────────────
-    // Each entry: { doctorName, degree, specialization }
-    doctors: {
-        type: [doctorEntrySchema],
-        default: []
+    // ── Auth Link ─────────────────────────────────────────────────────────────
+    doctorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Doctor',
+        required: true
     },
 
-    // Legacy single-doctor fields (kept for backward compatibility)
-    // These will be auto-populated from doctors[0] on save
-    doctorName: { type: String },
-    degree: { type: String },
-    specialization: { type: String },
+    // ── Clinic Basic Details ──────────────────────────────────────────────────
+    clinicName: {
+        type: String,
+        required: true
+    },
 
-    regNumber: { type: String },
+    // ── Single Doctor Details ─────────────────────────────────────────────────
+    doctorName: {
+        type: String,
+        required: true
+    },
+    degree: {
+        type: String,
+        default: ''
+    },
+    specialization: {
+        type: String,
+        default: ''
+    },
 
-    // Contact Info
-    mobile: { type: String },
-    email: { type: String },
-    website: { type: String },
-    address: { type: String },
+    // ── Registration ──────────────────────────────────────────────────────────
+    regNumber: {
+        type: String,
+        default: ''
+    },
 
-    // Branding
-    logo: { type: String },
-    signature: { type: String },
-    themeColor: { type: String, default: '#006e78' },
+    // ── Contact Info ──────────────────────────────────────────────────────────
+    mobile:  { type: String, default: '' },
+    email:   { type: String, default: '' },
+    website: { type: String, default: '' },
+    address: { type: String, default: '' },
 
-    // Timing
+    // ── Branding ──────────────────────────────────────────────────────────────
+    logo:       { type: String, default: '' },
+    signature:  { type: String, default: '' },
+    themeColor: { type: String, default: '#2563eb' },
+
+    // ── Clinic Timing ─────────────────────────────────────────────────────────
     timing: {
-        openAt: { type: String },
-        closeAt: { type: String },
-        weeklyOff: { type: String }
+        openAt:    { type: String, default: '' },
+        closeAt:   { type: String, default: '' },
+        weeklyOff: { type: String, default: 'No Weekly Off' }
     },
 
-    // Pricing & Appointment Policy
+    // ── Pricing & Appointment Policy ──────────────────────────────────────────
     consultationFee: {
         type: Number,
         default: 0
     },
     appointmentValidity: {
         type: Number,
-        default: 7,
-        description: "Number of days the appointment/fee is valid for follow-up"
+        default: 7
+        // Number of days the appointment/fee is valid for follow-up
     },
 
-    // Multi-Branch Support
+    // ── Multi-Branch Support ──────────────────────────────────────────────────
     isMainBranch: { type: Boolean, default: true },
-    branchName: { type: String },
+    branchName:   { type: String,  default: 'Main Branch' },
 
+    // ── Timestamps ────────────────────────────────────────────────────────────
     updatedAt: { type: Date, default: Date.now }
+
 }, { strict: false });
 
 module.exports = clinicProfileSchema;
