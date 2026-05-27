@@ -1097,7 +1097,7 @@ const AppointmentTable = () => {
           <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">{total} total records</p>
         </div>
 
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-3  flex-wrap">
           <button
             onClick={() => { clearCache(); fetchAppointments(page, true); }}
             disabled={loading}
@@ -1108,7 +1108,8 @@ const AppointmentTable = () => {
           <Link
             to={`/${slug}/dashboard/appointment/new`}
             className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl hover:shadow-slate-200 transition-all active:scale-95 flex items-center gap-2">
-            <Plus size={16} /> New Appointment
+            <Plus size={16} /> <span className="hidden sm:inline">New Appointment</span><span className="sm:hidden">New</span>
+
           </Link>
         </div>
       </div>
@@ -1166,7 +1167,8 @@ const AppointmentTable = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap">
+
           {STATUS_OPTIONS.map(status => {
             const colors = statusTabColors[status];
             const isActive = statusFilter === status;
@@ -1185,7 +1187,8 @@ const AppointmentTable = () => {
             );
           })}
 
-          <div className="ml-2 pl-2 border-l border-slate-200 flex items-center gap-2 flex-wrap">
+          <div className="ml-2 pl-2 border-l border-slate-200 flex items-center gap-2 flex-shrink-0">
+
             {PAYMENT_OPTIONS.map(p => {
               const isActive = paymentFilter === p;
               const colors = {

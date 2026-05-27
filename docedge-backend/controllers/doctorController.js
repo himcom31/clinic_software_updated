@@ -4,67 +4,44 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Top par import karein
-const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 exports.createDoctor = async (req, res) => {
   try {
     const { name, email, clinicName, address, mobile, password } = req.body;
 
-    // 1. Check if doctor already exists
     const existingDoctor = await Doctor.findOne({ email });
     if (existingDoctor) return res.status(400).json({ message: "Doctor already registered" });
 
-    // 2. 🔥 UNIQUE SLUG GENERATION 🔥
     let slug = slugify(clinicName, { lower: true, strict: true });
-    
-    // Check if slug already exists (Same clinic name case)
     const slugExists = await Doctor.findOne({ slug });
     if (slugExists) {
-      // Agar exists karta hai toh piche random string ya mobile ke last 4 digits laga do
       slug = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
-    // 4. Save to MAIN Doctor Collection
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    
-    const newDoctor = new Doctor({
-      name,
-      email,
-      clinicName,
-      slug,
-      address,
-      mobile,
-      password: hashedPassword
-    });
+
+    const newDoctor = new Doctor({ name, email, clinicName, slug, address, mobile, password: hashedPassword });
     const savedDoctor = await newDoctor.save();
 
-    // 5. 🔥 DYNAMIC COLLECTION CREATION (With Overwrite Protection) 🔥
-    const clinicCollectionName = slug.replace(/-/g, "_"); 
-    
-    // Check if model already exists to avoid OverwriteModelError
+    const clinicCollectionName = slug.replace(/-/g, "_");
     let DynamicModel;
     if (mongoose.models[clinicCollectionName]) {
       DynamicModel = mongoose.model(clinicCollectionName);
     } else {
       DynamicModel = mongoose.model(clinicCollectionName, new mongoose.Schema({}, { strict: false, timestamps: true }));
     }
-    
-    // Naye collection mein initial data insert karein
     await DynamicModel.create({
       message: `Database for ${clinicName} initialized`,
       ownerId: savedDoctor._id,
       setupDate: new Date()
     });
 
-    // 6. Send Email Logic (Baki code same rahega...)
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
     });
 
     const mailOptions = {
@@ -81,7 +58,6 @@ exports.createDoctor = async (req, res) => {
         <p>Regards,<br>DocEdge Team</p>
       `
     };
-
     await transporter.sendMail(mailOptions);
 
     res.status(201).json({
@@ -104,50 +80,94 @@ exports.getAllDoctors = async (req, res) => {
   }
 };
 
-exports.doctorLogin = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const { slug } = req.params; // URL se slug uthayega (e.g., /login/chaudhary-clinic)
+// ─── UPDATE DOCTOR ────────────────────────────────────────────────────────────
+// PUT /api/doctors/:id
+// Allowed fields: name, email, mobile, address, password
+// NOT allowed: clinicName, slug (locked permanently)
+exports.updateDoctor = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-        // 1. Check karein ki doctor exists karta hai ya nahi
-        const doctor = await Doctor.findOne({ email });
-        if (!doctor) {
-            return res.status(404).json({ message: "Doctor not found with this email" });
-        }
+    // Strip any attempt to change clinicName or slug
+    const { clinicName, slug, ...allowedUpdates } = req.body;
 
-        // 2. Check karein ki ye doctor isi clinic (slug) ka hai ya nahi
-        // Isse security badh jayegi, koi doosre clinic ke URL se login nahi kar payega
-        if (doctor.slug !== slug) {
-            return res.status(403).json({ message: "You are not authorized to access this clinic portal" });
-        }
-
-        // 3. Password Match karein (Bcrypt use karke)
-        const isMatch = await bcrypt.compare(password, doctor.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: "Invalid Secret Password" });
-        }
-
-        // 4. JWT Token Generate karein
-        const token = jwt.sign(
-            { id: doctor._id, slug: doctor.slug, role: 'doctor' },
-            process.env.JWT_SECRET,
-            { expiresIn: '5d' } // 1 din tak login rahega
-        );
-
-        res.status(200).json({
-            message: "Login Successful",
-            token,
-            doctor: {
-                id: doctor._id,
-                name: doctor.name,
-                clinicName: doctor.clinicName,
-                slug: doctor.slug,
-                email: doctor.email
-            }
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server Error during login" });
+    // If a new password was provided, hash it
+    if (allowedUpdates.password && allowedUpdates.password.trim() !== '') {
+      const salt = await bcrypt.genSalt(10);
+      allowedUpdates.password = await bcrypt.hash(allowedUpdates.password, salt);
+    } else {
+      // No password change requested — remove the key so MongoDB doesn't overwrite
+      delete allowedUpdates.password;
     }
+
+    // Check for email conflict with another doctor
+    if (allowedUpdates.email) {
+      const conflict = await Doctor.findOne({ email: allowedUpdates.email, _id: { $ne: id } });
+      if (conflict) {
+        return res.status(400).json({ message: "This email is already in use by another doctor." });
+      }
+    }
+
+    const updatedDoctor = await Doctor.findByIdAndUpdate(
+      id,
+      { $set: allowedUpdates },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedDoctor) {
+      return res.status(404).json({ message: "Doctor not found." });
+    }
+
+    res.status(200).json({
+      message: "Doctor updated successfully.",
+      doctor: updatedDoctor
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.doctorLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const { slug } = req.params;
+
+    const doctor = await Doctor.findOne({ email });
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found with this email" });
+    }
+
+    if (doctor.slug !== slug) {
+      return res.status(403).json({ message: "You are not authorized to access this clinic portal" });
+    }
+
+    const isMatch = await bcrypt.compare(password, doctor.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid Secret Password" });
+    }
+
+    const token = jwt.sign(
+      { id: doctor._id, slug: doctor.slug, role: 'doctor' },
+      process.env.JWT_SECRET,
+      { expiresIn: '5d' }
+    );
+
+    res.status(200).json({
+      message: "Login Successful",
+      token,
+      doctor: {
+        id: doctor._id,
+        name: doctor.name,
+        clinicName: doctor.clinicName,
+        slug: doctor.slug,
+        email: doctor.email
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server Error during login" });
+  }
 };

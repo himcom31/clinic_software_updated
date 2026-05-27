@@ -59,7 +59,7 @@ const DoctorsDataList = () => {
                         <tbody className="divide-y divide-slate-100">
                             {doctors.map((doc) => {
                                 // Full Portal URL generate karna (Admin link jo doctor ko bheja gaya hai)
-                                const fullPortalUrl = `https://docedge.com/${doc.slug}/admin/login`;
+                                const fullPortalUrl = `https://docedge.tbskit.cloud/${doc.slug}/login`;
                                 const LetterHeadUrl = `/admin/setup-letterhead/${doc.slug}`;
                                 const formBuilder = `/admin/setup-form/${doc.slug}`;
 
