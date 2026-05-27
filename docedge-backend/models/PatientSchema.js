@@ -24,7 +24,7 @@ const PatientSchema = new mongoose.Schema({
     // 2. Vitals & Clinical Data (From your Image)
     weight: { type: Number },                 // 8. Weight (kg)
     height: { type: Number },                 // 9. Height (cm)
-    bmi: { type: Number },                    // 10. BMI (Auto-calculated on Frontend)
+    bmi: { type: String },                    // 10. BMI (Auto-calculated on Frontend)
     allergies: { type: String },              // 13. Allergies
     address: { type: String },                // 12. Address
 

@@ -6,7 +6,7 @@ import {
     Printer, Search, Plus, User, Loader2, Save, X, RefreshCw,
     Stethoscope, Tag, FlaskConical, Syringe, FileText, PlusCircle,
     Table2, Database, Trash2, ChevronDown, Bold, Italic, Underline,
-    List, ListOrdered, AlignLeft, AlignCenter, AlignRight,Mail,
+    List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Mail,
     MessageCircle, LogOut, Eye, CheckCircle,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -39,10 +39,16 @@ const globalStyles = `
   .rx-section-body { background: #fff; padding: 14px 12px; }
   .rx-search-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
   .rx-search-input {
-    flex: 1; border: 1px solid #c8cdd4; border-radius: 3px; padding: 7px 11px;
-    font-size: 13px; color: #333; outline: none; background: #fff;
+    flex: 1;     min-width: 600px; border: 4px solid #87CEEB; border-radius: 5px; padding: 7px 11px;
+    font-size: 15px; color: #000; outline: none; background: #fff;
     transition: border-color 0.15s; height: 32px; box-sizing: border-box;
   }
+    .rx-search-input::placeholder {
+    color: #e53935;        /* Change this to any color you want */
+    font-style: italic;    /* Optional */
+    font-weight: 600;      /* Optional */
+    opacity: 1;
+}
   .rx-search-input:focus { border-color: #1976D2; box-shadow: 0 0 0 2px rgba(25,118,210,0.12); }
   .rx-add-btn {
     background: #00bfa5; color: #fff; border: none; border-radius: 3px;
@@ -102,7 +108,6 @@ const globalStyles = `
     font-family: Arial, Helvetica, sans-serif;
     box-shadow: 0 1px 3px rgba(0,0,0,0.10);
   }
-  /* toolbar rows */
   .cke4-toolbar {
     display: flex;
     align-items: center;
@@ -113,7 +118,6 @@ const globalStyles = `
     border-bottom: 1px solid #b6b6b6;
     min-height: 26px;
   }
-  /* individual toolbar button */
   .cke4-btn {
     display: inline-flex;
     align-items: center;
@@ -147,7 +151,6 @@ const globalStyles = `
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.10);
   }
   .cke4-btn svg { display: block; }
-  /* separator */
   .cke4-sep {
     display: inline-block;
     width: 1px;
@@ -156,22 +159,6 @@ const globalStyles = `
     margin: 0 3px;
     flex-shrink: 0;
     align-self: center;
-  }
-  /* select dropdowns */
-  .cke4-select {
-    height: 22px;
-    border: 1px solid #b6b6b6;
-    border-radius: 2px;
-    background: linear-gradient(180deg, #fff 0%, #ebebeb 100%);
-    font-size: 11px;
-    color: #333;
-    padding: 0 14px 0 4px;
-    outline: none;
-    cursor: pointer;
-    margin: 1px 1px;
-    -webkit-appearance: none;
-    appearance: none;
-    position: relative;
   }
   .cke4-select-wrap {
     position: relative;
@@ -201,8 +188,7 @@ const globalStyles = `
     -webkit-appearance: none;
     appearance: none;
   }
-  .cke4-select:focus, .cke4-select-wrap select:focus { border-color: #5b9bd5; }
-  /* editable body */
+  .cke4-select-wrap select:focus { border-color: #5b9bd5; }
   .cke4-body {
     min-height: 120px;
     max-height: 320px;
@@ -221,11 +207,10 @@ const globalStyles = `
     font-style: italic;
     pointer-events: none;
   }
-  .cke4-body ul { margin: 2px 0 2px 22px; padding: 0;  list-style-type: disc;}
+  .cke4-body ul { margin: 2px 0 2px 22px; padding: 0; list-style-type: disc; }
   .cke4-body ol { margin: 2px 0 2px 22px; padding: 0; }
   .cke4-body p { margin: 0 0 4px 0; }
-  .cke4-body li {  display: list-item; margin-bottom: 1px; }
-  /* status bar at bottom */
+  .cke4-body li { display: list-item; margin-bottom: 1px; }
   .cke4-statusbar {
     display: flex;
     align-items: center;
@@ -258,7 +243,6 @@ const globalStyles = `
     opacity: 0.5;
     flex-shrink: 0;
   }
-  /* color button with swatch */
   .cke4-color-btn {
     display: inline-flex;
     flex-direction: column;
@@ -286,7 +270,6 @@ const globalStyles = `
     border-radius: 1px;
     margin-top: 1px;
   }
-  /* dropdown arrow attached to color btn */
   .cke4-color-group {
     display: inline-flex;
     align-items: center;
@@ -314,108 +297,130 @@ const globalStyles = `
     border-color: #b0b0b0;
   }
 
-  /* Patient card */
   .rx-patient-card { background: #0f172a; color: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
   .rx-patient-card.revisit { background: #1565c0; }
-  .rx-revisit-banner { background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 6px; padding: 12px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .rx-revisit-banner {
+    background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 6px;
+    padding: 12px 16px; display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 12px; margin-bottom: 16px;
+  }
   .rx-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 48px; margin-top: 16px; }
-  .rx-btn-print { background: #334155; color: #fff; border: none; border-radius: 6px; padding: 14px; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; }
+  .rx-btn-print {
+    background: #334155; color: #fff; border: none; border-radius: 6px; padding: 14px;
+    font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 8px; transition: background 0.15s;
+  }
   .rx-btn-print:hover { background: #1e293b; }
-  .rx-btn-save { background: #16a34a; color: #fff; border: none; border-radius: 6px; padding: 14px; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; }
+  .rx-btn-save {
+    background: #16a34a; color: #fff; border: none; border-radius: 6px; padding: 14px;
+    font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 8px; transition: background 0.15s;
+  }
   .rx-btn-save:hover { background: #15803d; }
   .rx-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* Modal */
-  .rx-modal-overlay { position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(15,23,42,0.7); backdrop-filter: blur(4px); }
-  .rx-modal { background: #fff; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
-  .rx-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: #fff; border-radius: 10px 10px 0 0; z-index: 10; }
+  .rx-modal-overlay {
+    position: fixed; inset: 0; z-index: 999; display: flex; align-items: center;
+    justify-content: center; padding: 16px; background: rgba(15,23,42,0.7); backdrop-filter: blur(4px);
+  }
+  .rx-modal {
+    background: #fff; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+  }
+  .rx-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #f1f5f9;
+    position: sticky; top: 0; background: #fff; border-radius: 10px 10px 0 0; z-index: 10;
+  }
   .rx-modal-body { padding: 18px 20px; }
-  .rx-modal-footer { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid #f1f5f9; position: sticky; bottom: 0; background: #fff; border-radius: 0 0 10px 10px; }
-  .rx-field-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: 4px; }
-  .rx-field-input { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; padding: 9px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; outline: none; color: #0f172a; transition: border-color 0.15s; box-sizing: border-box; }
+  .rx-modal-footer {
+    display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid #f1f5f9;
+    position: sticky; bottom: 0; background: #fff; border-radius: 0 0 10px 10px;
+  }
+  .rx-field-label {
+    font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;
+    letter-spacing: 0.8px; display: block; margin-bottom: 4px;
+  }
+  .rx-field-input {
+    width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; padding: 9px 12px;
+    border-radius: 6px; font-size: 13px; font-weight: 600; outline: none;
+    color: #0f172a; transition: border-color 0.15s; box-sizing: border-box;
+  }
   .rx-field-input:focus { border-color: #1976D2; }
 
-  /* Dynamic table */
   .rx-dyn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
   @media (max-width: 640px) { .rx-dyn-grid { grid-template-columns: 1fr; } }
 
-  /* Header */
-  .rx-header { padding: 12px 8px; border-bottom: 1px solid #e8eaed; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; background: #fff; z-index: 30; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
-  .rx-mobile-search { padding: 14px 8px; background: #f8f9fa; border-bottom: 1px solid #e2e8f0; display: flex; gap: 8px; }
-  .rx-mobile-search-input { flex: 1; border: 1px solid #c8cdd4; border-radius: 3px; padding: 9px 14px; font-size: 13px; outline: none; }
+  .rx-header {
+    padding: 12px 8px; border-bottom: 1px solid #e8eaed; display: flex; align-items: center;
+    gap: 10px; position: sticky; top: 0; background: #fff; z-index: 30;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  }
+  .rx-mobile-search {
+    padding: 14px 8px; background: #f8f9fa; border-bottom: 1px solid #e2e8f0; display: flex; gap: 8px;
+  }
+  .rx-mobile-search-input {
+    flex: 1; border: 1px solid #c8cdd4; border-radius: 3px; padding: 9px 14px; font-size: 13px; outline: none;
+  }
   .rx-mobile-search-input:focus { border-color: #1976D2; }
-  .rx-mobile-search-btn { background: #1976D2; color: #fff; border: none; border-radius: 3px; padding: 9px 18px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.15s; }
+  .rx-mobile-search-btn {
+    background: #1976D2; color: #fff; border: none; border-radius: 3px; padding: 9px 18px;
+    font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center;
+    gap: 5px; transition: background 0.15s;
+  }
   .rx-mobile-search-btn:hover { background: #1565c0; }
-  .rx-search-wrap { position: relative; flex: 1; }
+  .rx-search-wrap { position: relative; flex: 6; }
 
-  /* ── Preview Modal ── */
-  /* ── Preview Modal ── */
-.preview-modal-overlay {
-  position: fixed; inset: 0; z-index: 1000;
-  display: flex; align-items: stretch; justify-content: stretch;
-  background: rgba(10,15,30,0.92); backdrop-filter: blur(8px);
-}
-.preview-modal {
-  background: #f0f4f8;
-  width: 100%; height: 100vh;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  grid-template-rows: 60px 1fr;
-  overflow: hidden;
-}
-.preview-modal-header {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px; background: #0f172a;
-  border-bottom: 1px solid #1e293b;
-  z-index: 10;
-}
-.preview-pdf-container {
-  background: #e2e8f0;
-  padding: 20px;
-  display: flex; flex-direction: column; align-items: center;
-  overflow-y: auto; gap: 12px;
-  height: calc(100vh - 60px);
-}
-.preview-pdf-frame {
-  width: 100%; border: none; border-radius: 4px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  background: #fff;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-.preview-action-bar {
-  background: #fff;
-  border-left: 1px solid #e2e8f0;
-  padding: 28px 24px;
-  display: flex; flex-direction: column; gap: 14px;
-  height: calc(100vh - 60px);
-  overflow-y: auto;
-}
-.preview-btn {
-  border: none; border-radius: 10px; padding: 16px 20px;
-  font-weight: 800; font-size: 12px; text-transform: uppercase;
-  letter-spacing: 0.8px; cursor: pointer;
-  display: flex; align-items: center; justify-content: flex-start;
-  gap: 12px; transition: all 0.18s; line-height: 1.2; width: 100%;
-}
-.preview-btn-wa { background: #25D366; color: #fff; }
-.preview-btn-wa:hover { background: #1ebe5d; transform: translateX(3px); box-shadow: 0 4px 14px rgba(37,211,102,0.35); }
-.preview-btn-wa:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
-.preview-btn-print { background: #334155; color: #fff; }
-.preview-btn-print:hover { background: #1e293b; transform: translateX(3px); box-shadow: 0 4px 14px rgba(51,65,85,0.3); }
-.preview-btn-exit { background: #16a34a; color: #fff; }
-.preview-btn-exit:hover { background: #15803d; transform: translateX(3px); box-shadow: 0 4px 14px rgba(22,163,74,0.3); }
-.preview-btn-exit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
-.wa-status-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 700; padding: 6px 12px;
-  border-radius: 20px; width: 100%; justify-content: center;
-}
-.wa-status-badge.success { background: #dcfce7; color: #166534; }
-.wa-status-badge.error { background: #fee2e2; color: #991b1b; }
-.wa-status-badge.sending { background: #dbeafe; color: #1e40af; }
+  .preview-modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: stretch; justify-content: stretch;
+    background: rgba(10,15,30,0.92); backdrop-filter: blur(8px);
+  }
+  .preview-modal {
+    background: #f0f4f8; width: 100%; height: 100vh;
+    display: grid; grid-template-columns: 1fr 380px; grid-template-rows: 60px 1fr; overflow: hidden;
+  }
+  .preview-modal-header {
+    grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; background: #0f172a; border-bottom: 1px solid #1e293b; z-index: 10;
+  }
+  .preview-pdf-container {
+    background: #e2e8f0; padding: 20px; display: flex; flex-direction: column;
+    align-items: center; overflow-y: auto; gap: 12px; height: calc(100vh - 60px);
+  }
+  .preview-pdf-frame {
+    width: 100%; border: none; border-radius: 4px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25); background: #fff;
+    flex: 1; min-height: 0; height: 100%;
+  }
+  .preview-action-bar {
+    background: #fff; border-left: 1px solid #e2e8f0; padding: 28px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+    height: calc(100vh - 60px); overflow-y: auto;
+  }
+  .preview-btn {
+    border: none; border-radius: 10px; padding: 16px 20px; font-weight: 800;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: flex-start;
+    gap: 12px; transition: all 0.18s; line-height: 1.2; width: 100%;
+  }
+  .preview-btn-wa { background: #25D366; color: #fff; }
+  .preview-btn-wa:hover { background: #1ebe5d; transform: translateX(3px); box-shadow: 0 4px 14px rgba(37,211,102,0.35); }
+  .preview-btn-wa:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+  .preview-btn-print { background: #334155; color: #fff; }
+  .preview-btn-print:hover { background: #1e293b; transform: translateX(3px); box-shadow: 0 4px 14px rgba(51,65,85,0.3); }
+  .preview-btn-exit { background: #16a34a; color: #fff; }
+  .preview-btn-exit:hover { background: #15803d; transform: translateX(3px); box-shadow: 0 4px 14px rgba(22,163,74,0.3); }
+  .preview-btn-exit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+  .wa-status-badge {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+    padding: 6px 12px; border-radius: 20px; width: 100%; justify-content: center;
+  }
+  .wa-status-badge.success { background: #dcfce7; color: #166534; }
+  .wa-status-badge.error { background: #fee2e2; color: #991b1b; }
+  .wa-status-badge.sending { background: #dbeafe; color: #1e40af; }
 `;
 
 /* ─── CKEditor 4 faithful Rich Text Editor ───────────────────────────────────── */
@@ -426,39 +431,29 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
     const [pathItems, setPathItems] = useState(['body']);
 
     useImperativeHandle(ref, () => ({
-
         insertText: (text) => {
             const el = editorRef.current;
             if (!el) return;
             el.focus();
-
             const currentHtml = el.innerHTML.trim();
-
             if (!currentHtml || currentHtml === '<br>') {
-                // Empty editor: create fresh list
                 el.innerHTML = `<ul><li> ${text}</li></ul>`;
             } else {
-                // Check if there's already a <ul> at the end
                 const existingUl = el.querySelector('ul:last-child');
                 if (existingUl) {
-                    // Append a new <li> to the existing <ul>
                     const li = document.createElement('li');
                     li.textContent = text;
                     existingUl.appendChild(li);
                 } else {
-                    // No <ul> exists yet — wrap existing content and add new item
                     el.innerHTML += `<ul><li>${text}</li></ul>`;
                 }
             }
-
-            // Move cursor to end
             const range = document.createRange();
             range.selectNodeContents(el);
             range.collapse(false);
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
-
             const newHtml = el.innerHTML;
             lastHtmlRef.current = newHtml;
             if (onChange) onChange(newHtml);
@@ -528,7 +523,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
 
     const Sep = () => <span className="cke4-sep" />;
 
-    /* ── SVG icon helpers (matching CKEditor 4 icons as closely as possible) ── */
+    /* ── SVG icon helpers ── */
     const icons = {
         source: <svg width="16" height="14" viewBox="0 0 20 16" fill="currentColor"><path d="M6.5 0L0 8l6.5 8 1.5-1.8L2.2 8 8 1.8 6.5 0zm7 0L12 1.8 17.8 8 12 14.2l1.5 1.8L20 8l-6.5-8z" /></svg>,
         save: <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13 0H2L0 2v12l2 2h12l2-2V3l-3-3zm-1 1l2 2h-2V1zm1 13H3l-1-1V2.4L3 1h1v4h8V1h.5L14 2.5V13l-1 1zM6 1h3v3H6V1zM8 9a2 2 0 100 4 2 2 0 000-4z" /></svg>,
@@ -589,18 +584,18 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
         pagebreak: <svg width="14" height="13" viewBox="0 0 16 14" fill="currentColor"><path d="M0 0h16v5H0V0zm0 9h16v5H0V9zm5 2l2-2 2 2" stroke="currentColor" strokeWidth="1" fill="none" /><path d="M6 5l1 2 1-2" fill="currentColor" /></svg>,
         iframe: <svg width="15" height="12" viewBox="0 0 17 13" fill="currentColor"><rect x="0.75" y="0.75" width="15.5" height="11.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M1 4h15" stroke="currentColor" strokeWidth="1" fill="none" /><circle cx="3" cy="2.5" r="0.8" /><circle cx="5.5" cy="2.5" r="0.8" /><circle cx="8" cy="2.5" r="0.8" /></svg>,
         fontcolor: <svg width="12" height="13" viewBox="0 0 13 14" fill="currentColor"><path d="M1 11l4.5-11h2L12 11h-2l-1-3H4l-1 3H1zm4-5h3.5L7 3 5 6z" /></svg>,
-        bgcolor: <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor"><path d="M2 10l5-10 5 10H2zm4-2h2L7 5 6 8zm5 1c0 1.5 1 2.5 0 4-1.5-1-0-4 0-4z" /></svg>,
+        bgcolor: <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor"><path d="M2 10l5-10 5 10H2zm4-2h2L7 5l-1 3zm5 1c0 1.5 1 2.5 0 4-1.5-1-0-4 0-4z" /></svg>,
         help: <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M5.5 5.5a1.5 1.5 0 013 0c0 1-1.5 1.5-1.5 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /><circle cx="7" cy="11" r="0.8" /></svg>,
         undo: <svg width="13" height="12" viewBox="0 0 14 12" fill="currentColor"><path d="M3.7 4H8c2.8 0 5 2.2 5 5s-2.2 5-5 5H4v-2h4c1.7 0 3-1.3 3-3s-1.3-3-3-3H3.7L6 8 4.6 9.4 0 5l4.6-4.6L6 1.8 3.7 4z" /></svg>,
         redo: <svg width="13" height="12" viewBox="0 0 14 12" fill="currentColor"><path d="M10.3 4H6C3.2 4 1 6.2 1 9s2.2 5 5 5h4v-2H6c-1.7 0-3-1.3-3-3s1.3-3 3-3h4.3L8 8l1.4 1.4L14 5l-4.6-4.6L8 1.8l2.3 2.2z" /></svg>,
     };
 
     /* ── Select wrapper ── */
-    const SelectBtn = ({ value, options, onChange, style = {} }) => (
+    const SelectBtn = ({ value, options, onChange: onChg, style = {} }) => (
         <div className="cke4-select-wrap" style={style}>
             <select
                 value={value}
-                onChange={e => { onChange(e.target.value); e.target.value = value; }}
+                onChange={e => { onChg(e.target.value); e.target.value = value; }}
                 onMouseDown={e => e.stopPropagation()}
             >
                 {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -609,8 +604,8 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
     );
 
     /* ── Color button with dropdown arrow ── */
-    const ColorBtn = ({ title, icon, color, onMain, style = {} }) => (
-        <div className="cke4-color-group" style={style}>
+    const ColorBtn = ({ title, icon, color, onMain }) => (
+        <div className="cke4-color-group">
             <button type="button" title={title} onMouseDown={e => { e.preventDefault(); onMain(); }} className="cke4-color-btn">
                 {icon}
                 <div className="cke4-color-swatch" style={{ background: color }} />
@@ -678,7 +673,6 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
                 <Btn title="Block Quote" onClick={() => execCmd('formatBlock', 'blockquote')}>{icons.blockquote}</Btn>
                 <Btn title="Insert Div" onClick={() => { }}>{icons.div}</Btn>
                 <Sep />
-                {/* Align Left is active by default as shown in screenshot */}
                 <Btn title="Align Left" onClick={() => execCmd('justifyLeft')} active={true}>{icons.alignleft}</Btn>
                 <Btn title="Center" onClick={() => execCmd('justifyCenter')}>{icons.aligncenter}</Btn>
                 <Btn title="Align Right" onClick={() => execCmd('justifyRight')}>{icons.alignright}</Btn>
@@ -764,14 +758,12 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
                     style={{ marginRight: 2 }}
                 />
                 <Sep />
-                {/* Font Color */}
                 <ColorBtn
                     title="Text Color"
                     icon={icons.fontcolor}
                     color="#000000"
                     onMain={() => { const c = prompt('Hex color (e.g. #ff0000):'); if (c) execCmd('foreColor', c); }}
                 />
-                {/* Background Color */}
                 <ColorBtn
                     title="Background Color"
                     icon={icons.bgcolor}
@@ -799,7 +791,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
                 className="cke4-body"
             />
 
-            {/* ── Status bar (body > ul > li path) ── */}
+            {/* ── Status bar ── */}
             <div className="cke4-statusbar">
                 <div className="cke4-statusbar-path">
                     {pathItems.map((item, i) => (
@@ -838,9 +830,9 @@ const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 
 const USABLE_W = MARGIN_R - MARGIN_L; const HEADER_BOTTOM_PT = 270;
 const FOOTER_TOP_PT = A4_H - 80; const PAGE2_START_Y = 110;
 
-const EMPTY_MED = { name: '', brandName: '', strength: '', unit_per_Dose: '', timing: '', duration: '', action: '', instructions: '', category: '', saltComposition: '' };
-const EMPTY_INV = { testName: '', category: '', action: '' };
-const EMPTY_VAC = { vaccineName: '', note: '', action: '' };
+const EMPTY_MED    = { name: '', brandName: '', strength: '', unit_per_Dose: '', timing: '', duration: '', action: '', instructions: '', category: '', saltComposition: '' };
+const EMPTY_INV    = { testName: '', category: '', action: '' };
+const EMPTY_VAC    = { vaccineName: '', note: '', action: '' };
 const EMPTY_REPORT = { reportName: '', impression: '', action: '', date: new Date().toISOString().split('T')[0] };
 
 const buildEmptyRow = (columns = []) => {
@@ -891,8 +883,6 @@ const renderHtmlSegmentsToPdf = (doc, segments, startX, startY, maxWidth, checkP
             const col = seg.color || '#1e293b';
             if (col.startsWith('#')) { const rgb = hexToRgb(col); r = rgb[0]; g = rgb[1]; b = rgb[2]; } else if (col.startsWith('rgb')) { const m = col.match(/(\d+),\s*(\d+),\s*(\d+)/); if (m) { r = parseInt(m[1]); g = parseInt(m[2]); b = parseInt(m[3]); } }
             doc.setTextColor(r, g, b);
-            const remainingWidth = maxWidth - (x - startX);
-            if (remainingWidth <= 0) { curY += lineHeight; curY = checkPageBreakFn(curY, lineHeight); x = startX + (isListItem ? 12 : 0); }
             const words = seg.text.split(' '); let lineStr = '';
             for (const word of words) {
                 const test = lineStr ? lineStr + ' ' + word : word;
@@ -916,6 +906,44 @@ const renderHtmlSegmentsToPdf = (doc, segments, startX, startY, maxWidth, checkP
 const stripHtml = (html) => {
     if (!html) return '';
     return html.replace(/<li>/gi, '• ').replace(/<\/li>/gi, '\n').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+};
+
+/* ─── PREDEFINED BLOCK ORDER ────────────────────────────────────────────────── */
+const DEFAULT_BLOCK_ORDER = [
+    { type: 'symptoms_block',       position: 0 },
+    { type: 'medicines_block',      position: 1 },
+    { type: 'investigations_block', position: 2 },
+    { type: 'vaccinations_block',   position: 3 },
+    { type: 'reports_block',        position: 4 },
+];
+
+const buildRenderOrder = (formStructure) => {
+    const blockOrder = (formStructure?.blockOrder && formStructure.blockOrder.length > 0)
+        ? formStructure.blockOrder
+        : DEFAULT_BLOCK_ORDER;
+    const sections = formStructure?.sections || [];
+    const items = [];
+
+    blockOrder.forEach(b => {
+        if (b.kind === 'predefined' || !b.kind) {
+            items.push({ kind: 'predefined', type: b.type, position: b.position });
+        } else if (b.kind === 'section') {
+            const section = sections[b.sectionIndex];
+            if (section) {
+                items.push({ kind: 'section', section, sectionIndex: b.sectionIndex, position: b.position });
+            }
+        }
+    });
+
+    sections.forEach((section, idx) => {
+        const alreadyPlaced = items.some(item => item.kind === 'section' && item.sectionIndex === idx);
+        if (!alreadyPlaced) {
+            items.push({ kind: 'section', section, sectionIndex: idx, position: 999 + idx });
+        }
+    });
+
+    items.sort((a, b) => a.position - b.position);
+    return items;
 };
 
 /* ─── AddToDBModal ───────────────────────────────────────────────────────────── */
@@ -947,13 +975,9 @@ const AddToDBModal = ({ isOpen, onClose, onSave, title, fields, saving }) => {
                             <div key={field.key}>
                                 <label className="rx-field-label">{field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}</label>
                                 {field.type === 'textarea' ? (
-                                    <textarea rows={2} className="rx-field-input" style={{ resize: 'none' }}
-                                        placeholder={field.placeholder || ''} value={formData[field.key] || ''}
-                                        onChange={e => setFormData(p => ({ ...p, [field.key]: e.target.value }))} />
+                                    <textarea rows={2} className="rx-field-input" style={{ resize: 'none' }} placeholder={field.placeholder || ''} value={formData[field.key] || ''} onChange={e => setFormData(p => ({ ...p, [field.key]: e.target.value }))} />
                                 ) : (
-                                    <input type={field.type || 'text'} className="rx-field-input"
-                                        placeholder={field.placeholder || ''} value={formData[field.key] || ''}
-                                        onChange={e => setFormData(p => ({ ...p, [field.key]: e.target.value }))} />
+                                    <input type={field.type || 'text'} className="rx-field-input" placeholder={field.placeholder || ''} value={formData[field.key] || ''} onChange={e => setFormData(p => ({ ...p, [field.key]: e.target.value }))} />
                                 )}
                             </div>
                         ))}
@@ -973,7 +997,8 @@ const AddToDBModal = ({ isOpen, onClose, onSave, title, fields, saving }) => {
 };
 
 /* ─── TableCellInput ─────────────────────────────────────────────────────────── */
-const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, onSelectSuggestion }) => {
+
+const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, onSelectSuggestion, onNoMatch, onNoMatchClear }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [searching, setSearching] = useState(false);
     const [open, setOpen] = useState(false);
@@ -985,6 +1010,7 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
     const handleChange = (e) => {
         const newVal = e.target.value;
         onUpdate(col.name, newVal);
+        if (onNoMatchClear) onNoMatchClear();
         if (!isSearchable) return;
         clearTimeout(debounceRef.current);
         if (newVal.length < 1) { setSuggestions([]); setOpen(false); return; }
@@ -993,13 +1019,22 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
             try {
                 const res = await axios.get(`${API_BAS}/api/prescriptions/${collectionName}/search`, { params: { q: newVal, slug, limit: 8 } });
                 const results = res.data.data || [];
-                setSuggestions(results); setOpen(results.length > 0);
+                setSuggestions(results);
+                setOpen(results.length > 0);
+                if (results.length === 0 && newVal.length >= 1) {
+                    if (onNoMatch) onNoMatch(newVal, row._rowId);
+                }
             } catch (_) { setSuggestions([]); setOpen(false); }
             finally { setSearching(false); }
         }, 250);
     };
 
-    const handleSelect = (suggestion) => { pointerDownRef.current = false; setOpen(false); setSuggestions([]); onSelectSuggestion(suggestion); };
+    const handleSelect = (suggestion) => {
+        pointerDownRef.current = false;
+        setOpen(false); setSuggestions([]);
+        if (onNoMatchClear) onNoMatchClear();
+        onSelectSuggestion(suggestion);
+    };
 
     switch (col.type) {
         case 'date': return <input type="date" value={val} onChange={e => onUpdate(col.name, e.target.value)} className="rx-table-input" />;
@@ -1008,7 +1043,7 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
             <div style={{ display: 'flex', gap: 4 }}>
                 {['Yes', 'No'].map(v => (
                     <button key={v} type="button" onClick={() => onUpdate(col.name, v)}
-                        style={{ padding: '4px 10px', borderRadius: 3, border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', background: val === v ? '#1976D2' : '#f1f5f9', color: val === v ? '#fff' : '#64748b', transition: 'all 0.15s' }}>{v}</button>
+                        style={{ padding: '4px 10px', borderRadius: 3, border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', background: val === v ? '#1976D2' : '#f1f5f9', color: val === v ? '#fff' : '#64748b' }}>{v}</button>
                 ))}
             </div>
         );
@@ -1017,14 +1052,15 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <input type="text" value={val} onChange={handleChange}
                         onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
-                        onBlur={() => { if (!pointerDownRef.current) setOpen(false); }}
+                        onBlur={() => { setTimeout(() => { if (!pointerDownRef.current) { setOpen(false); } }, 150); }}
                         placeholder={isSearchable ? `Search ${col.name}...` : ''}
                         className="rx-table-input" style={{ paddingRight: isSearchable ? 26 : undefined }} />
                     {isSearchable && searching && <Loader2 size={11} style={{ position: 'absolute', right: 7, color: '#1976D2', animation: 'spin 1s linear infinite', pointerEvents: 'none' }} />}
                     {isSearchable && !searching && suggestions.length > 0 && <ChevronDown size={11} style={{ position: 'absolute', right: 7, color: '#94a3b8', pointerEvents: 'none' }} />}
                 </div>
                 {open && suggestions.length > 0 && (
-                    <div className="rx-suggestion-list">
+    <div className="rx-suggestion-list" style={{ bottom: '100%', top: 'auto', marginTop: 0, marginBottom: 2 }}>
+                    
                         {suggestions.map((s, idx) => {
                             const displayCols = Object.entries(s).filter(([k]) => !['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'].includes(k));
                             const primary = displayCols[0]; const secondary = displayCols.slice(1, 3);
@@ -1043,12 +1079,20 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
 };
 
 /* ─── DynamicTableField ──────────────────────────────────────────────────────── */
-const DynamicTableField = ({ field, rows, slug, onChange }) => {
+
+const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const columns = field.columns || [];
     const collectionName = field.collectionName || null;
+    const [noMatchInfo, setNoMatchInfo] = useState({ show: false, val: '', rowId: null });
+
     const addRow = () => onChange([...rows, buildEmptyRow(columns)]);
     const updateCell = (rowId, colName, value) => onChange(rows.map(r => r._rowId === rowId ? { ...r, [colName]: value } : r));
-    const fillRowFromSuggestion = (rowId, suggestion) => onChange(rows.map(r => { if (r._rowId !== rowId) return r; const updated = { ...r }; columns.forEach(col => { if (suggestion[col.name] !== undefined) updated[col.name] = String(suggestion[col.name] ?? ''); }); return updated; }));
+    const fillRowFromSuggestion = (rowId, suggestion) => onChange(rows.map(r => {
+        if (r._rowId !== rowId) return r;
+        const updated = { ...r };
+        columns.forEach(col => { if (suggestion[col.name] !== undefined) updated[col.name] = String(suggestion[col.name] ?? ''); });
+        return updated;
+    }));
     const deleteRow = (rowId) => onChange(rows.filter(r => r._rowId !== rowId));
 
     return (
@@ -1059,18 +1103,31 @@ const DynamicTableField = ({ field, rows, slug, onChange }) => {
                     <span>{field.label || field.tableName || 'Custom Table'}</span>
                     {collectionName && <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.2)', borderRadius: 3, padding: '1px 6px' }}>searchable</span>}
                 </div>
-                <button type="button" onClick={addRow}
-                    style={{ background: '#00bfa5', color: '#fff', border: 'none', borderRadius: 3, padding: '4px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button type="button" onClick={addRow} style={{ background: '#00bfa5', color: '#fff', border: 'none', borderRadius: 3, padding: '4px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Plus size={11} /> Add Row
                 </button>
             </div>
+
+            <div className="rx-section-body" style={{ paddingBottom: 0 }}>
+                {noMatchInfo.show && (
+                    <div className="rx-no-match" style={{ marginBottom: 10 }}>
+                        <span style={{ fontSize: 11 }}>No match for "<strong>{noMatchInfo.val}</strong>"</span>
+                        <button className="rx-no-match-btn" onPointerDown={(e) => {
+                            e.preventDefault();
+                            setNoMatchInfo({ show: false, val: '', rowId: null });
+                            if (onOpenAddToDB) onOpenAddToDB(field, noMatchInfo.rowId, noMatchInfo.val, columns, collectionName);
+                        }}>
+                            <PlusCircle size={9} /> Add to DB
+                        </button>
+                    </div>
+                )}
+            </div>
+
             <div style={{ overflowX: 'auto' }}>
                 <table className="rx-table">
                     <thead>
                         <tr>
-                            {columns.map((col, i) => (
-                                <th key={i}>{col.name} {i === 0 && collectionName && <span style={{ color: '#1976D2', fontSize: 10 }}>🔍</span>}</th>
-                            ))}
+                            {columns.map((col, i) => (<th key={i}>{col.name} {i === 0 && collectionName && <span style={{ color: '#1976D2', fontSize: 10 }}>🔍</span>}</th>))}
                             <th style={{ width: 44 }}>Del</th>
                         </tr>
                     </thead>
@@ -1081,14 +1138,19 @@ const DynamicTableField = ({ field, rows, slug, onChange }) => {
                             <tr key={row._rowId}>
                                 {columns.map((col, cIdx) => (
                                     <td key={cIdx}>
-                                        <TableCellInput col={col} colIndex={cIdx} row={row} slug={slug} collectionName={collectionName}
+                                        <TableCellInput
+                                            col={col} colIndex={cIdx} row={row} slug={slug} collectionName={collectionName}
                                             onUpdate={(colName, value) => updateCell(row._rowId, colName, value)}
-                                            onSelectSuggestion={(suggestion) => fillRowFromSuggestion(row._rowId, suggestion)} />
+                                            onSelectSuggestion={(suggestion) => fillRowFromSuggestion(row._rowId, suggestion)}
+                                            onNoMatch={collectionName && cIdx === 0
+                                                ? (val, rowId) => setNoMatchInfo({ show: true, val, rowId })
+                                                : null
+                                            }
+                                            onNoMatchClear={() => setNoMatchInfo({ show: false, val: '', rowId: null })}
+                                        />
                                     </td>
                                 ))}
-                                <td style={{ textAlign: 'center' }}>
-                                    <button type="button" onClick={() => deleteRow(row._rowId)} className="rx-del-btn"><X size={11} /></button>
-                                </td>
+                                <td style={{ textAlign: 'center' }}><button type="button" onClick={() => deleteRow(row._rowId)} className="rx-del-btn"><X size={11} /></button></td>
                             </tr>
                         ))}
                     </tbody>
@@ -1102,12 +1164,11 @@ const DynamicTableField = ({ field, rows, slug, onChange }) => {
         </div>
     );
 };
-
 /* ─── PrintablePrescription ──────────────────────────────────────────────────── */
 const PrintablePrescription = forwardRef(({ design, patient, symptomsHtml, clinicProfile }, ref) => {
     const color = design?.color || '#1e4e79';
     return (
-        <div ref={ref} style={{ width: '210mm', minHeight: '297mm', backgroundColor: '#fff', position: 'relative', fontFamily: 'Arial, sans-serif', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', padding: '0' }}>
+        <div ref={ref} style={{ width: '210mm', minHeight: '297mm', backgroundColor: '#fff', position: 'relative', fontFamily: 'Arial, sans-serif', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
             <div style={{ width: '100%', height: 10, backgroundColor: color }} />
             <div style={{ position: 'absolute', top: '40%', left: 20, opacity: 0.04, fontSize: 180, fontFamily: 'serif', fontStyle: 'italic', pointerEvents: 'none', userSelect: 'none', color }}>Rx</div>
             {symptomsHtml && (
@@ -1123,18 +1184,16 @@ const PrintablePrescription = forwardRef(({ design, patient, symptomsHtml, clini
 PrintablePrescription.displayName = 'PrintablePrescription';
 
 /* ─── PreviewModal ───────────────────────────────────────────────────────────── */
-const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onPrint, onSaveExit, navigate, slug }) => {
+const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onSaveExit, navigate, slug }) => {
     const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
     const [waSending, setWaSending] = useState(false);
     const [waSaveExiting, setWaSaveExiting] = useState(false);
     const [waStatus, setWaStatus] = useState(null);
     const [waError, setWaError] = useState('');
-
     const [emailSending, setEmailSending] = useState(false);
     const [emailStatus, setEmailStatus] = useState(null);
     const [emailError, setEmailError] = useState('');
     const emailSendingRef = useRef(false);
-
 
     useEffect(() => {
         if (isOpen && pdfDoc) {
@@ -1144,117 +1203,43 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onPrint, onSaveExit, n
             return () => URL.revokeObjectURL(url);
         } else {
             setPdfBlobUrl(null);
-            setWaStatus(null);
-            setWaError('');
+            setWaStatus(null); setWaError('');
+            setEmailStatus(null); setEmailError('');
         }
     }, [isOpen, pdfDoc]);
 
     if (!isOpen) return null;
+
     const handleWhatsApp = async () => {
-        if (!patient?.mobile) {
-            setWaStatus('error');
-            setWaError('Patient mobile number not found.');
-            return;
-        }
-
-        setWaSending(true);
-        setWaStatus('sending');
-        setWaError('');
-
+        if (!patient?.mobile) { setWaStatus('error'); setWaError('Patient mobile number not found.'); return; }
+        setWaSending(true); setWaStatus('sending'); setWaError('');
         try {
-            // Convert PDF to base64
             const pdfBase64 = pdfDoc.output('datauristring');
-
-            // ✅ Call YOUR backend — no CORS issues
-            const res = await axios.post(
-                `${API_BAS}/api/whatsapp/send-prescription/${slug}`,
-                {
-                    pdfBase64,
-                    patientName: patient.name,
-                    patientMobile: patient.mobile
-                }
-            );
-
-            if (res.data.success) {
-                setWaStatus('success');
-            } else {
-                setWaStatus('error');
-                setWaError(res.data.message || 'Send failed');
-            }
-
-        } catch (err) {
-            setWaStatus('error');
-            setWaError(
-                err.response?.data?.message ||
-                err.message ||
-                'WhatsApp send failed'
-            );
-        } finally {
-            setWaSending(false);
-        }
+            const res = await axios.post(`${API_BAS}/api/whatsapp/send-prescription/${slug}`, { pdfBase64, patientName: patient.name, patientMobile: patient.mobile });
+            setWaStatus(res.data.success ? 'success' : 'error');
+            if (!res.data.success) setWaError(res.data.message || 'Send failed');
+        } catch (err) { setWaStatus('error'); setWaError(err.response?.data?.message || err.message || 'WhatsApp send failed'); }
+        finally { setWaSending(false); }
     };
-// Add this ref at the top of your component
 
-const handleEmail = async () => {
-    // ── Guard: block if already sending ──
-    if (emailSendingRef.current) {
-        console.warn('Email already in progress, ignoring duplicate call.');
-        return;
-    }
-
-    if (!patient?.email) {
-        setEmailStatus('error');
-        setEmailError('Patient email address not found.');
-        return;
-    }
-
-    // ── Lock ──
-    emailSendingRef.current = true;
-    setEmailSending(true);
-    setEmailStatus('sending');
-    setEmailError('');
-
-    try {
-        const pdfOutput = pdfDoc.output('datauristring');
-        const commaIndex = pdfOutput.indexOf(',');
-        const pdfBase64 = pdfOutput.substring(commaIndex + 1);
-
-        if (!pdfBase64.startsWith('JVBERi')) {
-            setEmailStatus('error');
-            setEmailError('PDF generation failed. Please try again.');
-            return;
-        }
-
-        const res = await axios.post(
-            `${API_BAS}/api/notifications/send-email/${slug}`,
-            { pdfBase64, patientName: patient.name, patientEmail: patient.email, patientMobile: patient.mobile },
-            { timeout: 60000, maxContentLength: Infinity, maxBodyLength: Infinity }
-        );
-
-        if (res.data.success) {
-            setEmailStatus('success');
-        } else {
-            setEmailStatus('error');
-            setEmailError(res.data.message || 'Email send failed');
-        }
-
-    } catch (err) {
-        setEmailStatus('error');
-        setEmailError(err.response?.data?.message || err.message || 'Email send failed.');
-    } finally {
-        // ── Unlock ──
-        emailSendingRef.current = false;
-        setEmailSending(false);
-    }
-};
-
-
+    const handleEmail = async () => {
+        if (emailSendingRef.current) return;
+        if (!patient?.email) { setEmailStatus('error'); setEmailError('Patient email address not found.'); return; }
+        emailSendingRef.current = true;
+        setEmailSending(true); setEmailStatus('sending'); setEmailError('');
+        try {
+            const pdfOutput = pdfDoc.output('datauristring');
+            const pdfBase64 = pdfOutput.substring(pdfOutput.indexOf(',') + 1);
+            if (!pdfBase64.startsWith('JVBERi')) { setEmailStatus('error'); setEmailError('PDF generation failed.'); return; }
+            const res = await axios.post(`${API_BAS}/api/notifications/send-email/${slug}`, { pdfBase64, patientName: patient.name, patientEmail: patient.email, patientMobile: patient.mobile }, { timeout: 60000 });
+            setEmailStatus(res.data.success ? 'success' : 'error');
+            if (!res.data.success) setEmailError(res.data.message || 'Email send failed');
+        } catch (err) { setEmailStatus('error'); setEmailError(err.response?.data?.message || err.message || 'Email send failed.'); }
+        finally { emailSendingRef.current = false; setEmailSending(false); }
+    };
 
     const handlePrint = () => {
-        if (pdfBlobUrl) {
-            const win = window.open(pdfBlobUrl, '_blank');
-            if (win) { win.addEventListener('load', () => { win.focus(); win.print(); }); }
-        }
+        if (pdfBlobUrl) { const win = window.open(pdfBlobUrl, '_blank'); if (win) win.addEventListener('load', () => { win.focus(); win.print(); }); }
     };
 
     const handleSaveExit = async () => {
@@ -1262,113 +1247,73 @@ const handleEmail = async () => {
         try { await onSaveExit(); } finally { setWaSaveExiting(false); }
     };
 
-return (
-    <div className="preview-modal-overlay">
-        <div className="preview-modal">
-            {/* Header — full width */}
-            <div className="preview-modal-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ background: '#1976D2', borderRadius: 6, padding: '6px 8px', color: '#fff', display: 'flex' }}>
-                        <Eye size={16} />
-                    </div>
-                    <div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>
-                            Prescription Preview
-                        </div>
-                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
-                            {patient?.name} · {patient?.mobile}
+    return (
+        <div className="preview-modal-overlay">
+            <div className="preview-modal">
+                <div className="preview-modal-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ background: '#1976D2', borderRadius: 6, padding: '6px 8px', color: '#fff', display: 'flex' }}><Eye size={16} /></div>
+                        <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Prescription Preview</div>
+                            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{patient?.name} · {patient?.mobile}</div>
                         </div>
                     </div>
-                </div>
-                <button onClick={onClose}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center' }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
-                    <X size={20} />
-                </button>
-            </div>
-
-            {/* Left: PDF iframe — ~50% of screen */}
-            <div className="preview-pdf-container">
-                {pdfBlobUrl ? (
-                    <iframe
-                        src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                        className="preview-pdf-frame"
-                        title="Prescription Preview"
-                    />
-                ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#94a3b8', gap: 10 }}>
-                        <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>Generating PDF...</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Right: Actions panel — fixed 380px */}
-            <div className="preview-action-bar">
-                <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4 }}>
-                        Ready to share
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
-                        Choose how to deliver this prescription:
-                    </div>
-                </div>
-
-                <button className="preview-btn preview-btn-wa" onClick={handleWhatsApp} disabled={waSending || !pdfBlobUrl}>
-                    {waSending
-                        ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                        : <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
-                    }
-                    <span>Send via WhatsApp</span>
-                </button>
-
-                {waStatus === 'sending' && <div className="wa-status-badge sending"><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />Sending on WhatsApp...</div>}
-                {waStatus === 'success' && <div className="wa-status-badge success"><CheckCircle size={12} />Sent on WhatsApp!</div>}
-                {waStatus === 'error' && <div className="wa-status-badge error"><X size={12} />{waError || 'WhatsApp send failed.'}</div>}
-
-                <button
-                    onClick={handleEmail}
-                    disabled={emailSending || !pdfBlobUrl}
-                    title={!patient?.email ? 'No email address on file' : ''}
-                    style={{
-                        background: patient?.email ? '#7c3aed' : '#94a3b8',
-                        color: '#fff', border: 'none', borderRadius: 10,
-                        padding: '16px 20px', fontWeight: 800, fontSize: 12,
-                        textTransform: 'uppercase', letterSpacing: '0.8px',
-                        cursor: emailSending || !pdfBlobUrl ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center',
-                        gap: 12, transition: 'all 0.18s', opacity: emailSending ? 0.7 : 1, width: '100%'
-                    }}
-                >
-                    {emailSending ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <Mail size={20} />}
-                    <span>Send via Email</span>
-                </button>
-
-                {emailStatus === 'sending' && <div className="wa-status-badge sending"><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />Sending Email...</div>}
-                {emailStatus === 'success' && <div className="wa-status-badge success"><CheckCircle size={12} />Email Sent!</div>}
-                {emailStatus === 'error' && <div className="wa-status-badge error"><X size={12} />{emailError}</div>}
-
-                <button className="preview-btn preview-btn-print" onClick={handlePrint} disabled={!pdfBlobUrl}>
-                    <Printer size={20} /><span>Print Prescription</span>
-                </button>
-
-                <div style={{ flex: 1 }} />
-
-                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
-                    <button className="preview-btn preview-btn-exit" onClick={handleSaveExit} disabled={waSaveExiting}>
-                        {waSaveExiting ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <LogOut size={20} />}
-                        <span>{waSaveExiting ? 'Saving...' : 'Save & Exit'}</span>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>
+                        <X size={20} />
                     </button>
-                    <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>
-                        Saves to database and returns to dashboard
+                </div>
+                <div className="preview-pdf-container">
+                    {pdfBlobUrl
+                        ? <iframe src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=0`} className="preview-pdf-frame" title="Prescription Preview" />
+                        : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#94a3b8', gap: 10 }}>
+                            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                            <span style={{ fontSize: 14, fontWeight: 600 }}>Generating PDF...</span>
+                          </div>
+                    }
+                </div>
+                <div className="preview-action-bar">
+                    <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4 }}>Ready to share</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>Choose how to deliver this prescription:</div>
+                    </div>
+
+                    <button className="preview-btn preview-btn-wa" onClick={handleWhatsApp} disabled={waSending || !pdfBlobUrl}>
+                        {waSending ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> :
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                        }
+                        <span>Send via WhatsApp</span>
+                    </button>
+                    {waStatus === 'sending' && <div className="wa-status-badge sending"><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />Sending on WhatsApp...</div>}
+                    {waStatus === 'success' && <div className="wa-status-badge success"><CheckCircle size={12} />Sent on WhatsApp!</div>}
+                    {waStatus === 'error' && <div className="wa-status-badge error"><X size={12} />{waError}</div>}
+
+                    <button onClick={handleEmail} disabled={emailSending || !pdfBlobUrl}
+                        style={{ background: patient?.email ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', borderRadius: 10, padding: '16px 20px', fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.8px', cursor: emailSending || !pdfBlobUrl ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 12, width: '100%', opacity: emailSending ? 0.7 : 1 }}>
+                        {emailSending ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <Mail size={20} />}
+                        <span>Send via Email</span>
+                    </button>
+                    {emailStatus === 'sending' && <div className="wa-status-badge sending"><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />Sending Email...</div>}
+                    {emailStatus === 'success' && <div className="wa-status-badge success"><CheckCircle size={12} />Email Sent!</div>}
+                    {emailStatus === 'error' && <div className="wa-status-badge error"><X size={12} />{emailError}</div>}
+
+                    <button className="preview-btn preview-btn-print" onClick={handlePrint} disabled={!pdfBlobUrl}>
+                        <Printer size={20} /><span>Print Prescription</span>
+                    </button>
+
+                    <div style={{ flex: 1 }} />
+
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
+                        <button className="preview-btn preview-btn-exit" onClick={handleSaveExit} disabled={waSaveExiting}>
+                            {waSaveExiting ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <LogOut size={20} />}
+                            <span>{waSaveExiting ? 'Saving...' : 'Save & Exit'}</span>
+                        </button>
+                        <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 10 }}>Saves to database and returns to dashboard</div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-);
-
+    );
 };
 
 /* ─── Main Component ─────────────────────────────────────────────────────────── */
@@ -1424,17 +1369,16 @@ const GeneratePrescription = () => {
     const [activeReportIndex, setActiveReportIndex] = useState(null);
     const [reportSearching, setReportSearching] = useState(false);
     const [reportSearchInput, setReportSearchInput] = useState('');
+    const [reportNoResults, setReportNoResults] = useState(false);
 
     const [isRevisit, setIsRevisit] = useState(false);
     const [isRevisitAutoFilled, setIsRevisitAutoFilled] = useState(false);
     const [tableRows, setTableRows] = useState({});
-    const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null, prefill: '' });
+const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null, prefill: '', customField: null, customRowId: null, customColumns: [], customCollectionName: '' });
     const [dbModalSaving, setDbModalSaving] = useState(false);
     const [clinicProfile, setClinicProfile] = useState(null);
-
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewPdfDoc, setPreviewPdfDoc] = useState(null);
-
 
     useEffect(() => {
         return () => {
@@ -1447,15 +1391,11 @@ const GeneratePrescription = () => {
     }, []);
 
     useEffect(() => { if (appointmentId) autoLoadAppointmentContext(); }, [appointmentId]);
-    // ✅ REPLACE WITH THIS — only one working API call
+
     useEffect(() => {
         const fetchClinicProfile = async () => {
-            try {
-                const res = await axios.get(`${API_BAS}/api/clinic/${slug}/clinicData`);
-                setClinicProfile(res.data.data);
-            } catch (err) {
-                console.error("Clinic profile fetch error:", err.message);
-            }
+            try { const res = await axios.get(`${API_BAS}/api/clinic/${slug}/clinicData`); setClinicProfile(res.data.data); }
+            catch (err) { console.error("Clinic profile fetch error:", err.message); }
         };
         fetchClinicProfile();
     }, [slug]);
@@ -1474,7 +1414,7 @@ const GeneratePrescription = () => {
                         if (dbRows.length > 0) { init[field.id] = dbRows.map((row, i) => { const { _id, __v, patientId: _pid, appointmentId: _aid, slug: _s, createdAt, updatedAt, ...colData } = row; return { _rowId: `row-db-${field.id}-${i}`, ...colData }; }); continue; }
                     } catch (_) { }
                 }
-                init[field.id] = [];
+                init[field.id] = [buildEmptyRow(field.columns || [])];
             }
         }
         setTableRows(init);
@@ -1527,7 +1467,9 @@ const GeneratePrescription = () => {
             const res = await axios.get(`${API_BAS}/api/prescriptions/initial-data?slug=${slug}&phone=${mobileInput}`);
             if (res.data.success) {
                 const { data } = res.data;
-                setMasterData(data); setDynamicValues({}); setMedicines([{ ...EMPTY_MED }]); setInvestigations([{ ...EMPTY_INV }]); setVaccinations([{ ...EMPTY_VAC }]); setReports([{ ...EMPTY_REPORT }]); setSymptomsHtml(''); setSymptomInput(''); setIsRevisit(false); setIsRevisitAutoFilled(false);
+                setMasterData(data); setDynamicValues({}); setMedicines([{ ...EMPTY_MED }]); setInvestigations([{ ...EMPTY_INV }]);
+                setVaccinations([{ ...EMPTY_VAC }]); setReports([{ ...EMPTY_REPORT }]); setSymptomsHtml(''); setSymptomInput('');
+                setIsRevisit(false); setIsRevisitAutoFilled(false);
                 if (data.isRevisit && data.lastPrescription) { applyRevisitData(data.lastPrescription, data.formStructure, data.patient); const prevTableData = data.lastPrescription.tableData || {}; await initTableRows(data.formStructure, prevTableData, data.patient?._id); setIsRevisit(true); setIsRevisitAutoFilled(true); }
                 else await initTableRows(data?.formStructure, {}, data.patient?._id);
             }
@@ -1535,7 +1477,7 @@ const GeneratePrescription = () => {
         finally { setSearching(false); }
     };
 
-    /* ── Medicine ── */
+    /* ── Medicine handlers ── */
     const searchMedicines = (query, index) => {
         setActiveMedIndex(index); setMedNoResults(prev => ({ ...prev, [index]: false }));
         if (!query || query.length < 2) { setMedSuggestions([]); return; }
@@ -1547,10 +1489,9 @@ const GeneratePrescription = () => {
     };
 
     const handleMedTopSearch = (query) => {
-        setMedSearchInput(query);
-        if (!query || query.length < 2) { setMedSuggestions([]); setActiveMedIndex('top'); return; }
+        setMedSearchInput(query); setActiveMedIndex('top');
+        if (!query || query.length < 2) { setMedSuggestions([]); return; }
         clearTimeout(debounceRef.current);
-        setActiveMedIndex('top');
         debounceRef.current = setTimeout(async () => {
             try { const res = await axios.get(`${API_BAS}/api/medicines/${slug}/list?search=${query}`); const results = res.data.data || []; setMedSuggestions(results); setMedNoResults(prev => ({ ...prev, top: results.length === 0 })); }
             catch (_) { setMedSuggestions([]); }
@@ -1559,12 +1500,7 @@ const GeneratePrescription = () => {
 
     const selectMedicineFromTop = (med) => {
         suggestionPointerDownRef.current = false;
-        setMedicines(prev => {
-            const emptyIdx = prev.findIndex(m => !m.name && !m.brandName);
-            const newMed = { name: med.name || '', brandName: med.brandName || '', strength: med.strength || '', unit_per_Dose: med.unit_per_Dose || '', timing: med.timing || '', duration: med.duration || '', route: med.route || '', action: med.action || '', instructions: med.instructions || '', category: med.category || '', saltComposition: med.saltComposition || '' };
-            if (emptyIdx >= 0) return prev.map((m, i) => i === emptyIdx ? newMed : m);
-            return [...prev, newMed];
-        });
+        setMedicines(prev => { const emptyIdx = prev.findIndex(m => !m.name && !m.brandName); const newMed = { name: med.name || '', brandName: med.brandName || '', strength: med.strength || '', unit_per_Dose: med.unit_per_Dose || '', timing: med.timing || '', duration: med.duration || '', route: med.route || '', action: med.action || '', instructions: med.instructions || '', category: med.category || '', saltComposition: med.saltComposition || '' }; if (emptyIdx >= 0) return prev.map((m, i) => i === emptyIdx ? newMed : m); return [...prev, newMed]; });
         setMedSearchInput(''); setMedSuggestions([]); setActiveMedIndex(null); setMedNoResults({});
     };
 
@@ -1572,10 +1508,9 @@ const GeneratePrescription = () => {
     const removeMedicine = (i) => setMedicines(prev => prev.filter((_, idx) => idx !== i));
     const updateMedicine = (i, field, val) => setMedicines(prev => prev.map((m, idx) => idx === i ? { ...m, [field]: val } : m));
 
-    /* ── Investigation ── */
+    /* ── Investigation handlers ── */
     const handleInvTopSearch = (query) => {
-        setInvSearchInput(query);
-        setActiveInvIndex('top'); setInvNoResults(prev => ({ ...prev, top: false }));
+        setInvSearchInput(query); setActiveInvIndex('top'); setInvNoResults(prev => ({ ...prev, top: false }));
         if (!query || query.length < 1) { setInvSuggestions([]); return; }
         clearTimeout(invDebounceRef.current);
         invDebounceRef.current = setTimeout(async () => {
@@ -1587,12 +1522,7 @@ const GeneratePrescription = () => {
 
     const selectInvestigationFromTop = (inv) => {
         invPointerDownRef.current = false;
-        setInvestigations(prev => {
-            const emptyIdx = prev.findIndex(i => !i.testName);
-            const newInv = { testName: inv.testName || '', category: inv.category || '', action: inv.action || '' };
-            if (emptyIdx >= 0) return prev.map((item, i) => i === emptyIdx ? newInv : item);
-            return [...prev, newInv];
-        });
+        setInvestigations(prev => { const emptyIdx = prev.findIndex(i => !i.testName); const newInv = { testName: inv.testName || '', category: inv.category || '', action: inv.action || '' }; if (emptyIdx >= 0) return prev.map((item, i) => i === emptyIdx ? newInv : item); return [...prev, newInv]; });
         setInvSearchInput(''); setInvSuggestions([]); setActiveInvIndex(null); setInvNoResults({});
     };
 
@@ -1600,10 +1530,9 @@ const GeneratePrescription = () => {
     const removeInvestigation = (i) => setInvestigations(prev => prev.filter((_, idx) => idx !== i));
     const updateInvestigation = (i, field, val) => setInvestigations(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
 
-    /* ── Vaccination ── */
+    /* ── Vaccination handlers ── */
     const handleVacTopSearch = (query) => {
-        setVacSearchInput(query);
-        setActiveVacIndex('top'); setVacNoResults(prev => ({ ...prev, top: false }));
+        setVacSearchInput(query); setActiveVacIndex('top'); setVacNoResults(prev => ({ ...prev, top: false }));
         if (!query || query.length < 1) { setVacSuggestions([]); return; }
         clearTimeout(vacDebounceRef.current);
         vacDebounceRef.current = setTimeout(async () => {
@@ -1615,12 +1544,7 @@ const GeneratePrescription = () => {
 
     const selectVaccinationFromTop = (vac) => {
         vacPointerDownRef.current = false;
-        setVaccinations(prev => {
-            const emptyIdx = prev.findIndex(v => !v.vaccineName);
-            const newVac = { vaccineName: vac.vaccineName || '', note: vac.note || '', action: vac.action || '' };
-            if (emptyIdx >= 0) return prev.map((item, i) => i === emptyIdx ? newVac : item);
-            return [...prev, newVac];
-        });
+        setVaccinations(prev => { const emptyIdx = prev.findIndex(v => !v.vaccineName); const newVac = { vaccineName: vac.vaccineName || '', note: vac.note || '', action: vac.action || '' }; if (emptyIdx >= 0) return prev.map((item, i) => i === emptyIdx ? newVac : item); return [...prev, newVac]; });
         setVacSearchInput(''); setVacSuggestions([]); setActiveVacIndex(null); setVacNoResults({});
     };
 
@@ -1628,27 +1552,27 @@ const GeneratePrescription = () => {
     const removeVaccination = (i) => setVaccinations(prev => prev.filter((_, idx) => idx !== i));
     const updateVaccination = (i, field, val) => setVaccinations(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
 
-    /* ── Report ── */
+    /* ── Report handlers ── */
     const handleReportTopSearch = (query) => {
-        setReportSearchInput(query);
-        setActiveReportIndex('top');
-        if (!query || query.length < 1) { setReportSuggestions([]); return; }
-        clearTimeout(reportDebounceRef.current);
-        reportDebounceRef.current = setTimeout(async () => {
-            setReportSearching(true);
-            try { const res = await axios.get(`${API_BAS}/api/p_reports/${slug}/list?search=${encodeURIComponent(query)}`); setReportSuggestions(res.data.data || []); }
-            catch (_) { setReportSuggestions([]); } finally { setReportSearching(false); }
-        }, 250);
-    };
+    setReportSearchInput(query); setActiveReportIndex('top');
+    setReportNoResults(false);
+    if (!query || query.length < 1) { setReportSuggestions([]); return; }
+    clearTimeout(reportDebounceRef.current);
+    reportDebounceRef.current = setTimeout(async () => {
+        setReportSearching(true);
+        try {
+            const res = await axios.get(`${API_BAS}/api/p_reports/${slug}/list?search=${encodeURIComponent(query)}`);
+            const results = res.data.data || [];
+            setReportSuggestions(results);
+            setReportNoResults(results.length === 0 && query.length >= 1);
+        } catch (_) { setReportSuggestions([]); }
+        finally { setReportSearching(false); }
+    }, 250);
+};
 
     const selectReportFromTop = (report) => {
         reportPointerDownRef.current = false;
-        setReports(prev => {
-            const emptyIdx = prev.findIndex(r => !r.reportName);
-            const newR = { reportName: report.reportName || '', impression: report.impression || '', action: report.action || '', date: report.date ? new Date(report.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0] };
-            if (emptyIdx >= 0) return prev.map((item, i) => i === emptyIdx ? newR : item);
-            return [...prev, newR];
-        });
+        setReports(prev => { const emptyIdx = prev.findIndex(r => !r.reportName); const newR = { reportName: report.reportName || '', impression: report.impression || '', action: report.action || '', date: report.date ? new Date(report.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0] }; if (emptyIdx >= 0) return prev.map((item, i) => i === emptyIdx ? newR : item); return [...prev, newR]; });
         setReportSearchInput(''); setReportSuggestions([]); setActiveReportIndex(null);
     };
 
@@ -1656,7 +1580,7 @@ const GeneratePrescription = () => {
     const removeReport = (i) => setReports(prev => prev.filter((_, idx) => idx !== i));
     const updateReport = (i, field, val) => setReports(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
 
-    /* ── Symptom ── */
+    /* ── Symptom handlers ── */
     const searchSymptoms = (query) => {
         setSymptomNoResults(false);
         if (!query || query.length < 1) { setSymptomSuggestions([]); return; }
@@ -1684,15 +1608,92 @@ const GeneratePrescription = () => {
     /* ── DB Modal ── */
     const openAddModal = (type, rowIndex, prefill) => setDbModal({ open: true, type, rowIndex, prefill });
     const closeAddModal = () => setDbModal({ open: false, type: null, rowIndex: null, prefill: '' });
-
+const openCustomTableAddModal = (field, rowId, prefillVal, columns, collectionName) => {
+    setDbModal({
+        open: true,
+        type: 'custom_table',
+        rowIndex: null,
+        prefill: prefillVal,
+        customField: field,
+        customRowId: rowId,
+        customColumns: columns,
+        customCollectionName: collectionName,
+    });
+};
     const handleSaveNewToDB = async (formData) => {
         setDbModalSaving(true);
         try {
             const { type, rowIndex, prefill } = dbModal;
-            if (type === 'medicine') { const payload = { name: formData.name || prefill, brandName: formData.brandName || '', strength: formData.strength || '', unit_per_Dose: formData.unit_per_Dose || '', timing: formData.timing || '', duration: formData.duration || '', action: formData.action || '', instructions: formData.instructions || '', category: formData.category || '', route: formData.route || '', saltComposition: formData.saltComposition || '' }; await axios.post(`${API_BAS}/api/medicines/${slug}/add`, payload); Object.entries(payload).forEach(([k, v]) => updateMedicine(rowIndex, k, v)); setMedNoResults(prev => ({ ...prev, [rowIndex]: false })); }
-            if (type === 'investigation') { const payload = { testName: formData.testName || prefill, category: formData.category || '', action: formData.action || '' }; await axios.post(`${API_BAS}/api/investigations/${slug}/save`, payload); Object.entries(payload).forEach(([k, v]) => updateInvestigation(rowIndex, k, v)); setInvNoResults(prev => ({ ...prev, [rowIndex]: false })); }
-            if (type === 'vaccination') { const payload = { vaccineName: formData.vaccineName || prefill, note: formData.note || '', action: formData.action || '' }; await axios.post(`${API_BAS}/api/vaccination/${slug}/add`, payload); Object.entries(payload).forEach(([k, v]) => updateVaccination(rowIndex, k, v)); setVacNoResults(prev => ({ ...prev, [rowIndex]: false })); }
+            if (type === 'medicine') {
+    const payload = { name: formData.name || prefill, brandName: formData.brandName || prefill, strength: formData.strength || '', unit_per_Dose: formData.unit_per_Dose || '', timing: formData.timing || '', duration: formData.duration || '', action: formData.action || '', instructions: formData.instructions || '', category: formData.category || '', route: formData.route || '', saltComposition: formData.saltComposition || '' };
+    await axios.post(`${API_BAS}/api/medicines/${slug}/add`, payload);
+    const emptyIdx = medicines.findIndex(m => !m.name && !m.brandName);
+    if (emptyIdx >= 0) {
+        setMedicines(prev => prev.map((m, i) => i === emptyIdx ? { ...m, ...payload } : m));
+    } else {
+        setMedicines(prev => [...prev, { ...EMPTY_MED, ...payload }]);
+    }
+    setMedNoResults({});
+}
+if (type === 'investigation') {
+    const payload = { testName: formData.testName || prefill, category: formData.category || '', action: formData.action || '' };
+    await axios.post(`${API_BAS}/api/investigations/${slug}/save`, payload);
+    const emptyIdx = investigations.findIndex(i => !i.testName);
+    if (emptyIdx >= 0) {
+        setInvestigations(prev => prev.map((item, i) => i === emptyIdx ? { ...item, ...payload } : item));
+    } else {
+        setInvestigations(prev => [...prev, { ...EMPTY_INV, ...payload }]);
+    }
+    setInvNoResults({});
+}
+if (type === 'vaccination') {
+    const payload = { vaccineName: formData.vaccineName || prefill, note: formData.note || '', action: formData.action || '' };
+    await axios.post(`${API_BAS}/api/vaccination/${slug}/add`, payload);
+    const emptyIdx = vaccinations.findIndex(v => !v.vaccineName);
+    if (emptyIdx >= 0) {
+        setVaccinations(prev => prev.map((item, i) => i === emptyIdx ? { ...item, ...payload } : item));
+    } else {
+        setVaccinations(prev => [...prev, { ...EMPTY_VAC, ...payload }]);
+    }
+    setVacNoResults({});
+}
             if (type === 'symptom') { const payload = { name: formData.name || prefill }; await axios.post(`${API_BAS}/api/symptoms/${slug}/add`, payload); if (symptomEditorRef.current?.insertText) symptomEditorRef.current.insertText(payload.name); setSymptomInput(''); setSymptomNoResults(false); }
+            if (type === 'report') {
+    const payload = {
+         reportName: formData.reportName || prefill,
+        impression: formData.impression || '',
+        action: formData.action || '',
+        date: formData.date || new Date().toISOString().split('T')[0],
+        patientId: masterData.patient?._id || null,
+        appointmentId: appointmentId || null,
+    };
+    await axios.post(`${API_BAS}/api/p_reports/${slug}/add`, payload);
+    const newR = { ...payload };
+    const emptyIdx = reports.findIndex(r => !r.reportName);
+    if (emptyIdx >= 0) {
+        setReports(prev => prev.map((r, i) => i === emptyIdx ? { ...r, ...newR } : r));
+    } else {
+        setReports(prev => [...prev, { ...EMPTY_REPORT, ...newR }]);
+    }
+    setReportSearchInput(''); setReportNoResults(false);
+    if (type === 'custom_table') {
+    const { customField, customRowId, customColumns, customCollectionName } = dbModal;
+    const payload = {};
+    customColumns.forEach(col => { payload[col.name] = formData[col.name] || ''; });
+    await axios.post(`${API_BAS}/api/prescriptions/${customCollectionName}/rows`, { ...payload, slug });
+    // Fill the row in the table
+    setTableRows(prev => {
+        const fieldId = customField.id;
+        const updated = (prev[fieldId] || []).map(r => {
+            if (r._rowId !== customRowId) return r;
+            const filledRow = { ...r };
+            customColumns.forEach(col => { filledRow[col.name] = payload[col.name]; });
+            return filledRow;
+        });
+        return { ...prev, [fieldId]: updated };
+    });
+}
+}
             closeAddModal(); alert("✅ Saved to database successfully!");
         } catch (err) { alert("Error saving: " + (err.response?.data?.message || err.message)); }
         finally { setDbModalSaving(false); }
@@ -1704,6 +1705,29 @@ const GeneratePrescription = () => {
         if (type === 'investigation') return { title: 'Add New Investigation', fields: [{ key: 'testName', label: 'Test Name', placeholder: 'e.g. CBC', required: true, defaultValue: prefill }, { key: 'category', label: 'Category', placeholder: 'e.g. Haematology' }, { key: 'action', label: 'Action / Notes', placeholder: 'e.g. Fasting required', type: 'textarea' }] };
         if (type === 'vaccination') return { title: 'Add New Vaccination', fields: [{ key: 'vaccineName', label: 'Vaccine Name', placeholder: 'e.g. Hepatitis B', required: true, defaultValue: prefill }, { key: 'note', label: 'Note', placeholder: 'e.g. 2nd dose at 6 weeks' }, { key: 'action', label: 'Action', placeholder: 'e.g. IM injection 0.5ml', type: 'textarea' }] };
         if (type === 'symptom') return { title: 'Add New Symptom', fields: [{ key: 'name', label: 'Symptom Name', placeholder: 'e.g. Headache', required: true, defaultValue: prefill }, { key: 'category', label: 'Category (optional)', placeholder: 'e.g. Neurological' }] };
+        if (type === 'report') return {
+    title: 'Add New Report',
+    fields: [
+        { key: 'reportName', label: 'Report Name', placeholder: 'e.g. CBC Report', required: true, defaultValue: prefill },
+        { key: 'date', label: 'Date', type: 'date', defaultValue: new Date().toISOString().split('T')[0] },
+        { key: 'impression', label: 'Impression', placeholder: 'e.g. Normal findings', type: 'textarea' },
+        { key: 'action', label: 'Action', placeholder: 'e.g. Repeat in 3 months', type: 'textarea' },
+    ]
+};
+if (type === 'custom_table') {
+    const { customColumns, prefill } = dbModal;
+    return {
+        title: `Add to ${dbModal.customCollectionName || 'Table'}`,
+        fields: (customColumns || []).map((col, i) => ({
+            key: col.name,
+            label: col.name,
+            placeholder: `Enter ${col.name}`,
+            required: i === 0,
+            defaultValue: i === 0 ? prefill : '',
+            type: col.type === 'date' ? 'date' : col.type === 'number' ? 'number' : 'text',
+        }))
+    };
+}
         return { title: '', fields: [] };
     };
 
@@ -1717,23 +1741,23 @@ const GeneratePrescription = () => {
         const px = (v) => Math.round(v * S);
         const addContinuationPage = () => {
             doc.addPage();
-            // Only draw top bar on continuation pages
-            doc.setFillColor(cr, cg, cb);
-            doc.rect(0, 0, A4_W, 14, 'F');
-            doc.setFontSize(9);
-            doc.setTextColor(150);
-            doc.text("RX CONTINUED...", MARGIN_L, PAGE2_START_Y - 20);
+            doc.setFillColor(cr, cg, cb); doc.rect(0, 0, A4_W, 14, 'F');
+            doc.setFontSize(9); doc.setTextColor(150); doc.text("RX CONTINUED...", MARGIN_L, PAGE2_START_Y - 20);
             return PAGE2_START_Y;
         };
         const checkPageBreak = (currentY, neededHeight = 20) => { if (currentY + neededHeight > FOOTER_TOP_PT) return addContinuationPage(); return currentY; };
+
         doc.setFontSize(220); doc.setTextColor(245, 245, 245); doc.text("Rx", 60, 520);
         doc.setFillColor(cr, cg, cb); doc.rect(0, 0, A4_W, px(25), 'F'); doc.rect(0, A4_H - 14, A4_W, 14, 'F');
-        if (design.elements?.length) { design.elements.forEach(el => { if (el.src?.startsWith('data:image')) { try { doc.addImage(el.src, el.src.includes('png') ? 'PNG' : 'JPEG', px(el.x), px(el.y), px(el.w), px(el.h)); } catch (_) { } } }); }
-        else {
+
+        if (design.elements?.length) {
+            design.elements.forEach(el => { if (el.src?.startsWith('data:image')) { try { doc.addImage(el.src, el.src.includes('png') ? 'PNG' : 'JPEG', px(el.x), px(el.y), px(el.w), px(el.h)); } catch (_) { } } });
+        } else {
             if (design.logo) { try { doc.addImage(design.logo, 'PNG', px(design.layout?.logo?.x || 40), px(design.layout?.logo?.y || 40), px(design.layout?.logo?.w || 120), px(design.layout?.logo?.h || 120)); } catch (_) { } }
             if (design.drName) { const rx = px((design.layout?.drInfo?.x || 400) + (design.layout?.drInfo?.w || 300)); const ry = px(design.layout?.drInfo?.y || 40); doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(cr, cg, cb); doc.text(design.drName.toUpperCase(), rx, ry + 18, { align: 'right' }); doc.setFontSize(11); doc.setTextColor(100, 116, 139); doc.text(design.degree || '', rx, ry + 33, { align: 'right' }); doc.setFontSize(8); doc.setTextColor(148, 163, 184); doc.text(`REG: ${design.regNo || ''}`, rx, ry + 46, { align: 'right' }); }
             if (design.clinicName) { const cx = px(design.layout?.clinicInfo?.x || 40); const cy = px(design.layout?.clinicInfo?.y || 190); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(15, 23, 42); doc.text(design.clinicName.toUpperCase(), cx, cy + 16); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(100, 116, 139); doc.text(design.address || '', cx, cy + 30, { maxWidth: px(design.layout?.clinicInfo?.w || 450) }); }
         }
+
         let curY = HEADER_BOTTOM_PT;
         doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.7); doc.line(MARGIN_L, curY, doc.internal.pageSize.width - MARGIN_L, curY);
         autoTable(doc, {
@@ -1749,183 +1773,145 @@ const GeneratePrescription = () => {
         });
         doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.7); doc.line(MARGIN_L, doc.lastAutoTable.finalY, doc.internal.pageSize.width - MARGIN_L, doc.lastAutoTable.finalY);
         curY = doc.lastAutoTable.finalY + 30;
-        if (symptomsHtml && symptomsHtml.trim() && symptomsHtml.trim() !== '<br>') {
-            curY = checkPageBreak(curY, 40); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Symptoms", MARGIN_L, curY);
-            curY += 4; doc.setDrawColor(30, 78, 121); doc.setLineWidth(1); doc.line(MARGIN_L, curY, MARGIN_R, curY); curY += 14;
-            const segments = parseHtmlToSegments(symptomsHtml);
-            curY = renderHtmlSegmentsToPdf(doc, segments, MARGIN_L + 5, curY, USABLE_W - 10, checkPageBreak, 14); curY += 20;
-        }
-        if (formStructure?.sections?.length) {
-            const MID = MARGIN_L + USABLE_W / 2; const COL1_LABEL_W = 110; const COL1_VAL_X = MARGIN_L + COL1_LABEL_W + 4; const COL2_X = MID + 8; const COL2_LABEL_W = 100; const COL2_VAL_X = COL2_X + COL2_LABEL_W + 4;
-            formStructure.sections.forEach(section => {
-                const nonTableFields = (section.fields || []).filter(f => f.type !== 'table'); const tableFields = (section.fields || []).filter(f => f.type === 'table');
+
+        const renderOrder = buildRenderOrder(formStructure);
+
+        for (const item of renderOrder) {
+            if (item.kind === 'predefined') {
+                switch (item.type) {
+                    case 'symptoms_block': {
+                        if (symptomsHtml && symptomsHtml.trim() && symptomsHtml.trim() !== '<br>') {
+                            curY = checkPageBreak(curY, 40);
+                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Symptoms", MARGIN_L, curY);
+                            curY += 4; doc.setDrawColor(30, 78, 121); doc.setLineWidth(1); doc.line(MARGIN_L, curY, MARGIN_R, curY); curY += 14;
+                            curY = renderHtmlSegmentsToPdf(doc, parseHtmlToSegments(symptomsHtml), MARGIN_L + 5, curY, USABLE_W - 10, checkPageBreak, 14);
+                            curY += 20;
+                        }
+                        break;
+                    }
+                    case 'medicines_block': {
+                        const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
+                        if (filledMeds.length) {
+                            curY = checkPageBreak(curY, 50);
+                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
+                            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['S.No', 'Medicine', 'Dose', 'Freq', 'Route', 'Timing', 'Instruction', 'Duration']], body: filledMeds.map((m, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: m.brandName || m.name, styles: { fontStyle: 'bold' } }, m.unit_per_Dose || '—', m.strength || '—', m.route || '—', m.timing || '—', m.instructions || '—', m.duration || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } } });
+                            curY = doc.lastAutoTable.finalY + 30;
+                        }
+                        break;
+                    }
+                    case 'investigations_block': {
+                        const filledInvs = investigations.filter(inv => inv.testName?.trim());
+                        if (filledInvs.length) {
+                            curY = checkPageBreak(curY, 50);
+                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
+                            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 100 }, 3: { cellWidth: 120 } } });
+                            curY = doc.lastAutoTable.finalY + 30;
+                        }
+                        break;
+                    }
+                    case 'vaccinations_block': {
+                        const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
+                        if (filledVacs.length) {
+                            curY = checkPageBreak(curY, 50);
+                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
+                            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Vaccination Name', 'Note', 'Action']], body: filledVacs.map((vac, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } }, vac.note || '—', vac.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 140 }, 3: { cellWidth: 120 } } });
+                            curY = doc.lastAutoTable.finalY + 30;
+                        }
+                        break;
+                    }
+                    case 'reports_block': {
+                        const filledReports = reports.filter(r => r.reportName?.trim());
+                        if (filledReports.length) {
+                            curY = checkPageBreak(curY, 50);
+                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Available Reports", MARGIN_L, curY);
+                            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Report Name', 'Date', 'Impression', 'Action']], body: filledReports.map((r, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: r.reportName || '—', styles: { fontStyle: 'bold' } }, r.date ? new Date(r.date).toLocaleDateString('en-GB') : '—', r.impression || '—', r.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 120 }, 4: { cellWidth: 100 } } });
+                            curY = doc.lastAutoTable.finalY + 30;
+                        }
+                        break;
+                    }
+                }
+            } else if (item.kind === 'section') {
+                const section = item.section;
+                const MID = MARGIN_L + USABLE_W / 2;
+                const COL1_LABEL_W = 110; const COL1_VAL_X = MARGIN_L + COL1_LABEL_W + 4;
+                const COL2_X = MID + 8; const COL2_VAL_X = COL2_X + 100 + 4;
+                const nonTableFields = (section.fields || []).filter(f => f.type !== 'table');
+                const tableFields = (section.fields || []).filter(f => f.type === 'table');
+
                 if (nonTableFields.length > 0) {
-                    curY = checkPageBreak(curY, 40); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
-                    curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY); let fieldY = curY + 15;
+                    curY = checkPageBreak(curY, 40);
+                    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
+                    curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                    let fieldY = curY + 15;
                     for (let i = 0; i < nonTableFields.length; i += 2) {
                         fieldY = checkPageBreak(fieldY, 25); const rowStartY = fieldY; let maxRowHeight = 18;
                         doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(30, 78, 121); doc.text(`${nonTableFields[i].label}:`, MARGIN_L, fieldY);
                         const val1 = String(dynamicValues[String(nonTableFields[i].id)] || '—');
-                        if (val1.startsWith('data:image')) { try { doc.addImage(val1, val1.includes('image/png') ? 'PNG' : 'JPEG', MARGIN_L, fieldY + 5, 50, 40); maxRowHeight = Math.max(maxRowHeight, 50); } catch (_) { doc.text("[Image Error]", COL1_VAL_X, fieldY); } }
+                        if (val1.startsWith('data:image')) { try { doc.addImage(val1, 'PNG', MARGIN_L, fieldY + 5, 50, 40); maxRowHeight = 50; } catch (_) { doc.text("[Image Error]", COL1_VAL_X, fieldY); } }
                         else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val1, COL1_VAL_X, fieldY, { maxWidth: MID - COL1_VAL_X - 5 }); }
                         if (nonTableFields[i + 1]) {
                             doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(`${nonTableFields[i + 1].label}:`, COL2_X, rowStartY);
                             const val2 = String(dynamicValues[String(nonTableFields[i + 1].id)] || '—');
-                            if (val2.startsWith('data:image')) { try { doc.addImage(val2, val2.includes('image/png') ? 'PNG' : 'JPEG', COL2_X, rowStartY + 5, 50, 40); maxRowHeight = Math.max(maxRowHeight, 50); } catch (_) { doc.text("[Image Error]", COL2_VAL_X, rowStartY); } }
+                            if (val2.startsWith('data:image')) { try { doc.addImage(val2, 'PNG', COL2_X, rowStartY + 5, 50, 40); maxRowHeight = Math.max(maxRowHeight, 50); } catch (_) { doc.text("[Image Error]", COL2_VAL_X, rowStartY); } }
                             else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val2, COL2_VAL_X, rowStartY, { maxWidth: MARGIN_R - COL2_VAL_X }); }
                         }
                         fieldY += maxRowHeight;
                     }
                     curY = fieldY + 20;
                 }
+
                 tableFields.forEach(tField => {
                     const tRows = (tableRows[tField.id] || []).filter(r => Object.entries(r).some(([k, v]) => k !== '_rowId' && v !== ''));
                     if (tRows.length === 0) return;
-                    curY = checkPageBreak(curY, 50); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(tField.label || tField.tableName || 'Custom Table', MARGIN_L, curY);
+                    curY = checkPageBreak(curY, 50);
+                    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(tField.label || tField.tableName || 'Custom Table', MARGIN_L, curY);
                     curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                     const colNames = (tField.columns || []).map(c => c.name);
                     autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', ...colNames]], body: tRows.map((row, i) => [{ content: i + 1, styles: { halign: 'center' } }, ...colNames.map(name => row[name] || '—')]), columnStyles: { 0: { cellWidth: 25 } } });
                     curY = doc.lastAutoTable.finalY + 20;
                 });
                 curY += 10;
-            });
+            }
         }
-        const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
-        if (filledMeds.length) {
-            curY = checkPageBreak(curY, 50); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
-            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['S.No', 'Medicine', 'Dose', 'Freq', 'Route', 'Timing', 'Instruction', 'Duration']], body: filledMeds.map((m, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: m.brandName || m.name, styles: { fontStyle: 'bold' } }, m.strength || m.unit_per_Dose || '—', m.strength || '—', m.route || '—', m.timing || '—', m.instructions || '—', m.duration || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } } });
-            curY = doc.lastAutoTable.finalY + 30;
-        }
-        const filledInvs = investigations.filter(inv => inv.testName?.trim());
-        if (filledInvs.length) {
-            curY = checkPageBreak(curY, 50); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
-            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 100 }, 3: { cellWidth: 120 } } });
-            curY = doc.lastAutoTable.finalY + 30;
-        }
-        const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
-        if (filledVacs.length) {
-            curY = checkPageBreak(curY, 50); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
-            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Vaccination Name', 'Note', 'Action']], body: filledVacs.map((vac, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } }, vac.note || '—', vac.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 140 }, 3: { cellWidth: 120 } } });
-            curY = doc.lastAutoTable.finalY + 30;
-        }
-        const filledReports = reports.filter(r => r.reportName?.trim());
-        if (filledReports.length) {
-            curY = checkPageBreak(curY, 50); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Available Reports", MARGIN_L, curY);
-            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Report Name', 'Date', 'Impression', 'Action']], body: filledReports.map((r, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: r.reportName || '—', styles: { fontStyle: 'bold' } }, r.date ? new Date(r.date).toLocaleDateString('en-GB') : '—', r.impression || '—', r.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 120 }, 4: { cellWidth: 100 } } });
-            curY = doc.lastAutoTable.finalY + 30;
-        }
-        // ── Doctor Signature Block ──
-        // ── Doctor Signature Block ──
+
+        // ── Doctor Signature ──────────────────────────────────────────────────
         curY = checkPageBreak(curY, 80);
         curY += 24;
-
         const sigBlockX = MARGIN_R - 160;
-
-        // 1. Signature image (stored as file path e.g. /uploads/signatures/xxx.png)
         if (clinicProfile?.signature) {
             try {
-                const fullUrl = clinicProfile.signature.startsWith('data:')
-                    ? clinicProfile.signature
-                    : `${API_BAS}${clinicProfile.signature}`;
-
-                const toBase64 = (url) => fetch(url)
-                    .then(r => r.blob())
-                    .then(blob => new Promise(resolve => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.readAsDataURL(blob);
-                    }));
-
+                const fullUrl = clinicProfile.signature.startsWith('data:') ? clinicProfile.signature : `${API_BAS}${clinicProfile.signature}`;
+                const toBase64 = (url) => fetch(url).then(r => r.blob()).then(blob => new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); }));
                 const base64Sig = await toBase64(fullUrl);
-                const fmt = base64Sig.includes('image/png') ? 'PNG' : 'JPEG';
-                doc.addImage(base64Sig, fmt, sigBlockX, curY, 120, 40);
+                doc.addImage(base64Sig, base64Sig.includes('image/png') ? 'PNG' : 'JPEG', sigBlockX, curY, 120, 40);
                 curY += 44;
             } catch (_) { }
         }
+        doc.setDrawColor(cr, cg, cb); doc.setLineWidth(0.8); doc.line(sigBlockX, curY, sigBlockX + 160, curY); curY += 5;
+        const displayDrName = clinicProfile?.doctors?.[0]?.doctorName || clinicProfile?.doctorName || design?.drName || '—';
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(cr, cg, cb);
+        doc.text(displayDrName, sigBlockX + 80, curY + 11, { align: 'center' }); curY += 14;
+        const displayDegree = clinicProfile?.doctors?.[0]?.degree || clinicProfile?.degree || design?.degree || '';
+        if (displayDegree) { doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(100, 116, 139); doc.text(displayDegree, sigBlockX + 80, curY + 4, { align: 'center' }); curY += 12; }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(100, 116, 139);
+        doc.text(`Reg. No: ${clinicProfile?.regNumber || design?.regNo || '—'}`, sigBlockX + 80, curY + 4, { align: 'center' });
 
-        // 2. Signature line
-        doc.setDrawColor(cr, cg, cb);
-        doc.setLineWidth(0.8);
-        doc.line(sigBlockX, curY, sigBlockX + 160, curY);
-        curY += 5;
-
-        // 3. Doctor name — doctors[] array first, fallback to legacy field
-        const displayDrName =
-            clinicProfile?.doctors?.[0]?.doctorName ||
-            clinicProfile?.doctorName ||
-            design?.drName ||
-            '—';
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(cr, cg, cb);
-        doc.text(displayDrName, sigBlockX + 80, curY + 11, { align: 'center' });
-        curY += 14;
-
-        // 4. Degree
-        const displayDegree =
-            clinicProfile?.doctors?.[0]?.degree ||
-            clinicProfile?.degree ||
-            design?.degree ||
-            '';
-
-        if (displayDegree) {
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8.5);
-            doc.setTextColor(100, 116, 139);
-            doc.text(displayDegree, sigBlockX + 80, curY + 4, { align: 'center' });
-            curY += 12;
-        }
-
-        // 5. Reg number — schema field is "regNumber" not "regNo"
-        const displayReg =
-            clinicProfile?.regNumber ||
-            design?.regNo ||
-            '—';
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.5);
-        doc.setTextColor(100, 116, 139);
-        doc.text(`Reg. No: ${displayReg}`, sigBlockX + 80, curY + 4, { align: 'center' });
-        curY += 20;
-        // Draw footer on every page
+        // ── Footer on every page ──────────────────────────────────────────────
         const totalPages = doc.internal.getNumberOfPages();
-
         for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
             doc.setPage(pageNum);
-
-            // Bottom color bar (already drawn on page 1, redo for all)
-            doc.setFillColor(cr, cg, cb);
-            doc.rect(0, A4_H - 14, A4_W, 14, 'F');
-
-            // Footer contact line
+            doc.setFillColor(cr, cg, cb); doc.rect(0, A4_H - 14, A4_W, 14, 'F');
             const footerY = A4_H - 55;
-            doc.setDrawColor(cr, cg, cb);
-            doc.setLineWidth(3);
-            doc.line(MARGIN_L, footerY, MARGIN_L, footerY + 22);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(9);
-            doc.setTextColor(51, 65, 85);
+            doc.setDrawColor(cr, cg, cb); doc.setLineWidth(3); doc.line(MARGIN_L, footerY, MARGIN_L, footerY + 22);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
             doc.text(design.contact || '', MARGIN_L + 10, footerY + 10);
-
-            // If design has a footer image element, draw it too
             if (design.elements?.length) {
-                const footerImgs = design.elements.filter(el =>
-                    el.src?.startsWith('data:image') && px(el.y) > A4_H - 120
-                );
-                footerImgs.forEach(el => {
-                    try {
-                        doc.addImage(
-                            el.src,
-                            el.src.includes('png') ? 'PNG' : 'JPEG',
-                            px(el.x), px(el.y), px(el.w), px(el.h)
-                        );
-                    } catch (_) { }
-                });
+                design.elements.filter(el => el.src?.startsWith('data:image') && px(el.y) > A4_H - 120)
+                    .forEach(el => { try { doc.addImage(el.src, el.src.includes('png') ? 'PNG' : 'JPEG', px(el.x), px(el.y), px(el.w), px(el.h)); } catch (_) { } });
             }
         }
         return doc;
@@ -1935,9 +1921,9 @@ const GeneratePrescription = () => {
         const { design, patient, formStructure } = masterData;
         const pdfBase64 = doc.output('datauristring');
         const patientId = patient?._id;
-        const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
-        const filledInvs = investigations.filter(inv => inv.testName?.trim());
-        const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
+        const filledMeds    = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
+        const filledInvs    = investigations.filter(inv => inv.testName?.trim());
+        const filledVacs    = vaccinations.filter(vac => vac.vaccineName?.trim());
         const filledReports = reports.filter(r => r.reportName?.trim());
 
         await Promise.all(filledReports.map(r =>
@@ -1952,7 +1938,7 @@ const GeneratePrescription = () => {
                     const tRows = (tableRows[tField.id] || []).filter(r => Object.entries(r).some(([k, v]) => k !== '_rowId' && v !== ''));
                     if (tRows.length === 0) return;
                     tableDataForPrescription[tField.id] = tRows;
-                    if (tField.collectionName) { tRows.forEach(row => { const { _rowId, ...cleanRow } = row; tableSavePromises.push(axios.post(`${API_BAS}/api/prescriptions/${tField.collectionName}/rows`, { ...cleanRow, patientId, appointmentId, slug }).catch(err => console.warn(`Table row save failed:`, err.message))); }); }
+                    if (tField.collectionName) { tRows.forEach(row => { const { _rowId, ...cleanRow } = row; tableSavePromises.push(axios.post(`${API_BAS}/api/prescriptions/${tField.collectionName}/rows`, { ...cleanRow, patientId, appointmentId, slug }).catch(err => console.warn('Table row save failed:', err.message))); }); }
                 });
             });
         }
@@ -1979,66 +1965,30 @@ const GeneratePrescription = () => {
             const doc = await buildPdfDoc(design, patient, formStructure);
             setPreviewPdfDoc(doc);
             setPreviewOpen(true);
-        } catch (err) {
-            console.error(err);
-            alert("Error generating PDF: " + err.message);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleSaveToDB = async () => {
-        const { design, patient, formStructure } = masterData;
-        if (!patient || !design) return alert("Patient/Design data missing!");
-        setSaving(true);
-        try {
-            const doc = await buildPdfDoc(design, patient, formStructure);
-            const pdfBase64 = doc.output('datauristring');
-            const patientId = patient?._id;
-            const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
-            const filledInvs = investigations.filter(inv => inv.testName?.trim());
-            const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
-            const filledReports = reports.filter(r => r.reportName?.trim());
-            await Promise.all(filledReports.map(r => axios.post(`${API_BAS}/api/p_reports/${slug}/add`, { patientId, appointmentId, reportName: r.reportName, date: r.date || new Date(), impression: r.impression, action: r.action }).catch(err => console.warn('Report save failed:', err.message))));
-            const tableDataForPrescription = {}; const tableSavePromises = [];
-            if (formStructure?.sections) {
-                formStructure.sections.forEach(section => {
-                    (section.fields || []).filter(f => f.type === 'table').forEach(tField => {
-                        const tRows = (tableRows[tField.id] || []).filter(r => Object.entries(r).some(([k, v]) => k !== '_rowId' && v !== ''));
-                        if (tRows.length === 0) return;
-                        tableDataForPrescription[tField.id] = tRows;
-                        if (tField.collectionName) { tRows.forEach(row => { const { _rowId, ...cleanRow } = row; tableSavePromises.push(axios.post(`${API_BAS}/api/prescriptions/${tField.collectionName}/rows`, { ...cleanRow, patientId, appointmentId, slug }).catch(err => console.warn(`Table row save failed:`, err.message))); }); }
-                    });
-                });
-            }
-            await Promise.all(tableSavePromises);
-            const consultationResponsesArray = Object.entries(dynamicValues).map(([fieldId, value]) => ({ fieldId: String(fieldId), label: '', value }));
-            const symptomsPlain = stripHtml(symptomsHtml);
-            const symptomsArray = symptomsPlain ? symptomsPlain.split('\n').filter(s => s.trim()).map(s => ({ name: s.replace(/^•\s*/, '').trim() })) : [];
-            await axios.post(`${API_BAS}/api/prescriptions/save`, { slug, patientId, pdfBinary: pdfBase64, consultationResponses: consultationResponsesArray, medicines: filledMeds, symptomsHtml, symptoms: symptomsArray, investigations: filledInvs, vaccinations: filledVacs, reports: filledReports, tableData: tableDataForPrescription });
-        } catch (err) { console.error(err); alert("Error: " + err.message); }
+        } catch (err) { console.error(err); alert("Error generating PDF: " + err.message); }
         finally { setSaving(false); }
     };
 
     const handleSaveExit = async () => {
-        const { design, patient, formStructure } = masterData;
+        const { design, patient } = masterData;
         if (!patient || !design || !previewPdfDoc) return;
         try {
             await persistPrescription(previewPdfDoc);
             setPreviewOpen(false);
             navigate(`/${slug}/dashboard/appointment`);
-        } catch (err) {
-            console.error(err);
-            alert("Error saving: " + err.message);
-        }
+        } catch (err) { console.error(err); alert("Error saving: " + err.message); }
     };
 
     const { design, patient, formStructure } = masterData;
     const modalConfig = getModalConfig();
 
+    /* ── Render a custom form field ── */
     const renderDynamicField = (field) => {
         if (field.type === 'table') {
-            return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id] || []} slug={slug} onChange={(updatedRows) => setTableRows(prev => ({ ...prev, [field.id]: updatedRows }))} />;
+return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id] || []} slug={slug}
+    onChange={(updatedRows) => setTableRows(prev => ({ ...prev, [field.id]: updatedRows }))}
+    onOpenAddToDB={openCustomTableAddModal}
+/>;
         }
         if (field.type === 'file') {
             return (
@@ -2053,20 +2003,319 @@ const GeneratePrescription = () => {
             return (
                 <div key={field.id}>
                     <label className="rx-field-label">{field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}</label>
-                    <textarea className="rx-field-input" rows={2} style={{ resize: 'none' }}
-                        value={dynamicValues[String(field.id)] || ''} onChange={(e) => setDynamicValues(p => ({ ...p, [String(field.id)]: e.target.value }))} />
+                    <textarea className="rx-field-input" rows={2} style={{ resize: 'none' }} value={dynamicValues[String(field.id)] || ''} onChange={(e) => setDynamicValues(p => ({ ...p, [String(field.id)]: e.target.value }))} />
                 </div>
             );
         }
         return (
             <div key={field.id}>
                 <label className="rx-field-label">{field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}</label>
-                <input className="rx-field-input"
-                    type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                <input className="rx-field-input" type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
                     value={dynamicValues[String(field.id)] || ''} onChange={(e) => setDynamicValues(p => ({ ...p, [String(field.id)]: e.target.value }))} />
             </div>
         );
     };
+
+    /* ── Render a predefined block by type ── */
+    const renderPredefinedBlock = (type) => {
+        switch (type) {
+            case 'symptoms_block': return (
+                <div className="rx-section" key="symptoms_block">
+                    <div className="rx-section-header">Symptoms</div>
+                    <div className="rx-section-body">
+                        <div style={{ position: 'relative', marginBottom: 10 }}>
+                            <div className="rx-search-row">
+                                <div className="rx-search-wrap">
+                                    <input className="rx-search-input" placeholder="Search Symptom"
+                                        value={symptomInput}
+                                        onChange={(e) => { setSymptomInput(e.target.value); searchSymptoms(e.target.value); }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (symptomSuggestions.length > 0) selectSymptom(symptomSuggestions[0]); else if (symptomInput.trim()) addCustomSymptom(); } }}
+                                        onBlur={() => { setTimeout(() => { if (!symptomPointerDownRef.current) setSymptomSuggestions([]); }, 150); }} />
+                                    {symptomSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
+                                    {symptomSuggestions.length > 0 && (
+                                        <div className="rx-suggestion-list" style={{ width: '100%' }}>
+                                            {symptomSuggestions.map((s, idx) => (
+                                                <div key={s._id || idx} onPointerDown={(e) => { e.preventDefault(); symptomPointerDownRef.current = true; selectSymptom(s); }} className="rx-suggestion-item">
+                                                    {s.name} {s.category && <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 6 }}>{s.category}</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button className="rx-add-btn" onClick={addCustomSymptom}>+ Add New Symptom</button>
+                            </div>
+                            {symptomNoResults && !symptomSearching && symptomInput.length >= 1 && (
+                                <div className="rx-no-match">
+                                    <span>No match for "<strong>{symptomInput}</strong>"</span>
+                                    <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('symptom', null, symptomInput); }}><PlusCircle size={10} /> Add to DB</button>
+                                </div>
+                            )}
+                        </div>
+                        <RichTextEditor ref={symptomEditorRef} value={symptomsHtml} onChange={setSymptomsHtml} placeholder="Symptoms will appear here when selected above, or type freely..." />
+                    </div>
+                </div>
+            );
+
+            case 'medicines_block': return (
+                <div className="rx-section" key="medicines_block">
+                    <div className="rx-section-header">Medicine</div>
+                    <div className="rx-section-body">
+                        <div style={{ position: 'relative', marginBottom: 10 }}>
+                            <div className="rx-search-row">
+                                <div className="rx-search-wrap">
+                                    <input className="rx-search-input" placeholder="Search Medicine..."
+                                        value={medSearchInput}
+                                        onChange={(e) => handleMedTopSearch(e.target.value)}
+                                        onBlur={() => { setTimeout(() => { if (!suggestionPointerDownRef.current) { setMedSuggestions([]); setActiveMedIndex(null); } }, 150); }} />
+                                    {activeMedIndex === 'top' && medSuggestions.length > 0 && (
+                                        <div className="rx-suggestion-list" style={{ width: 340 }}>
+                                            {medSuggestions.map(s => (
+                                                <div key={s._id} onPointerDown={(e) => { e.preventDefault(); suggestionPointerDownRef.current = true; selectMedicineFromTop(s); }} className="rx-suggestion-item">
+                                                    <div style={{ fontWeight: 700 }}>{s.brandName || s.name}</div>
+                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.name} · {s.strength} · {s.category}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button className="rx-add-btn" onClick={addMedicineManually}>+ Add Medicine</button>
+                            </div>
+                            {activeMedIndex === 'top' && medNoResults['top'] && medSearchInput.length >= 2 && (
+                                <div className="rx-no-match">
+                                    <span>No match for "<strong>{medSearchInput}</strong>"</span>
+                                    <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('medicine', medicines.length, medSearchInput); }}><PlusCircle size={10} /> Add to DB</button>
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table className="rx-table">
+                                <thead>
+                                    <tr><th>Medicine Name</th><th>Unit per Dose</th><th>Frequency</th><th>Route</th><th>Timing</th><th>Instruction</th><th>Duration</th><th style={{ width: 44 }}>Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    {medicines.map((med, i) => (
+                                        <tr key={i}>
+                                            <td style={{ minWidth: 170, position: 'relative' }}>
+                                                <input className="rx-table-input" placeholder="Brand / Generic..."
+                                                    value={med.brandName || med.name}
+                                                    onChange={(e) => { updateMedicine(i, 'brandName', e.target.value); searchMedicines(e.target.value, i); }}
+                                                    onBlur={() => { setTimeout(() => { if (!suggestionPointerDownRef.current) { setMedSuggestions([]); setActiveMedIndex(null); } }, 150); }} />
+                                                {activeMedIndex === i && medSuggestions.length > 0 && (
+                                                    <div className="rx-suggestion-list">
+                                                        {medSuggestions.map(s => (
+                                                            <div key={s._id} onPointerDown={(e) => {
+                                                                e.preventDefault(); suggestionPointerDownRef.current = true;
+                                                                setMedicines(prev => prev.map((m, mi) => mi === i ? { ...m, name: s.name || '', brandName: s.brandName || '', strength: s.strength || '', unit_per_Dose: s.unit_per_Dose || '', timing: s.timing || '', duration: s.duration || '', route: s.route || '', action: s.action || '', instructions: s.instructions || '', category: s.category || '', saltComposition: s.saltComposition || '' } : m));
+                                                                setMedSuggestions([]); setActiveMedIndex(null); setMedNoResults(prev => ({ ...prev, [i]: false }));
+                                                            }} className="rx-suggestion-item">
+                                                                <div style={{ fontWeight: 700 }}>{s.brandName}</div>
+                                                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.name} · {s.strength}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {activeMedIndex === i && medNoResults[i] && (med.brandName || med.name)?.length >= 2 && (
+                                                    <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50 }}>
+                                                        <div className="rx-no-match" style={{ width: 220 }}>
+                                                            <span style={{ fontSize: 11 }}>No match</span>
+                                                            <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('medicine', i, med.brandName || med.name); }}><PlusCircle size={9} /> Add</button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td style={{ minWidth: 90 }}><input className="rx-table-input" placeholder="1 Tab" value={med.unit_per_Dose || ''} onChange={(e) => updateMedicine(i, 'unit_per_Dose', e.target.value)} /></td>
+                                            <td style={{ minWidth: 80 }}><input className="rx-table-input" placeholder="1-0-1" value={med.strength || ''} onChange={(e) => updateMedicine(i, 'strength', e.target.value)} /></td>
+                                            <td style={{ minWidth: 70 }}><input className="rx-table-input" placeholder="P/O" value={med.route || ''} onChange={(e) => updateMedicine(i, 'route', e.target.value)} /></td>
+                                            <td style={{ minWidth: 90 }}><input className="rx-table-input" placeholder="Morning" value={med.timing || ''} onChange={(e) => updateMedicine(i, 'timing', e.target.value)} /></td>
+                                            <td style={{ minWidth: 110 }}><input className="rx-table-input" placeholder="After meal" value={med.instructions || ''} onChange={(e) => updateMedicine(i, 'instructions', e.target.value)} /></td>
+                                            <td style={{ minWidth: 80 }}><input className="rx-table-input" placeholder="10 days" value={med.duration || ''} onChange={(e) => updateMedicine(i, 'duration', e.target.value)} /></td>
+                                            <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeMedicine(i)}><X size={11} /></button></td>
+                                        </tr>
+                                    ))}
+                                    {medicines.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No medicines added</td></tr>}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            case 'investigations_block': return (
+                <div className="rx-section" key="investigations_block">
+                    <div className="rx-section-header">Investigation</div>
+                    <div className="rx-section-body">
+                        <div style={{ position: 'relative', marginBottom: 10 }}>
+                            <div className="rx-search-row">
+                                <div className="rx-search-wrap">
+                                    <input className="rx-search-input" placeholder="Search Investigation"
+                                        value={invSearchInput}
+                                        onChange={(e) => handleInvTopSearch(e.target.value)}
+                                        onBlur={() => { setTimeout(() => { if (!invPointerDownRef.current) { setInvSuggestions([]); setActiveInvIndex(null); } }, 150); }} />
+                                    {invSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
+                                    {activeInvIndex === 'top' && invSuggestions.length > 0 && (
+                                        <div className="rx-suggestion-list" style={{ width: 340 }}>
+                                            {invSuggestions.map(s => (
+                                                <div key={s._id} onPointerDown={(e) => { e.preventDefault(); invPointerDownRef.current = true; selectInvestigationFromTop(s); }} className="rx-suggestion-item">
+                                                    <span style={{ fontWeight: 700 }}>{s.testName}</span>
+                                                    {s.category && <span style={{ color: '#94a3b8', marginLeft: 6 }}>{s.category}</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button className="rx-add-btn" onClick={addInvestigation}>+ Add Investigation</button>
+                            </div>
+                            {activeInvIndex === 'top' && invNoResults['top'] && !invSearching && invSearchInput.length >= 1 && (
+                                <div className="rx-no-match">
+                                    <span>No match for "<strong>{invSearchInput}</strong>"</span>
+                                    <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('investigation', investigations.length, invSearchInput); }}><PlusCircle size={10} /> Add to DB</button>
+                                </div>
+                            )}
+                        </div>
+                        <table className="rx-table">
+                            <thead><tr><th>Investigation</th><th>Action</th><th style={{ width: 44 }}></th></tr></thead>
+                            <tbody>
+                                {investigations.map((inv, i) => (
+                                    <tr key={i}>
+                                        <td style={{ minWidth: 220 }}><input className="rx-table-input" placeholder="Test name..." value={inv.testName} onChange={(e) => updateInvestigation(i, 'testName', e.target.value)} /></td>
+                                        <td style={{ minWidth: 180 }}><input className="rx-table-input" placeholder="Notes / action" value={inv.action || ''} onChange={(e) => updateInvestigation(i, 'action', e.target.value)} /></td>
+                                        <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeInvestigation(i)}><X size={11} /></button></td>
+                                    </tr>
+                                ))}
+                                {investigations.length === 0 && <tr><td colSpan={3} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No investigations added</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+
+            case 'vaccinations_block': return (
+                <div className="rx-section" key="vaccinations_block">
+                    <div className="rx-section-header">Vaccination</div>
+                    <div className="rx-section-body">
+                        <div style={{ position: 'relative', marginBottom: 10 }}>
+                            <div className="rx-search-row">
+                                <div className="rx-search-wrap">
+                                    <input className="rx-search-input" placeholder="Search Vaccination"
+                                        value={vacSearchInput}
+                                        onChange={(e) => handleVacTopSearch(e.target.value)}
+                                        onBlur={() => { setTimeout(() => { if (!vacPointerDownRef.current) { setVacSuggestions([]); setActiveVacIndex(null); } }, 150); }} />
+                                    {vacSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
+                                    {activeVacIndex === 'top' && vacSuggestions.length > 0 && (
+                                        <div className="rx-suggestion-list" style={{ width: 340 }}>
+                                            {vacSuggestions.map(s => (
+                                                <div key={s._id} onPointerDown={(e) => { e.preventDefault(); vacPointerDownRef.current = true; selectVaccinationFromTop(s); }} className="rx-suggestion-item">
+                                                    <span style={{ fontWeight: 700 }}>{s.vaccineName}</span>
+                                                    {s.note && <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.note}</div>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button className="rx-add-btn" onClick={addVaccination}>+ Add New Vaccination</button>
+                            </div>
+                            {activeVacIndex === 'top' && vacNoResults['top'] && !vacSearching && vacSearchInput.length >= 1 && (
+                                <div className="rx-no-match">
+                                    <span>No match for "<strong>{vacSearchInput}</strong>"</span>
+                                    <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('vaccination', vaccinations.length, vacSearchInput); }}><PlusCircle size={10} /> Add to DB</button>
+                                </div>
+                            )}
+                        </div>
+                        <table className="rx-table">
+                            <thead><tr><th>Vaccination Name</th><th>Note</th><th>Action</th><th style={{ width: 44 }}></th></tr></thead>
+                            <tbody>
+                                {vaccinations.map((vac, i) => (
+                                    <tr key={i}>
+                                        <td style={{ minWidth: 200 }}><input className="rx-table-input" placeholder="Vaccine name..." value={vac.vaccineName} onChange={(e) => updateVaccination(i, 'vaccineName', e.target.value)} /></td>
+                                        <td style={{ minWidth: 140 }}><input className="rx-table-input" placeholder="e.g. 2nd dose" value={vac.note || ''} onChange={(e) => updateVaccination(i, 'note', e.target.value)} /></td>
+                                        <td style={{ minWidth: 140 }}><input className="rx-table-input" placeholder="IM injection" value={vac.action || ''} onChange={(e) => updateVaccination(i, 'action', e.target.value)} /></td>
+                                        <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeVaccination(i)}><X size={11} /></button></td>
+                                    </tr>
+                                ))}
+                                {vaccinations.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No vaccinations added</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+
+            case 'reports_block': return (
+                <div className="rx-section" key="reports_block">
+                    <div className="rx-section-header">Reports</div>
+                    <div className="rx-section-body">
+                        <div style={{ position: 'relative', marginBottom: 10 }}>
+                            <div className="rx-search-row">
+                                <div className="rx-search-wrap">
+                                    <input className="rx-search-input" placeholder="Search Report"
+                                        value={reportSearchInput}
+                                        onChange={(e) => handleReportTopSearch(e.target.value)}
+                                        onBlur={() => { setTimeout(() => { if (!reportPointerDownRef.current) { setReportSuggestions([]); setActiveReportIndex(null); } }, 150); }} />
+                                    {reportSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
+                                    {activeReportIndex === 'top' && reportSuggestions.length > 0 && (
+                                        <div className="rx-suggestion-list" style={{ width: 340 }}>
+                                            {reportSuggestions.map((s, idx) => (
+                                                <div key={s._id || idx} onPointerDown={(e) => { e.preventDefault(); reportPointerDownRef.current = true; selectReportFromTop(s); }} className="rx-suggestion-item">
+                                                    <span style={{ fontWeight: 700 }}>{s.reportName}</span>
+                                                    {s.date && <span style={{ color: '#94a3b8', marginLeft: 6, fontSize: 11 }}>{new Date(s.date).toLocaleDateString()}</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {activeReportIndex === 'top' && reportNoResults && !reportSearching && reportSearchInput.length >= 1 && (
+    <div className="rx-no-match">
+        <span>No match for "<strong>{reportSearchInput}</strong>"</span>
+        <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('report', reports.length, reportSearchInput); }}>
+            <PlusCircle size={10} /> Add to DB
+        </button>
+    </div>
+)}
+                                </div>
+                                <button className="rx-add-btn" onClick={addReport}>+ Add Report</button>
+                            </div>
+                        </div>
+                        <table className="rx-table">
+                            <thead><tr><th>Report Name</th><th>Date</th><th>Impression</th><th>Action</th><th style={{ width: 44 }}></th></tr></thead>
+                            <tbody>
+                                {reports.map((report, i) => (
+                                    <tr key={i}>
+                                        <td style={{ minWidth: 170 }}><input className="rx-table-input" placeholder="Report name..." value={report.reportName} onChange={(e) => updateReport(i, 'reportName', e.target.value)} /></td>
+                                        <td style={{ minWidth: 130 }}><input type="date" className="rx-table-input" value={report.date} onChange={(e) => updateReport(i, 'date', e.target.value)} /></td>
+                                        <td style={{ minWidth: 150 }}><input className="rx-table-input" placeholder="Normal findings" value={report.impression || ''} onChange={(e) => updateReport(i, 'impression', e.target.value)} /></td>
+                                        <td style={{ minWidth: 140 }}><input className="rx-table-input" placeholder="Repeat in 3 months" value={report.action || ''} onChange={(e) => updateReport(i, 'action', e.target.value)} /></td>
+                                        <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeReport(i)}><X size={11} /></button></td>
+                                    </tr>
+                                ))}
+                                {reports.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No reports added</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+
+            default: return null;
+        }
+    };
+
+    /* ── Render a custom form section ── */
+    const renderFormSection = (section, sIdx) => {
+        const tableFields    = (section.fields || []).filter(f => f.type === 'table');
+        const nonTableFields = (section.fields || []).filter(f => f.type !== 'table');
+        return (
+            <React.Fragment key={`section-${sIdx}`}>
+                {nonTableFields.length > 0 && (
+                    <div className="rx-section">
+                        <div className="rx-section-header">{section.sectionTitle}</div>
+                        <div className="rx-section-body">
+                            <div className="rx-dyn-grid">{nonTableFields.map(field => renderDynamicField(field))}</div>
+                        </div>
+                    </div>
+                )}
+                {tableFields.map(field => renderDynamicField(field))}
+            </React.Fragment>
+        );
+    };
+
+    const renderOrder = patient ? buildRenderOrder(formStructure) : [];
 
     return (
         <div style={{ minHeight: '100vh', background: '#f0f4f8' }}>
@@ -2112,17 +2361,17 @@ const GeneratePrescription = () => {
                     {patient && (
                         <>
                             {/* Patient card */}
-                            <div className={`rx-patient-card ${isRevisit ? 'revisit' : ''}`}>
+                            <div className={`rx-patient-card ${isRevisit ? 'revisit' : ''}`} style={{ margin: '0 8px 16px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
                                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>Active Patient</span>
                                     {isRevisit && <span style={{ fontSize: 10, fontWeight: 800, background: '#1565c0', padding: '2px 8px', borderRadius: 3, display: 'flex', alignItems: 'center', gap: 3 }}><RefreshCw size={9} /> Revisit</span>}
                                 </div>
-                                <div className="text-[18px] font-extrabold tracking-[2px] mb-[2px]">{patient.name}</div>
+                                <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '2px', marginBottom: 2 }}>{patient.name}</div>
                                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase' }}>{patient.age}Y / {patient.gender} | {patient.mobile}</div>
                             </div>
 
                             {isRevisitAutoFilled && (
-                                <div className="rx-revisit-banner">
+                                <div className="rx-revisit-banner" style={{ margin: '0 8px 16px' }}>
                                     <div>
                                         <div style={{ fontSize: 11, fontWeight: 800, color: '#1565c0', display: 'flex', alignItems: 'center', gap: 4, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 2 }}><RefreshCw size={11} /> Previous Visit Data Auto-filled</div>
                                         <div style={{ fontSize: 11, color: '#3b82f6' }}>All fields loaded from last visit. Edit freely before saving.</div>
@@ -2134,321 +2383,26 @@ const GeneratePrescription = () => {
                                 </div>
                             )}
 
-                            {/* ══ SYMPTOMS ══ */}
-                            <div className="rx-section" style={{ marginBottom: 16, borderRadius: 2 }}>
-                                <div className="rx-section-header">Symptoms</div>
-                                <div className="rx-section-body">
-                                    <div style={{ position: 'relative', marginBottom: 10 }}>
-                                        <div className="rx-search-row">
-                                            <div className="rx-search-wrap">
-                                                <input className="rx-search-input" placeholder="Search Symptom"
-                                                    value={symptomInput}
-                                                    onChange={(e) => { setSymptomInput(e.target.value); searchSymptoms(e.target.value); }}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (symptomSuggestions.length > 0) selectSymptom(symptomSuggestions[0]); else if (symptomInput.trim()) addCustomSymptom(); } }}
-                                                    onBlur={() => { setTimeout(() => { if (!symptomPointerDownRef.current) setSymptomSuggestions([]); }, 150); }} />
-                                                {symptomSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
-                                                {symptomSuggestions.length > 0 && (
-                                                    <div className="rx-suggestion-list" style={{ width: '100%' }}>
-                                                        {symptomSuggestions.map((s, idx) => (
-                                                            <div key={s._id || idx} onPointerDown={(e) => { e.preventDefault(); symptomPointerDownRef.current = true; selectSymptom(s); }} className="rx-suggestion-item">
-                                                                {s.name} {s.category && <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: 6 }}>{s.category}</span>}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button className="rx-add-btn" onClick={addCustomSymptom}>+ Add New Symptom</button>
-                                        </div>
-                                        {symptomNoResults && !symptomSearching && symptomInput.length >= 1 && (
-                                            <div className="rx-no-match">
-                                                <span>No match for "<strong>{symptomInput}</strong>"</span>
-                                                <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('symptom', null, symptomInput); }}>
-                                                    <PlusCircle size={10} /> Add to DB
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <RichTextEditor ref={symptomEditorRef} value={symptomsHtml} onChange={setSymptomsHtml} placeholder="Symptoms will appear here when selected above, or type freely..." />
-                                </div>
-                            </div>
-
-                            {/* ══ DYNAMIC FORM SECTIONS ══ */}
-                            {formStructure?.sections.map((section, sIdx) => {
-                                const tableF = section.fields.filter(f => f.type === 'table');
-                                const nonTableF = section.fields.filter(f => f.type !== 'table');
-                                return (
-                                    <div key={sIdx}>
-                                        {nonTableF.length > 0 && (
-                                            <div className="rx-section" style={{ marginBottom: 16, borderRadius: 2 }}>
-                                                <div className="rx-section-header">{section.sectionTitle}</div>
-                                                <div className="rx-section-body">
-                                                    <div className="rx-dyn-grid">{nonTableF.map(field => renderDynamicField(field))}</div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {tableF.map(field => renderDynamicField(field))}
-                                    </div>
-                                );
+                            {/* ── DYNAMIC RENDER ORDER from FormBuilder ── */}
+                            {renderOrder.map((item) => {
+                                if (item.kind === 'predefined') return renderPredefinedBlock(item.type);
+                                if (item.kind === 'section')    return renderFormSection(item.section, item.sectionIndex);
+                                return null;
                             })}
 
-                            {/* ══ MEDICINES ══ */}
-                            <div className="rx-section" style={{ marginBottom: 16, borderRadius: 2 }}>
-                                <div className="rx-section-header">Medicine</div>
-                                <div className="rx-section-body">
-                                    <div style={{ position: 'relative', marginBottom: 10 }}>
-                                        <div className="rx-search-row">
-                                            <div className="rx-search-wrap">
-                                                <input className="rx-search-input" placeholder="Search Medicine..."
-                                                    value={medSearchInput}
-                                                    onChange={(e) => handleMedTopSearch(e.target.value)}
-                                                    onBlur={() => { setTimeout(() => { if (!suggestionPointerDownRef.current) { setMedSuggestions([]); setActiveMedIndex(null); } }, 150); }} />
-                                                {activeMedIndex === 'top' && medSuggestions.length > 0 && (
-                                                    <div className="rx-suggestion-list" style={{ width: 340 }}>
-                                                        {medSuggestions.map(s => (
-                                                            <div key={s._id} onPointerDown={(e) => { e.preventDefault(); suggestionPointerDownRef.current = true; selectMedicineFromTop(s); }} className="rx-suggestion-item">
-                                                                <div style={{ fontWeight: 700 }}>{s.brandName || s.name}</div>
-                                                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.name} · {s.strength} · {s.category}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button className="rx-add-btn" onClick={addMedicineManually}>+ Add Medicine</button>
-                                        </div>
-                                        {activeMedIndex === 'top' && medNoResults['top'] && medSearchInput.length >= 2 && (
-                                            <div className="rx-no-match">
-                                                <span>No match for "<strong>{medSearchInput}</strong>"</span>
-                                                <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('medicine', medicines.length, medSearchInput); }}>
-                                                    <PlusCircle size={10} /> Add to DB
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div style={{ overflowX: 'auto' }}>
-                                        <table className="rx-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Medicine Name</th><th>Unit per Dose</th><th>Frequency</th>
-                                                    <th>Route</th><th>Timing</th><th>Instruction</th><th>Duration</th>
-                                                    <th style={{ width: 44 }}>Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {medicines.map((med, i) => (
-                                                    <tr key={i}>
-                                                        <td style={{ minWidth: 170, position: 'relative' }}>
-                                                            <input className="rx-table-input" placeholder="Brand / Generic..."
-                                                                value={med.brandName || med.name}
-                                                                onChange={(e) => { updateMedicine(i, 'brandName', e.target.value); searchMedicines(e.target.value, i); }}
-                                                                onBlur={() => { setTimeout(() => { if (!suggestionPointerDownRef.current) { setMedSuggestions([]); setActiveMedIndex(null); } }, 150); }} />
-                                                            {activeMedIndex === i && medSuggestions.length > 0 && (
-                                                                <div className="rx-suggestion-list">
-                                                                    {medSuggestions.map(s => (
-                                                                        <div key={s._id} onPointerDown={(e) => { e.preventDefault(); suggestionPointerDownRef.current = true; const selectMed = (med2, idx) => { setMedicines(prev => prev.map((m, mi) => mi === idx ? { ...m, name: med2.name || '', brandName: med2.brandName || '', strength: med2.strength || '', unit_per_Dose: med2.unit_per_Dose || '', timing: med2.timing || '', duration: med2.duration || '', route: med2.route || '', action: med2.action || '', instructions: med2.instructions || '', category: med2.category || '', saltComposition: med2.saltComposition || '' } : m)); setMedSuggestions([]); setActiveMedIndex(null); setMedNoResults(prev => ({ ...prev, [idx]: false })); }; selectMed(s, i); }} className="rx-suggestion-item">
-                                                                            <div style={{ fontWeight: 700 }}>{s.brandName}</div>
-                                                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.name} · {s.strength}</div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                            {activeMedIndex === i && medNoResults[i] && (med.brandName || med.name)?.length >= 2 && (
-                                                                <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50 }}>
-                                                                    <div className="rx-no-match" style={{ width: 220 }}>
-                                                                        <span style={{ fontSize: 11 }}>No match</span>
-                                                                        <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('medicine', i, med.brandName || med.name); }}>
-                                                                            <PlusCircle size={9} /> Add
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                        <td style={{ minWidth: 90 }}><input className="rx-table-input" placeholder="1 Tab" value={med.unit_per_Dose || ''} onChange={(e) => updateMedicine(i, 'unit_per_Dose', e.target.value)} /></td>
-                                                        <td style={{ minWidth: 80 }}><input className="rx-table-input" placeholder="1-0-1" value={med.strength || ''} onChange={(e) => updateMedicine(i, 'strength', e.target.value)} /></td>
-                                                        <td style={{ minWidth: 70 }}><input className="rx-table-input" placeholder="P/O" value={med.route || ''} onChange={(e) => updateMedicine(i, 'route', e.target.value)} /></td>
-                                                        <td style={{ minWidth: 90 }}><input className="rx-table-input" placeholder="Morning" value={med.timing || ''} onChange={(e) => updateMedicine(i, 'timing', e.target.value)} /></td>
-                                                        <td style={{ minWidth: 110 }}><input className="rx-table-input" placeholder="After meal" value={med.instructions || ''} onChange={(e) => updateMedicine(i, 'instructions', e.target.value)} /></td>
-                                                        <td style={{ minWidth: 80 }}><input className="rx-table-input" placeholder="10 days" value={med.duration || ''} onChange={(e) => updateMedicine(i, 'duration', e.target.value)} /></td>
-                                                        <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeMedicine(i)}><X size={11} /></button></td>
-                                                    </tr>
-                                                ))}
-                                                {medicines.length === 0 && (
-                                                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No medicines added</td></tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ══ INVESTIGATIONS ══ */}
-                            <div className="rx-section" style={{ marginBottom: 16, borderRadius: 2 }}>
-                                <div className="rx-section-header">Investigation</div>
-                                <div className="rx-section-body">
-                                    <div style={{ position: 'relative', marginBottom: 10 }}>
-                                        <div className="rx-search-row">
-                                            <div className="rx-search-wrap">
-                                                <input className="rx-search-input" placeholder="Search Investigation"
-                                                    value={invSearchInput}
-                                                    onChange={(e) => handleInvTopSearch(e.target.value)}
-                                                    onBlur={() => { setTimeout(() => { if (!invPointerDownRef.current) { setInvSuggestions([]); setActiveInvIndex(null); } }, 150); }} />
-                                                {invSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
-                                                {activeInvIndex === 'top' && invSuggestions.length > 0 && (
-                                                    <div className="rx-suggestion-list" style={{ width: 340 }}>
-                                                        {invSuggestions.map(s => (
-                                                            <div key={s._id} onPointerDown={(e) => { e.preventDefault(); invPointerDownRef.current = true; selectInvestigationFromTop(s); }} className="rx-suggestion-item">
-                                                                <span style={{ fontWeight: 700 }}>{s.testName}</span>
-                                                                {s.category && <span style={{ color: '#94a3b8', marginLeft: 6 }}>{s.category}</span>}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button className="rx-add-btn" onClick={addInvestigation}>+ Add Investigation</button>
-                                        </div>
-                                        {activeInvIndex === 'top' && invNoResults['top'] && !invSearching && invSearchInput.length >= 1 && (
-                                            <div className="rx-no-match">
-                                                <span>No match for "<strong>{invSearchInput}</strong>"</span>
-                                                <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('investigation', investigations.length, invSearchInput); }}>
-                                                    <PlusCircle size={10} /> Add to DB
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <table className="rx-table">
-                                        <thead><tr><th>Investigation</th><th>Action</th><th style={{ width: 44 }}></th></tr></thead>
-                                        <tbody>
-                                            {investigations.map((inv, i) => (
-                                                <tr key={i}>
-                                                    <td style={{ minWidth: 220 }}><input className="rx-table-input" placeholder="Test name..." value={inv.testName} onChange={(e) => updateInvestigation(i, 'testName', e.target.value)} /></td>
-                                                    <td style={{ minWidth: 180 }}><input className="rx-table-input" placeholder="Notes / action" value={inv.action || ''} onChange={(e) => updateInvestigation(i, 'action', e.target.value)} /></td>
-                                                    <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeInvestigation(i)}><X size={11} /></button></td>
-                                                </tr>
-                                            ))}
-                                            {investigations.length === 0 && (
-                                                <tr><td colSpan={3} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No investigations added</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* ══ VACCINATIONS ══ */}
-                            <div className="rx-section" style={{ marginBottom: 16, borderRadius: 2 }}>
-                                <div className="rx-section-header">Vaccination</div>
-                                <div className="rx-section-body">
-                                    <div style={{ position: 'relative', marginBottom: 10 }}>
-                                        <div className="rx-search-row">
-                                            <div className="rx-search-wrap">
-                                                <input className="rx-search-input" placeholder="Search Vaccination"
-                                                    value={vacSearchInput}
-                                                    onChange={(e) => handleVacTopSearch(e.target.value)}
-                                                    onBlur={() => { setTimeout(() => { if (!vacPointerDownRef.current) { setVacSuggestions([]); setActiveVacIndex(null); } }, 150); }} />
-                                                {vacSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
-                                                {activeVacIndex === 'top' && vacSuggestions.length > 0 && (
-                                                    <div className="rx-suggestion-list" style={{ width: 340 }}>
-                                                        {vacSuggestions.map(s => (
-                                                            <div key={s._id} onPointerDown={(e) => { e.preventDefault(); vacPointerDownRef.current = true; selectVaccinationFromTop(s); }} className="rx-suggestion-item">
-                                                                <span style={{ fontWeight: 700 }}>{s.vaccineName}</span>
-                                                                {s.note && <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.note}</div>}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button className="rx-add-btn" onClick={addVaccination}>+ Add New Vaccination</button>
-                                        </div>
-                                        {activeVacIndex === 'top' && vacNoResults['top'] && !vacSearching && vacSearchInput.length >= 1 && (
-                                            <div className="rx-no-match">
-                                                <span>No match for "<strong>{vacSearchInput}</strong>"</span>
-                                                <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('vaccination', vaccinations.length, vacSearchInput); }}>
-                                                    <PlusCircle size={10} /> Add to DB
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <table className="rx-table">
-                                        <thead><tr><th>Vaccination Name</th><th>Note</th><th>Action</th><th style={{ width: 44 }}></th></tr></thead>
-                                        <tbody>
-                                            {vaccinations.map((vac, i) => (
-                                                <tr key={i}>
-                                                    <td style={{ minWidth: 200 }}><input className="rx-table-input" placeholder="Vaccine name..." value={vac.vaccineName} onChange={(e) => updateVaccination(i, 'vaccineName', e.target.value)} /></td>
-                                                    <td style={{ minWidth: 140 }}><input className="rx-table-input" placeholder="e.g. 2nd dose" value={vac.note || ''} onChange={(e) => updateVaccination(i, 'note', e.target.value)} /></td>
-                                                    <td style={{ minWidth: 140 }}><input className="rx-table-input" placeholder="IM injection" value={vac.action || ''} onChange={(e) => updateVaccination(i, 'action', e.target.value)} /></td>
-                                                    <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeVaccination(i)}><X size={11} /></button></td>
-                                                </tr>
-                                            ))}
-                                            {vaccinations.length === 0 && (
-                                                <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No vaccinations added</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* ══ REPORTS ══ */}
-                            <div className="rx-section" style={{ marginBottom: 16, borderRadius: 2 }}>
-                                <div className="rx-section-header">Reports</div>
-                                <div className="rx-section-body">
-                                    <div style={{ position: 'relative', marginBottom: 10 }}>
-                                        <div className="rx-search-row">
-                                            <div className="rx-search-wrap">
-                                                <input className="rx-search-input" placeholder="Search Report"
-                                                    value={reportSearchInput}
-                                                    onChange={(e) => handleReportTopSearch(e.target.value)}
-                                                    onBlur={() => { setTimeout(() => { if (!reportPointerDownRef.current) { setReportSuggestions([]); setActiveReportIndex(null); } }, 150); }} />
-                                                {reportSearching && <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />}
-                                                {activeReportIndex === 'top' && reportSuggestions.length > 0 && (
-                                                    <div className="rx-suggestion-list" style={{ width: 340 }}>
-                                                        {reportSuggestions.map((s, idx) => (
-                                                            <div key={s._id || idx} onPointerDown={(e) => { e.preventDefault(); reportPointerDownRef.current = true; selectReportFromTop(s); }} className="rx-suggestion-item">
-                                                                <span style={{ fontWeight: 700 }}>{s.reportName}</span>
-                                                                {s.date && <span style={{ color: '#94a3b8', marginLeft: 6, fontSize: 11 }}>{new Date(s.date).toLocaleDateString()}</span>}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button className="rx-add-btn" onClick={addReport}>+ Add Report</button>
-                                        </div>
-                                    </div>
-                                    <table className="rx-table">
-                                        <thead><tr><th>Report Name</th><th>Date</th><th>Impression</th><th>Action</th><th style={{ width: 44 }}></th></tr></thead>
-                                        <tbody>
-                                            {reports.map((report, i) => (
-                                                <tr key={i}>
-                                                    <td style={{ minWidth: 170 }}><input className="rx-table-input" placeholder="Report name..." value={report.reportName} onChange={(e) => updateReport(i, 'reportName', e.target.value)} /></td>
-                                                    <td style={{ minWidth: 130 }}><input type="date" className="rx-table-input" value={report.date} onChange={(e) => updateReport(i, 'date', e.target.value)} /></td>
-                                                    <td style={{ minWidth: 150 }}><input className="rx-table-input" placeholder="Normal findings" value={report.impression || ''} onChange={(e) => updateReport(i, 'impression', e.target.value)} /></td>
-                                                    <td style={{ minWidth: 140 }}><input className="rx-table-input" placeholder="Repeat in 3 months" value={report.action || ''} onChange={(e) => updateReport(i, 'action', e.target.value)} /></td>
-                                                    <td style={{ textAlign: 'center' }}><button className="rx-del-btn" onClick={() => removeReport(i)}><X size={11} /></button></td>
-                                                </tr>
-                                            ))}
-                                            {reports.length === 0 && (
-                                                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 24, color: '#94a3b8', fontStyle: 'italic' }}>No reports added</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* ── Action Buttons ── */}
-                            <div className="rx-action-grid">
+                            {/* Action Buttons */}
+                            <div className="rx-action-grid" style={{ padding: '16px 8px 48px' }}>
                                 <button className="rx-btn-print" onClick={async () => {
-                                    const { design, patient, formStructure } = masterData;
-                                    if (!patient || !design) return alert("Patient/Design data missing!");
-                                    const doc = await buildPdfDoc(design, patient, formStructure);
-                                    const pdfBlobUrl = URL.createObjectURL(doc.output('blob'));
-                                    const win = window.open(pdfBlobUrl, '_blank');
-                                    if (win) {
-                                        win.addEventListener('load', () => {
-                                            win.focus();
-                                            win.print();
-                                        });
-                                    }
+                                    const { design: d, patient: p, formStructure: fs } = masterData;
+                                    if (!p || !d) return alert("Patient/Design data missing!");
+                                    const doc = await buildPdfDoc(d, p, fs);
+                                    const url = URL.createObjectURL(doc.output('blob'));
+                                    const win = window.open(url, '_blank');
+                                    if (win) win.addEventListener('load', () => { win.focus(); win.print(); });
                                 }}>
                                     <Printer size={15} /> Print Only
                                 </button>
-                                <button className="rx-btn-save" onClick={() => { handleSave(); handleSaveToDB(); }} disabled={saving}>
+                                <button className="rx-btn-save" onClick={handleSave} disabled={saving}>
                                     {saving ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Eye size={15} />}
                                     {saving ? 'Building...' : 'Save & Share'}
                                 </button>
@@ -2477,17 +2431,16 @@ const GeneratePrescription = () => {
                 )}
             </div>
 
-            {/* ── Add to DB Modal ── */}
+            {/* Add to DB Modal */}
             <AddToDBModal isOpen={dbModal.open} onClose={closeAddModal} onSave={handleSaveNewToDB}
                 title={modalConfig.title} fields={modalConfig.fields} saving={dbModalSaving} />
 
-            {/* ── Preview Modal (Post-Save) ── */}
+            {/* Preview Modal */}
             <PreviewModal
                 isOpen={previewOpen}
                 onClose={() => setPreviewOpen(false)}
                 pdfDoc={previewPdfDoc}
                 patient={patient}
-                onPrint={handlePrint}
                 onSaveExit={handleSaveExit}
                 navigate={navigate}
                 slug={slug}

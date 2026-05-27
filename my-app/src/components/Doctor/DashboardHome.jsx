@@ -170,44 +170,7 @@ const MiniCalendar = () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI Assistant panel
-// ─────────────────────────────────────────────────────────────────────────────
-const AIAssistant = () => {
-    const [msg, setMsg] = useState('');
-    const CHIPS = ['Suggest Prescription', 'Health Insights', 'Form Generator', 'Quick Notes'];
-    return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center">
-                    <Sparkles size={15} className="text-white" />
-                </div>
-                <span className="font-bold text-slate-800 text-sm">AI Assistant</span>
-                <span className="px-2 py-0.5 text-[9px] font-black bg-blue-50 text-blue-600 rounded-full uppercase tracking-wider">Beta</span>
-            </div>
-            <p className="text-xs text-slate-500">I can help you with:</p>
-            <div className="flex flex-wrap gap-2">
-                {CHIPS.map(c => (
-                    <button key={c} className="px-3 py-1.5 text-xs font-bold bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-600 rounded-lg border border-slate-100 transition-colors">
-                        {c}
-                    </button>
-                ))}
-            </div>
-            <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-blue-400 transition-colors mt-auto">
-                <input
-                    value={msg}
-                    onChange={e => setMsg(e.target.value)}
-                    placeholder="Ask me anything..."
-                    className="flex-1 text-sm bg-transparent outline-none text-slate-700 placeholder-slate-400"
-                />
-                <button
-                    onClick={() => setMsg('')}
-                    className="p-1.5 bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition-colors"
-                >
-                    <Send size={11} />
-                </button>
-            </div>
-        </div>
-    );
-};
+// ───────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error state
@@ -315,12 +278,6 @@ const RealClinicDashboard = () => {
                         </div>
 
                         {/* Quick actions */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <ActionButton label="New Patient"      sub="Add new patient"       icon={PlusCircle}   bg="bg-blue-600" />
-                            <ActionButton label="New Prescription" sub="Create prescription"   icon={FileText}     bg="bg-emerald-500" />
-                            <ActionButton label="Book Appointment" sub="Schedule appointment"  icon={CalendarDays} bg="bg-indigo-500" />
-                            <ActionButton label="Create Bill"      sub="Generate invoice"      icon={CreditCard}   bg="bg-amber-500" />
-                        </div>
 
                         {/* Chart + Activity */}
                         <div className="grid grid-cols-12 gap-5">
@@ -374,7 +331,7 @@ const RealClinicDashboard = () => {
                                 <h3 className="font-bold text-slate-800 text-sm mb-4">Recent Activity</h3>
                                 {recentActivity && recentActivity.length > 0 ? (
                                     <div className="space-y-4">
-                                        {recentActivity.map(act => (
+                                        {recentActivity.slice(0, 4).map(act => (
                                             <div key={act.id} className="flex items-start gap-3">
                                                 <ActivityIcon type={act.type} />
                                                 <div className="flex-1 min-w-0">
@@ -387,9 +344,7 @@ const RealClinicDashboard = () => {
                                 ) : (
                                     <p className="text-slate-400 text-sm text-center py-6">No recent activity.</p>
                                 )}
-                                <button className="mt-4 text-xs font-bold text-blue-600 flex items-center gap-1 hover:gap-2 transition-all">
-                                    View all activity <ArrowUpRight size={12} />
-                                </button>
+                                
                             </div>
                         </div>
 
@@ -397,9 +352,7 @@ const RealClinicDashboard = () => {
                         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                                 <h3 className="font-bold text-slate-800 text-sm">Recent Patients</h3>
-                                <button className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:gap-2 transition-all">
-                                    View all patients <ArrowUpRight size={12} />
-                                </button>
+                                
                             </div>
                             <table className="w-full">
                                 <thead className="bg-slate-50">
@@ -410,7 +363,7 @@ const RealClinicDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {recentPatients && recentPatients.length > 0 ? recentPatients.map(p => (
+                                    {recentPatients && recentPatients.length > 0 ? recentPatients.slice(0, 6).map(p => (
                                         <tr key={p._id} className="hover:bg-slate-50 transition-colors">
                                             <td className="px-5 py-3">
                                                 <div className="flex items-center gap-2.5">
@@ -472,7 +425,7 @@ const RealClinicDashboard = () => {
                         <MiniCalendar />
 
                         {/* AI Assistant */}
-                        <AIAssistant />
+                       
                     </div>
 
                 </div>

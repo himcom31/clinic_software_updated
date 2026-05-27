@@ -1,21 +1,12 @@
 const mongoose = require('mongoose');
 const formSchema = require('../models/ConsultationForm');
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: get/create the per-clinic FORM model
-// e.g. slug = "dr-smith" → collection = "dr-smith_forms"
-// ─────────────────────────────────────────────────────────────────────────────
 function getFormModel(slug) {
     const collectionName = `${slug}_forms`;
     return mongoose.models[collectionName]
         || mongoose.model(collectionName, formSchema, collectionName);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: derive a safe MongoDB collection name
-// slug = "dr-smith-clinic", tableName = "Vitals"
-// → "dr_smith_clinic_vitals_table"
-// ─────────────────────────────────────────────────────────────────────────────
 function deriveCollectionName(slug, tableName) {
     const clean = (s) =>
         (s || '')
@@ -26,20 +17,12 @@ function deriveCollectionName(slug, tableName) {
     return `${clean(slug)}_${clean(tableName)}_table`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: get/create a dynamic ROW model for any table collection
-// Used by all table CRUD functions below
-// ─────────────────────────────────────────────────────────────────────────────
 function getRowModel(collectionName) {
     if (mongoose.models[collectionName]) return mongoose.models[collectionName];
     const schema = new mongoose.Schema({}, { strict: false, timestamps: true });
     return mongoose.model(collectionName, schema, collectionName);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: build a typed Mongoose schema from column definitions
-// columns = [{ name: 'Date', type: 'date' }, { name: 'BP', type: 'text' }, ...]
-// ─────────────────────────────────────────────────────────────────────────────
 function buildDynamicRowSchema(columns) {
     const schemaDef = {};
     columns.forEach(col => {
@@ -56,26 +39,31 @@ function buildDynamicRowSchema(columns) {
 
 // =============================================================================
 // 1. POST /api/clinic/:slug/save-form
-//    Save the entire form layout (all sections + fields)
 // =============================================================================
 exports.saveFormStructure = async (req, res) => {
     try {
         const { slug } = req.params;
-        const { formName, sections, speciality } = req.body;
+        // ── Accept blockOrder from the request body ───────────────────────────
+        const { formName, sections, speciality, blockOrder } = req.body;
 
-        if ( !formName || !sections) {
+        if (!formName || !sections) {
             return res.status(400).json({
                 success: false,
-                message: 'doctorId, formName, and sections are required.'
+                message: 'formName and sections are required.'
             });
         }
 
         const FormModel = getFormModel(slug);
 
         const result = await FormModel.findOneAndUpdate(
-            
             { formName },
-            {  formName, sections, speciality, updatedAt: Date.now() },
+            {
+                formName,
+                sections,
+                speciality,
+                blockOrder: blockOrder || [],   // ← save blockOrder, default to []
+                updatedAt:  Date.now()
+            },
             { upsert: true, new: true }
         );
 
@@ -94,7 +82,7 @@ exports.saveFormStructure = async (req, res) => {
 
 // =============================================================================
 // 2. GET /api/clinic/:slug/get-form
-//    Fetch the most recently saved form template for a clinic
+//    blockOrder is returned as part of the form document automatically
 // =============================================================================
 exports.getFormStructure = async (req, res) => {
     try {
@@ -121,24 +109,12 @@ exports.getFormStructure = async (req, res) => {
 
 // =============================================================================
 // 3. POST /api/clinic/:slug/create-table
-//    Called when doctor clicks "Save & Create Collection" in TableBuilderModal
-//
-//    Body: { tableName, collectionName?, columns: [{ name, type }] }
-//
-//    What it does:
-//    - Validates input
-//    - Derives the MongoDB collection name (same logic as frontend)
-//    - Builds a typed Mongoose schema from the column definitions
-//    - Registers the model (replaces it if already exists, for edits)
-//    - Forces MongoDB to physically create the collection via sentinel insert
-//    - Creates a createdAt index for performance
 // =============================================================================
 exports.createTableCollection = async (req, res) => {
     try {
         const { slug } = req.params;
         const { tableName, collectionName: clientCollName, columns } = req.body;
 
-        // ── Validate ──────────────────────────────────────────────────────────
         if (!tableName || !tableName.trim()) {
             return res.status(400).json({ success: false, message: 'tableName is required.' });
         }
@@ -150,13 +126,10 @@ exports.createTableCollection = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Every column must have a name.' });
         }
 
-        // ── Derive collection name ─────────────────────────────────────────────
         const collectionName = (clientCollName && clientCollName.trim())
             ? clientCollName.trim()
             : deriveCollectionName(slug, tableName);
 
-        // ── Build & register Mongoose model ───────────────────────────────────
-        // Delete stale model if it exists (handles "edit columns" case)
         if (mongoose.models[collectionName]) {
             delete mongoose.models[collectionName];
         }
@@ -164,13 +137,9 @@ exports.createTableCollection = async (req, res) => {
         const rowSchema = buildDynamicRowSchema(columns);
         const RowModel  = mongoose.model(collectionName, rowSchema, collectionName);
 
-        // ── Force MongoDB to physically create the collection ─────────────────
-        // MongoDB is lazy — collection only appears after first real insert.
-        // We insert a sentinel doc and immediately delete it.
         const sentinel = await RowModel.create({ __sentinel: true });
         await RowModel.deleteOne({ _id: sentinel._id });
 
-        // ── Add index on createdAt ─────────────────────────────────────────────
         await RowModel.collection.createIndex({ createdAt: -1 });
 
         return res.status(201).json({
@@ -192,11 +161,7 @@ exports.createTableCollection = async (req, res) => {
 
 
 // =============================================================================
-// 4. GET /api/table/:collectionName/rows
-//    Fetch all rows from a dynamic table collection
-//
-//    Example: GET /api/table/dr_smith_clinic_vitals_table/rows
-//    Returns: { success: true, data: [ ...rows ] }
+// 4–7. Table row CRUD (unchanged)
 // =============================================================================
 exports.getRows = async (req, res) => {
     try {
@@ -210,14 +175,6 @@ exports.getRows = async (req, res) => {
     }
 };
 
-
-// =============================================================================
-// 5. POST /api/table/:collectionName/rows
-//    Insert a new row into a dynamic table collection
-//
-//    Body: { "Date": "2024-01-15", "BP": "120/80", "Weight": 70 }
-//    Returns: { success: true, data: { _id, ...rowData, createdAt } }
-// =============================================================================
 exports.addRow = async (req, res) => {
     try {
         const { collectionName } = req.params;
@@ -230,14 +187,6 @@ exports.addRow = async (req, res) => {
     }
 };
 
-
-// =============================================================================
-// 6. PUT /api/table/:collectionName/rows/:rowId
-//    Update an existing row by its MongoDB _id
-//
-//    Body: { "BP": "130/85" }   ← only the fields you want to change
-//    Returns: { success: true, data: { updated row } }
-// =============================================================================
 exports.updateRow = async (req, res) => {
     try {
         const { collectionName, rowId } = req.params;
@@ -251,13 +200,6 @@ exports.updateRow = async (req, res) => {
     }
 };
 
-
-// =============================================================================
-// 7. DELETE /api/table/:collectionName/rows/:rowId
-//    Delete a single row by its MongoDB _id
-//
-//    Returns: { success: true, message: 'Row deleted.' }
-// =============================================================================
 exports.deleteRow = async (req, res) => {
     try {
         const { collectionName, rowId } = req.params;

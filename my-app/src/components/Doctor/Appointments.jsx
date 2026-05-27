@@ -322,15 +322,8 @@ const Appointments = () => {
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[3px]">Live System</span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tighter uppercase text-slate-800 flex items-center gap-3">
-            Queue Studio <Activity className="text-[#18afb1]" size={24} />
-          </h1>
-        </div>
+        
+        
 
         <div className="flex items-center gap-3 ml-auto">
           <button

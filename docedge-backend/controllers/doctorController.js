@@ -84,27 +84,37 @@ exports.getAllDoctors = async (req, res) => {
 // PUT /api/doctors/:id
 // Allowed fields: name, email, mobile, address, password
 // NOT allowed: clinicName, slug (locked permanently)
+
 exports.updateDoctor = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Strip any attempt to change clinicName or slug
+    // Strip any attempt to change clinicName or slug (but keep for email)
     const { clinicName, slug, ...allowedUpdates } = req.body;
 
-    // If a new password was provided, hash it
-    if (allowedUpdates.password && allowedUpdates.password.trim() !== '') {
+    // Save plain password BEFORE hashing (needed for email)
+    const plainPassword = (allowedUpdates.password && allowedUpdates.password.trim() !== '')
+      ? allowedUpdates.password.trim()
+      : null;
+
+    // Hash password if provided
+    if (plainPassword) {
       const salt = await bcrypt.genSalt(10);
-      allowedUpdates.password = await bcrypt.hash(allowedUpdates.password, salt);
+      allowedUpdates.password = await bcrypt.hash(plainPassword, salt);
     } else {
-      // No password change requested — remove the key so MongoDB doesn't overwrite
       delete allowedUpdates.password;
     }
 
     // Check for email conflict with another doctor
     if (allowedUpdates.email) {
-      const conflict = await Doctor.findOne({ email: allowedUpdates.email, _id: { $ne: id } });
+      const conflict = await Doctor.findOne({ 
+        email: allowedUpdates.email, 
+        _id: { $ne: id } 
+      });
       if (conflict) {
-        return res.status(400).json({ message: "This email is already in use by another doctor." });
+        return res.status(400).json({ 
+          message: "This email is already in use by another doctor." 
+        });
       }
     }
 
@@ -116,6 +126,34 @@ exports.updateDoctor = async (req, res) => {
 
     if (!updatedDoctor) {
       return res.status(404).json({ message: "Doctor not found." });
+    }
+
+    // Only send email if email or password was actually changed
+    if (plainPassword || allowedUpdates.email) {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+      });
+
+      const mailOptions = {
+        from: `"No Reply - DocEdge" <${process.env.EMAIL_USER}>`,
+        to: updatedDoctor.email,                  // ✅ from DB record
+        subject: `DocEdge - Credentials Updated`,
+        html: `
+          <h1>Hello Dr. ${updatedDoctor.name},</h1>
+          <p>Your clinic management portal credentials have been updated.</p>
+          <p><b>Login URL:</b> https://docedge.tbskit.cloud/${updatedDoctor.slug}/login</p>
+          <p><b>Updated Username:</b> ${updatedDoctor.email}</p>
+          ${plainPassword 
+            ? `<p><b>Updated Password:</b> ${plainPassword}</p>` 
+            : '<p>Password was not changed.</p>'
+          }
+          <br>
+          <p>Regards,<br>DocEdge Team</p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
     }
 
     res.status(200).json({

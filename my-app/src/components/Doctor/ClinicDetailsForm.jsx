@@ -305,26 +305,10 @@ const ClinicDetailsForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
             {/* Contact Card */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">
-              <h2 className={sectionTitle}><Phone className="text-blue-600" size={18} /> Contact Matrix</h2>
-              <div className="relative">
-                <Mail className="absolute left-4 top-3 text-slate-400" size={16} />
-                <input type="email" placeholder="Official Email" className={inputStyle} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-              </div>
-              <div className="relative">
-                <Globe className="absolute left-4 top-3 text-slate-400" size={16} />
-                <input type="text" placeholder="Clinic Website" className={inputStyle} value={formData.website} onChange={e => setFormData({ ...formData, website: e.target.value })} />
-              </div>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-3 text-slate-400" size={16} />
-                <input type="text" placeholder="Clinic Address" className={inputStyle} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
-              </div>
-              <div className="relative">
-                <Phone className="absolute left-4 top-3 text-slate-400" size={16} />
-                <input type="text" placeholder="Mobile Number" className={inputStyle} value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} />
-              </div>
-            </div>
+            
 
+
+            
             {/* Timing Card */}
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">

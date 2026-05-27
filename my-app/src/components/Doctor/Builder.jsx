@@ -16,13 +16,63 @@ import {
   Settings2, Eye, Save, Layout, Sparkles, Stethoscope,
   Smile, Baby, User, Layers, Info, X, Heading,
   ChevronRight, AlertCircle, Wand2, Loader2, Monitor, MousePointer2,
-  Tag, CheckCircle2, Table2, Database,
+  Tag, CheckCircle2, Table2, Database, Pill, FlaskConical, Syringe,
+  FileText, Activity, Lock,
 } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
 const API_BAS = import.meta.env.VITE_API_URL;
 
+// ─── PREDEFINED BLOCK CONFIGS ─────────────────────────────────────────────────
+// These represent the hardcoded sections in GeneratePrescription that can now
+// be reordered from within FormBuilder.
+
+export const PREDEFINED_BLOCKS = {
+  symptoms_block: {
+    label: 'Symptoms',
+    icon: <Activity size={18} />,
+    color: 'blue',
+    description: 'Rich-text symptom entry with DB search',
+    locked: false,
+  },
+  medicines_block: {
+    label: 'Medicines',
+    icon: <Pill size={18} />,
+    color: 'emerald',
+    description: 'Medicine table with brand/generic search',
+    locked: false,
+  },
+  investigations_block: {
+    label: 'Investigations',
+    icon: <FlaskConical size={18} />,
+    color: 'violet',
+    description: 'Lab tests & investigation orders',
+    locked: false,
+  },
+  vaccinations_block: {
+    label: 'Vaccinations',
+    icon: <Syringe size={18} />,
+    color: 'amber',
+    description: 'Vaccine records with dose notes',
+    locked: false,
+  },
+  reports_block: {
+    label: 'Reports',
+    icon: <FileText size={18} />,
+    color: 'rose',
+    description: 'Attached reports with impressions',
+    locked: false,
+  },
+};
+
+const BLOCK_COLOR_MAP = {
+  blue:    { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-700',   badge: 'bg-blue-100 text-blue-600',   icon: 'text-blue-500'   },
+  emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-600', icon: 'text-emerald-500' },
+  violet:  { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-700', badge: 'bg-violet-100 text-violet-600', icon: 'text-violet-500' },
+  amber:   { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-700',  badge: 'bg-amber-100 text-amber-600',  icon: 'text-amber-500'  },
+  rose:    { bg: 'bg-rose-50',   border: 'border-rose-200',   text: 'text-rose-700',   badge: 'bg-rose-100 text-rose-600',   icon: 'text-rose-500'   },
+};
 
 // ─── CONFIGURATION ────────────────────────────────────────────────────────────
 
@@ -43,8 +93,6 @@ const FIELD_TYPES = [
 
 const COLUMN_TYPES = ['text', 'number', 'date', 'dropdown', 'yesno'];
 
-// Derive MongoDB collection name from clinic slug + table name
-// e.g. slug="dr-smith-clinic", tableName="Vitals" → "dr_smith_clinic_vitals_table"
 export const deriveCollectionName = (slug, tableName) => {
   const cleanSlug  = (slug      || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
   const cleanTable = (tableName || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
@@ -133,7 +181,6 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
     setError('');
     setSaving(true);
     try {
-      // Tell backend to create / ensure the collection exists
       await axios.post(`${API_BAS}/api/clinic/${slug}/create-table`, {
         tableName:      tableName.trim(),
         collectionName,
@@ -154,8 +201,6 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white w-full max-w-lg rounded-[28px] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
-
-        {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-xl text-white shadow-md shadow-blue-100">
@@ -171,10 +216,7 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
-
-          {/* Table name */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 block">
               Table Name <span className="text-red-500">*</span>
@@ -187,7 +229,6 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
             />
           </div>
 
-          {/* Derived collection name badge */}
           {tableName.trim() && (
             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
               <Database size={12} className="text-blue-500 flex-shrink-0" />
@@ -198,16 +239,12 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
             </div>
           )}
 
-          {/* Columns */}
           <div className="space-y-3 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between px-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 Columns ({columns.length})
               </label>
-              <button
-                onClick={addColumn}
-                className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all"
-              >
+              <button onClick={addColumn} className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all">
                 <Plus size={12} /> Add Column
               </button>
             </div>
@@ -232,9 +269,7 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
                     value={col.type}
                     onChange={e => updateColumn(col.id, 'type', e.target.value)}
                   >
-                    {COLUMN_TYPES.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
+                    {COLUMN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <button
                     onClick={() => deleteColumn(col.id)}
@@ -248,7 +283,6 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
             </div>
           </div>
 
-          {/* Live table preview */}
           {columns.length > 0 && tableName.trim() && (
             <div className="pt-3 border-t border-slate-100 space-y-2">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 block">Preview</label>
@@ -278,7 +312,6 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-[11px] font-bold text-red-600">
               <AlertCircle size={12} /> {error}
@@ -286,7 +319,6 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
           )}
         </div>
 
-        {/* Footer */}
         <div className="p-5 border-t border-slate-100 bg-white flex items-center justify-between gap-3">
           {savedMsg ? (
             <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600">
@@ -316,12 +348,102 @@ const TableBuilderModal = ({ slug, field, onSave, onClose }) => {
   );
 };
 
+// ─── PREDEFINED BLOCK CARD PREVIEW ───────────────────────────────────────────
+const PredefinedBlockPreview = ({ field, isSelected, onDelete }) => {
+  const blockDef = PREDEFINED_BLOCKS[field.type];
+  if (!blockDef) return null;
+  const colors = BLOCK_COLOR_MAP[blockDef.color];
+
+  const previewContent = {
+    symptoms_block: (
+      <div className="space-y-2">
+        <div className="flex gap-2 flex-wrap">
+          {['Fever', 'Headache', 'Cough'].map(s => (
+            <span key={s} className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border ${colors.badge} ${colors.border}`}>
+              <Tag size={7} />{s}
+            </span>
+          ))}
+          <span className="text-[9px] text-slate-300 italic self-center">+ type freely...</span>
+        </div>
+        <div className={`h-8 rounded-lg border ${colors.border} ${colors.bg} flex items-center px-3`}>
+          <span className="text-[9px] text-slate-400 italic">Rich text symptom editor...</span>
+        </div>
+      </div>
+    ),
+    medicines_block: (
+      <div className="overflow-hidden rounded-lg border border-slate-100">
+        <table className="w-full text-[9px]">
+          <thead><tr className="bg-slate-50"><th className="px-2 py-1.5 text-left font-bold text-slate-400">Medicine</th><th className="px-2 py-1.5 text-left font-bold text-slate-400">Dose</th><th className="px-2 py-1.5 text-left font-bold text-slate-400">Duration</th></tr></thead>
+          <tbody><tr><td className="px-2 py-1 text-slate-300 italic">Paracetamol 500mg</td><td className="px-2 py-1 text-slate-300">1-0-1</td><td className="px-2 py-1 text-slate-300">5 days</td></tr></tbody>
+        </table>
+      </div>
+    ),
+    investigations_block: (
+      <div className="overflow-hidden rounded-lg border border-slate-100">
+        <table className="w-full text-[9px]">
+          <thead><tr className="bg-slate-50"><th className="px-2 py-1.5 text-left font-bold text-slate-400">Test Name</th><th className="px-2 py-1.5 text-left font-bold text-slate-400">Action</th></tr></thead>
+          <tbody><tr><td className="px-2 py-1 text-slate-300 italic">CBC, LFT...</td><td className="px-2 py-1 text-slate-300">Fasting req.</td></tr></tbody>
+        </table>
+      </div>
+    ),
+    vaccinations_block: (
+      <div className="overflow-hidden rounded-lg border border-slate-100">
+        <table className="w-full text-[9px]">
+          <thead><tr className="bg-slate-50"><th className="px-2 py-1.5 text-left font-bold text-slate-400">Vaccine</th><th className="px-2 py-1.5 text-left font-bold text-slate-400">Note</th></tr></thead>
+          <tbody><tr><td className="px-2 py-1 text-slate-300 italic">Hepatitis B</td><td className="px-2 py-1 text-slate-300">2nd dose</td></tr></tbody>
+        </table>
+      </div>
+    ),
+    reports_block: (
+      <div className="overflow-hidden rounded-lg border border-slate-100">
+        <table className="w-full text-[9px]">
+          <thead><tr className="bg-slate-50"><th className="px-2 py-1.5 text-left font-bold text-slate-400">Report</th><th className="px-2 py-1.5 text-left font-bold text-slate-400">Date</th><th className="px-2 py-1.5 text-left font-bold text-slate-400">Impression</th></tr></thead>
+          <tbody><tr><td className="px-2 py-1 text-slate-300 italic">X-Ray Chest</td><td className="px-2 py-1 text-slate-300">Today</td><td className="px-2 py-1 text-slate-300">Normal</td></tr></tbody>
+        </table>
+      </div>
+    ),
+  };
+
+  return (
+    <div className={`w-full rounded-xl border-2 p-3 ${colors.bg} ${colors.border}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className={colors.icon}>{blockDef.icon}</span>
+          <span className={`text-[11px] font-black uppercase tracking-wider ${colors.text}`}>{blockDef.label}</span>
+          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase ${colors.badge}`}>predefined</span>
+        </div>
+        {isSelected && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="p-1 hover:bg-red-50 rounded text-slate-300 hover:text-red-400 transition-colors"
+            title="Remove from layout"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
+      </div>
+      <div className="pointer-events-none">
+        {previewContent[field.type]}
+      </div>
+      <div className={`mt-2 text-[8px] font-bold ${colors.text} opacity-60 flex items-center gap-1`}>
+        <GripVertical size={9} /> Drag to reorder position
+      </div>
+    </div>
+  );
+};
+
 // ─── SORTABLE FIELD CARD ──────────────────────────────────────────────────────
 const SortableField = ({ field, isSelected, onSelect, onDelete, onDuplicate, onEditTable }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: field.id });
   const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto' };
 
+  const isPredefined = !!PREDEFINED_BLOCKS[field.type];
+
   const renderFieldPreview = () => {
+    if (isPredefined) {
+      return <PredefinedBlockPreview field={field} isSelected={isSelected} onDelete={() => onDelete(field.id)} />;
+    }
+
     switch (field.type) {
       case 'heading':
         return <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 mb-1">{field.label || 'New Section'}</h3>;
@@ -349,56 +471,32 @@ const SortableField = ({ field, isSelected, onSelect, onDelete, onDuplicate, onE
       case 'table':
         return (
           <div className="w-full bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-            {/* Table header bar */}
             <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Table2 size={11} className="text-blue-500" />
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                  {field.tableName || 'Untitled Table'}
-                </span>
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{field.tableName || 'Untitled Table'}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
-                  {field.columns?.length || 0} cols
-                </span>
+                <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">{field.columns?.length || 0} cols</span>
                 {isSelected && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onEditTable(field.id); }}
-                    className="text-[8px] font-black text-slate-400 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2 py-0.5 rounded-full uppercase transition-all"
-                  >
-                    Edit
-                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); onEditTable(field.id); }} className="text-[8px] font-black text-slate-400 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2 py-0.5 rounded-full uppercase transition-all">Edit</button>
                 )}
               </div>
             </div>
-            {/* Mini table preview */}
             {field.columns?.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-[9px] border-collapse">
                   <thead>
-                    <tr>
-                      {field.columns.map((col, i) => (
-                        <th key={i} className="text-left px-2.5 py-1.5 font-black text-slate-400 bg-slate-50 border-b border-slate-100 whitespace-nowrap uppercase tracking-wider">
-                          {col.name}
-                        </th>
-                      ))}
-                    </tr>
+                    <tr>{field.columns.map((col, i) => (<th key={i} className="text-left px-2.5 py-1.5 font-black text-slate-400 bg-slate-50 border-b border-slate-100 whitespace-nowrap uppercase tracking-wider">{col.name}</th>))}</tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      {field.columns.map((_, i) => (
-                        <td key={i} className="px-2.5 py-1.5 text-slate-200 italic">—</td>
-                      ))}
-                    </tr>
+                    <tr>{field.columns.map((_, i) => (<td key={i} className="px-2.5 py-1.5 text-slate-200 italic">—</td>))}</tr>
                   </tbody>
                 </table>
               </div>
             ) : (
-              <div className="py-4 flex items-center justify-center text-[9px] text-slate-300 font-bold uppercase tracking-widest italic">
-                No columns configured — click Edit to configure
-              </div>
+              <div className="py-4 flex items-center justify-center text-[9px] text-slate-300 font-bold uppercase tracking-widest italic">No columns — click Edit to configure</div>
             )}
-            {/* Collection badge */}
             {field.collectionName && (
               <div className="px-3 py-1.5 bg-white border-t border-slate-100 flex items-center gap-1.5">
                 <Database size={8} className="text-slate-300" />
@@ -428,7 +526,8 @@ const SortableField = ({ field, isSelected, onSelect, onDelete, onDuplicate, onE
         <GripVertical size={14} className="text-slate-400" />
       </div>
 
-      {field.type !== 'heading' && (
+      {/* For predefined blocks, the header/delete are handled inside PredefinedBlockPreview */}
+      {!isPredefined && field.type !== 'heading' && (
         <div className="flex justify-between items-start mb-3">
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
@@ -446,6 +545,7 @@ const SortableField = ({ field, isSelected, onSelect, onDelete, onDuplicate, onE
           )}
         </div>
       )}
+
       <div className="pointer-events-none">{renderFieldPreview()}</div>
     </div>
   );
@@ -457,6 +557,23 @@ const PreviewField = ({ field }) => {
   const [symptomInput,  setSymptomInput]  = useState('');
   const [addedSymptoms, setAddedSymptoms] = useState([]);
   const [tableRows,     setTableRows]     = useState([]);
+
+  if (PREDEFINED_BLOCKS[field.type]) {
+    const blockDef = PREDEFINED_BLOCKS[field.type];
+    const colors = BLOCK_COLOR_MAP[blockDef.color];
+    return (
+      <div className={`p-6 rounded-[24px] border-2 ${colors.border} ${colors.bg}`}>
+        <div className="flex items-center gap-2 mb-3">
+          <span className={colors.icon}>{blockDef.icon}</span>
+          <span className={`text-sm font-black uppercase tracking-widest ${colors.text}`}>{blockDef.label}</span>
+          <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${colors.badge}`}>
+            rendered in prescription
+          </span>
+        </div>
+        <p className="text-[11px] text-slate-400 italic">{blockDef.description} — full interface shown during prescription generation.</p>
+      </div>
+    );
+  }
 
   if (field.type === 'heading') {
     return <h3 className="text-xl font-black text-slate-800 border-b-2 border-blue-600 pb-2 inline-block mb-2">{field.label}</h3>;
@@ -477,77 +594,25 @@ const PreviewField = ({ field }) => {
     );
   }
 
-  // ── TABLE FIELD PREVIEW (interactive in preview mode) ────────────────────
   if (field.type === 'table') {
-    const addRow = () => {
-      const emptyRow = { _id: Date.now() };
-      (field.columns || []).forEach(col => { emptyRow[col.name] = ''; });
-      setTableRows(prev => [...prev, emptyRow]);
-    };
-    const updateCell = (rowId, colName, value) => {
-      setTableRows(prev => prev.map(r => r._id === rowId ? { ...r, [colName]: value } : r));
-    };
-    const deleteRow = (rowId) => {
-      setTableRows(prev => prev.filter(r => r._id !== rowId));
-    };
-
+    const addRow = () => { const emptyRow = { _id: Date.now() }; (field.columns || []).forEach(col => { emptyRow[col.name] = ''; }); setTableRows(prev => [...prev, emptyRow]); };
+    const updateCell = (rowId, colName, value) => { setTableRows(prev => prev.map(r => r._id === rowId ? { ...r, [colName]: value } : r)); };
+    const deleteRow = (rowId) => { setTableRows(prev => prev.filter(r => r._id !== rowId)); };
     return (
       <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
-            <Table2 size={12} className="text-blue-500" /> {field.label || field.tableName}
-          </label>
-          <button onClick={addRow} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl font-bold text-[10px] hover:bg-blue-700 transition-all">
-            <Plus size={11} /> Add Row
-          </button>
+          <label className="text-xs font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Table2 size={12} className="text-blue-500" /> {field.label || field.tableName}</label>
+          <button onClick={addRow} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl font-bold text-[10px] hover:bg-blue-700 transition-all"><Plus size={11} /> Add Row</button>
         </div>
         <div className="overflow-x-auto rounded-xl border border-slate-100">
           <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50">
-                {(field.columns || []).map((col, i) => (
-                  <th key={i} className="text-left px-3 py-2 font-bold text-slate-500 border-b border-slate-100 whitespace-nowrap text-[10px] uppercase tracking-widest">{col.name}</th>
-                ))}
-                <th className="px-3 py-2 border-b border-slate-100 w-8" />
-              </tr>
-            </thead>
+            <thead><tr className="bg-slate-50">{(field.columns || []).map((col, i) => (<th key={i} className="text-left px-3 py-2 font-bold text-slate-500 border-b border-slate-100 whitespace-nowrap text-[10px] uppercase tracking-widest">{col.name}</th>))}<th className="px-3 py-2 border-b border-slate-100 w-8" /></tr></thead>
             <tbody>
-              {tableRows.length === 0 ? (
-                <tr><td colSpan={(field.columns?.length || 1) + 1} className="text-center py-6 text-[10px] text-slate-300 italic">No rows yet — click Add Row</td></tr>
-              ) : (
-                tableRows.map(row => (
-                  <tr key={row._id} className="border-b border-slate-50 last:border-0">
-                    {(field.columns || []).map((col, i) => (
-                      <td key={i} className="px-2 py-1.5">
-                        {col.type === 'date' ? (
-                          <input type="date" value={row[col.name] || ''} onChange={e => updateCell(row._id, col.name, e.target.value)} className="w-full bg-transparent outline-none text-xs text-slate-700 border border-slate-100 rounded-lg px-2 py-1 focus:border-blue-400" />
-                        ) : col.type === 'number' ? (
-                          <input type="number" value={row[col.name] || ''} onChange={e => updateCell(row._id, col.name, e.target.value)} placeholder="0" className="w-24 bg-transparent outline-none text-xs text-slate-700 border border-slate-100 rounded-lg px-2 py-1 focus:border-blue-400" />
-                        ) : col.type === 'yesno' ? (
-                          <div className="flex gap-1">
-                            {['Yes','No'].map(v => (
-                              <button key={v} onClick={() => updateCell(row._id, col.name, v)} className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${row[col.name] === v ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{v}</button>
-                            ))}
-                          </div>
-                        ) : (
-                          <input type="text" value={row[col.name] || ''} onChange={e => updateCell(row._id, col.name, e.target.value)} className="w-full bg-transparent outline-none text-xs text-slate-700 border border-slate-100 rounded-lg px-2 py-1 focus:border-blue-400" />
-                        )}
-                      </td>
-                    ))}
-                    <td className="px-2 py-1.5">
-                      <button onClick={() => deleteRow(row._id)} className="p-1 hover:bg-red-50 rounded text-slate-200 hover:text-red-400 transition-all"><Trash2 size={11} /></button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              {tableRows.length === 0 ? (<tr><td colSpan={(field.columns?.length || 1) + 1} className="text-center py-6 text-[10px] text-slate-300 italic">No rows yet</td></tr>) :
+                tableRows.map(row => (<tr key={row._id} className="border-b border-slate-50 last:border-0">{(field.columns || []).map((col, i) => (<td key={i} className="px-2 py-1.5"><input type={col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'} value={row[col.name] || ''} onChange={e => updateCell(row._id, col.name, e.target.value)} className="w-full bg-transparent outline-none text-xs text-slate-700 border border-slate-100 rounded-lg px-2 py-1 focus:border-blue-400" /></td>))}<td className="px-2 py-1.5"><button onClick={() => deleteRow(row._id)} className="p-1 hover:bg-red-50 rounded text-slate-200 hover:text-red-400 transition-all"><Trash2 size={11} /></button></td></tr>))}
             </tbody>
           </table>
         </div>
-        {field.collectionName && (
-          <div className="flex items-center gap-1.5 text-[9px] text-slate-300">
-            <Database size={9} /><span className="font-mono">{field.collectionName}</span>
-          </div>
-        )}
       </div>
     );
   }
@@ -588,20 +653,21 @@ export default function FormBuilder() {
   const [fetching,      setFetching]      = useState(true);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-  // Symptom state
   const [symptomInput,     setSymptomInput]     = useState('');
   const [symptomList,      setSymptomList]      = useState([]);
   const [symptomSaving,    setSymptomSaving]    = useState(false);
   const [symptomSavedMsg,  setSymptomSavedMsg]  = useState('');
   const [showSymptomPanel, setShowSymptomPanel] = useState(false);
 
-  // Table builder modal: which field's table is being edited (null = modal closed)
   const [tableModalFieldId, setTableModalFieldId] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  // Which predefined blocks are already placed on the canvas
+  const placedPredefinedTypes = fields.filter(f => !!PREDEFINED_BLOCKS[f.type]).map(f => f.type);
 
   // ── Fetch saved form ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -613,6 +679,7 @@ export default function FormBuilder() {
         if (data?.data?.sections) {
           const flatFields = [];
           data.data.sections.forEach((section, sIdx) => {
+            // Restore heading
             flatFields.push({
               id:    `heading-${sIdx}-${section.sectionTitle}`,
               type:  'heading',
@@ -620,12 +687,65 @@ export default function FormBuilder() {
             });
             section.fields.forEach(f => flatFields.push({ ...f }));
           });
-          setFields(flatFields);
+
+          // Restore predefined blocks from saved blockOrder
+          const savedBlockOrder = data.data.blockOrder || [];
+          const allFieldsWithBlocks = [];
+
+          if (savedBlockOrder.length > 0) {
+            // Interleave: build from saved blockOrder which may reference sections by title
+            // For simplicity, append predefined blocks as saved (they store position index)
+            // We'll use a merged approach: flatFields first, then insert predefined blocks at saved positions
+            const predefinedFromSave = savedBlockOrder.map((b, i) => ({
+              id: `predefined-${b.type}-${i}`,
+              type: b.type,
+              label: PREDEFINED_BLOCKS[b.type]?.label || b.type,
+              _predefined: true,
+              _savedPosition: b.position,
+            }));
+
+            // Merge: insert predefined blocks at their saved positions
+            const merged = [...flatFields];
+            predefinedFromSave.forEach(pb => {
+              const pos = Math.min(pb._savedPosition ?? merged.length, merged.length);
+              merged.splice(pos, 0, pb);
+            });
+            allFieldsWithBlocks.push(...merged);
+          } else {
+            // No saved block order — append all predefined blocks that aren't already inline
+            allFieldsWithBlocks.push(...flatFields);
+            // Add defaults at the end
+            Object.keys(PREDEFINED_BLOCKS).forEach((type, i) => {
+              allFieldsWithBlocks.push({
+                id: `predefined-${type}-default`,
+                type,
+                label: PREDEFINED_BLOCKS[type].label,
+                _predefined: true,
+              });
+            });
+          }
+
+          setFields(allFieldsWithBlocks);
           setFormName(data.data.formName);
+        } else {
+          // No saved form — populate with default predefined blocks at the bottom
+          const defaultPredefined = Object.keys(PREDEFINED_BLOCKS).map((type, i) => ({
+            id: `predefined-${type}-default`,
+            type,
+            label: PREDEFINED_BLOCKS[type].label,
+            _predefined: true,
+          }));
+          setFields([...TEMPLATES.general.fields, ...defaultPredefined]);
         }
       } catch (err) {
         console.error('Fetch error:', err);
-        setFields(TEMPLATES.general.fields);
+        const defaultPredefined = Object.keys(PREDEFINED_BLOCKS).map((type, i) => ({
+          id: `predefined-${type}-default`,
+          type,
+          label: PREDEFINED_BLOCKS[type].label,
+          _predefined: true,
+        }));
+        setFields([...TEMPLATES.general.fields, ...defaultPredefined]);
       } finally {
         setFetching(false);
       }
@@ -633,7 +753,6 @@ export default function FormBuilder() {
     fetchForm();
   }, [slug]);
 
-  // ── Fetch symptom list when panel opens ────────────────────────────────────
   useEffect(() => {
     if (!slug || !showSymptomPanel) return;
     axios.get(`${API_BAS}/api/symptoms/${slug}/list`)
@@ -641,7 +760,6 @@ export default function FormBuilder() {
       .catch(err => console.error('Symptom fetch error:', err));
   }, [slug, showSymptomPanel]);
 
-  // ── Save symptom to DB ──────────────────────────────────────────────────────
   const saveSymptomToDB = async () => {
     const trimmed = symptomInput.trim();
     if (!trimmed) return;
@@ -670,74 +788,118 @@ export default function FormBuilder() {
     } catch (err) { console.error('Symptom delete error:', err); }
   };
 
-  // ── Save form layout ────────────────────────────────────────────────────────
-  const saveBuilderData = async () => {
-
+  // ── Save form layout — now includes predefined block positions ─────────────
+  
+const saveBuilderData = async () => {
     const sections = [];
     let currentSection = { sectionTitle: 'General', fields: [] };
 
-    fields.forEach((field) => {
-      if (field.type === 'heading') {
-        if (currentSection.fields.length > 0 || sections.length > 0) sections.push(currentSection);
-        currentSection = { sectionTitle: field.label || 'New Section', fields: [] };
-      } else {
-        currentSection.fields.push({
-          id:              field.id,
-          type:            field.type,
-          label:           field.label,
-          placeholder:     field.placeholder     || '',
-          required:        field.required        || false,
-          options:         field.options         || [],
-          value:           field.value           || '',
-          defaultSymptoms: field.defaultSymptoms || [],
-          // Table-specific
-          tableName:       field.tableName       || '',
-          collectionName:  field.collectionName  || '',
-          columns:         (field.columns        || []).map(c => ({ name: c.name, type: c.type })),
-          order:           currentSection.fields.length,
-        });
-      }
+    // Extract predefined block order AND section positions from the flat fields array
+    const blockOrder = [];
+    let sectionIndexCounter = 0;
+
+    fields.forEach((field, idx) => {
+        if (PREDEFINED_BLOCKS[field.type]) {
+            // Predefined block — record its canvas position
+            blockOrder.push({ type: field.type, position: idx, kind: 'predefined' });
+            return;
+        }
+
+        if (field.type === 'heading') {
+            // If previous section had fields, push it and record its position
+            if (currentSection.fields.length > 0 || sections.length > 0) {
+                sections.push(currentSection);
+                // Record this section's canvas position
+                blockOrder.push({
+                    type: 'section',
+                    sectionIndex: sectionIndexCounter,
+                    position: idx,
+                    kind: 'section'
+                });
+                sectionIndexCounter++;
+            }
+            currentSection = { sectionTitle: field.label || 'New Section', fields: [] };
+        } else {
+            currentSection.fields.push({
+                id:              field.id,
+                type:            field.type,
+                label:           field.label,
+                placeholder:     field.placeholder     || '',
+                required:        field.required        || false,
+                options:         field.options         || [],
+                value:           field.value           || '',
+                defaultSymptoms: field.defaultSymptoms || [],
+                tableName:       field.tableName       || '',
+                collectionName:  field.collectionName  || '',
+                columns:         (field.columns || []).map(c => ({ name: c.name, type: c.type })),
+                order:           currentSection.fields.length,
+            });
+        }
     });
 
-    sections.push(currentSection);
+    // Push the last section
+    if (currentSection.fields.length > 0 || currentSection.sectionTitle !== 'General') {
+        sections.push(currentSection);
+        // Find the last heading position for this section
+        const lastHeadingIdx = fields.map((f, i) => f.type === 'heading' ? i : -1)
+            .filter(i => i !== -1)
+            .pop() ?? fields.length - 1;
+        blockOrder.push({
+            type: 'section',
+            sectionIndex: sectionIndexCounter,
+            position: lastHeadingIdx,
+            kind: 'section'
+        });
+    }
+
     const cleanedSections = sections.filter(s => s.sectionTitle !== 'General' || s.fields.length > 0);
 
     setLoading(true);
     try {
-      await axios.post(`${API_BAS}/api/clinic/${slug}/save-form`, {
-        slug,
-        formName,
-        sections: cleanedSections,
-      });
-      alert('Template saved!');
-    } catch (err) { alert('Error saving form template.'); }
-    finally { setLoading(false); }
-  };
+        await axios.post(`${API_BAS}/api/clinic/${slug}/save-form`, {
+            slug,
+            formName,
+            sections: cleanedSections,
+            blockOrder,
+        });
+        alert('Template saved!');
+    } catch (err) {
+        alert('Error saving form template.');
+    } finally {
+        setLoading(false);
+    }
+};
 
   // ── Field CRUD ──────────────────────────────────────────────────────────────
   const addField = (type) => {
+    // If it's a predefined block and already placed, don't add duplicate
+    if (PREDEFINED_BLOCKS[type] && placedPredefinedTypes.includes(type)) {
+      alert(`"${PREDEFINED_BLOCKS[type].label}" is already on the canvas. You can drag it to reorder.`);
+      return;
+    }
+
     const template = FIELD_TYPES.find(f => f.type === type);
     const newField = {
       id:              `field-${Date.now()}`,
       type,
-      label:           type === 'heading' ? 'New Section'
-                     : type === 'symptom' ? 'Symptoms'
-                     : type === 'table'   ? 'Custom Table'
-                     : `New ${template.label}`,
+      label:           PREDEFINED_BLOCKS[type]?.label
+                       || (type === 'heading' ? 'New Section'
+                       : type === 'symptom'  ? 'Symptoms'
+                       : type === 'table'    ? 'Custom Table'
+                       : `New ${template?.label}`),
       placeholder:     '',
       required:        false,
       options:         ['Option 1', 'Option 2'],
       value:           '',
       defaultSymptoms: [],
-      // Table-specific — empty until TableBuilderModal is saved
       tableName:       '',
       collectionName:  '',
       columns:         [],
+      _predefined:     !!PREDEFINED_BLOCKS[type],
     };
     setFields(prev => [...prev, newField]);
     setSelectedId(newField.id);
     if (type === 'symptom') setShowSymptomPanel(true);
-    // Auto-open table builder modal when a table field is added
     if (type === 'table') setTableModalFieldId(newField.id);
   };
 
@@ -754,7 +916,10 @@ export default function FormBuilder() {
     setFields(prev => {
       const index = prev.findIndex(f => f.id === id);
       if (index === -1) return prev;
-      const copy = { ...prev[index], id: `field-${Date.now()}`, label: `${prev[index].label} (Copy)` };
+      const original = prev[index];
+      // Don't duplicate predefined blocks
+      if (PREDEFINED_BLOCKS[original.type]) return prev;
+      const copy = { ...original, id: `field-${Date.now()}`, label: `${original.label} (Copy)` };
       const next = [...prev];
       next.splice(index + 1, 0, copy);
       return next;
@@ -771,7 +936,6 @@ export default function FormBuilder() {
     }
   };
 
-  // ── Table modal save callback ───────────────────────────────────────────────
   const handleTableSave = (fieldId, tableConfig) => {
     updateField(fieldId, {
       tableName:      tableConfig.tableName,
@@ -808,8 +972,47 @@ export default function FormBuilder() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6" style={{ scrollbarWidth: 'none' }}>
+
+          {/* ── Predefined Clinical Blocks ── */}
           <section>
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Toolbox</h3>
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Predefined Blocks</h3>
+              <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full uppercase">drag to reorder</span>
+            </div>
+            <div className="grid grid-cols-1 gap-1.5">
+              {Object.entries(PREDEFINED_BLOCKS).map(([type, blockDef]) => {
+                const colors = BLOCK_COLOR_MAP[blockDef.color];
+                const isPlaced = placedPredefinedTypes.includes(type);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => addField(type)}
+                    disabled={isPlaced}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left group shadow-sm
+                      ${isPlaced
+                        ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
+                        : `${colors.bg} border-${blockDef.color}-200 hover:bg-blue-600 hover:text-white hover:border-blue-600`
+                      }`}
+                  >
+                    <div className={`transition-colors ${isPlaced ? 'text-slate-300' : `${colors.icon} group-hover:text-white`}`}>
+                      {blockDef.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[11px] font-bold block truncate">{blockDef.label}</span>
+                      <span className={`text-[8px] font-bold truncate block ${isPlaced ? 'text-slate-300' : `${colors.text} group-hover:text-blue-200 opacity-70`}`}>
+                        {isPlaced ? '✓ On canvas — drag to reorder' : blockDef.description}
+                      </span>
+                    </div>
+                    {isPlaced && <CheckCircle2 size={12} className="text-emerald-400 flex-shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ── Custom Fields ── */}
+          <section>
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Custom Fields</h3>
             <div className="grid grid-cols-1 gap-1.5">
               {FIELD_TYPES.map(f => (
                 <button
@@ -836,7 +1039,7 @@ export default function FormBuilder() {
             </div>
           </section>
 
-          {/* Symptom DB panel */}
+          {/* ── Symptom DB panel ── */}
           <section>
             <button
               onClick={() => setShowSymptomPanel(p => !p)}
@@ -878,12 +1081,22 @@ export default function FormBuilder() {
             )}
           </section>
 
-          {/* Presets */}
+          {/* ── Presets ── */}
           <section>
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Presets</h3>
             <div className="space-y-1.5">
               {Object.entries(TEMPLATES).map(([key, temp]) => (
-                <button key={key} onClick={() => { if (window.confirm('Overwrite current design?')) setFields(temp.fields); }}
+                <button key={key} onClick={() => {
+                  if (window.confirm('Overwrite current design? Predefined blocks will be re-added at the bottom.')) {
+                    const defaultPredefined = Object.keys(PREDEFINED_BLOCKS).map((type, i) => ({
+                      id: `predefined-${type}-${Date.now()}-${i}`,
+                      type,
+                      label: PREDEFINED_BLOCKS[type].label,
+                      _predefined: true,
+                    }));
+                    setFields([...temp.fields, ...defaultPredefined]);
+                  }
+                }}
                   className="w-full flex items-center gap-2.5 p-3 bg-white rounded-xl border border-slate-100 hover:border-blue-300 hover:bg-blue-50 transition-all text-left">
                   <div className="text-slate-300">{temp.icon}</div>
                   <span className="text-[10px] font-bold">{temp.name}</span>
@@ -919,6 +1132,23 @@ export default function FormBuilder() {
 
         <div className="flex-1 overflow-y-auto p-8 flex justify-center" style={{ scrollbarWidth: 'none' }} onClick={() => setSelectedId(null)}>
           <div className="w-full max-w-2xl bg-white min-h-[90vh] rounded-[32px] shadow-2xl border border-slate-200 p-12 h-fit">
+
+            {/* Legend */}
+            <div className="flex items-center gap-4 mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-blue-200 border border-blue-300" />
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Predefined blocks</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-slate-200 border border-slate-300" />
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Custom fields</span>
+              </div>
+              <div className="flex items-center gap-1.5 ml-auto">
+                <GripVertical size={11} className="text-slate-300" />
+                <span className="text-[9px] font-bold text-slate-300">Drag any item to reorder</span>
+              </div>
+            </div>
+
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={fields.map(f => f.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1">
@@ -959,124 +1189,130 @@ export default function FormBuilder() {
           {selectedField ? (
             <div className="space-y-6">
               <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
-                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">{selectedField.type} Settings</span>
-                {selectedField.type === 'symptom' && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">DB-synced</span>}
-                {selectedField.type === 'table'   && <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">Auto Collection</span>}
-                {!['symptom','table'].includes(selectedField.type) && <Info size={14} className="text-blue-400" />}
+                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
+                  {PREDEFINED_BLOCKS[selectedField.type] ? 'Predefined Block' : `${selectedField.type} Settings`}
+                </span>
+                {PREDEFINED_BLOCKS[selectedField.type]
+                  ? <span className="text-[8px] font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full uppercase">Drag to reorder</span>
+                  : selectedField.type === 'symptom' ? <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">DB-synced</span>
+                  : selectedField.type === 'table'   ? <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">Auto Collection</span>
+                  : <Info size={14} className="text-blue-400" />
+                }
               </div>
 
-              {/* Label */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Question Label</label>
-                <input
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-[12px] font-bold focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
-                  value={selectedField.label}
-                  onChange={(e) => updateField(selectedId, { label: e.target.value })}
-                />
-              </div>
-
-              {/* ── TABLE field config in right panel ── */}
-              {selectedField.type === 'table' && (
-                <div className="space-y-3">
-                  {selectedField.collectionName ? (
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3">
-                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
-                        <Database size={11} /> Collection Info
-                      </p>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-blue-400 font-bold">Table Name</span>
-                          <span className="text-blue-700 font-black">{selectedField.tableName}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-blue-400 font-bold">Columns</span>
-                          <span className="text-blue-700 font-black">{selectedField.columns?.length || 0}</span>
-                        </div>
-                        <div className="mt-2 p-2 bg-white rounded-lg border border-blue-100">
-                          <p className="text-[8px] text-blue-400 font-bold uppercase tracking-widest mb-1">Collection</p>
-                          <p className="text-[9px] font-mono font-black text-blue-700 break-all">{selectedField.collectionName}</p>
-                        </div>
-                      </div>
+              {/* Predefined block info panel */}
+              {PREDEFINED_BLOCKS[selectedField.type] && (() => {
+                const blockDef = PREDEFINED_BLOCKS[selectedField.type];
+                const colors = BLOCK_COLOR_MAP[blockDef.color];
+                return (
+                  <div className={`p-4 ${colors.bg} rounded-xl border ${colors.border} space-y-3`}>
+                    <div className="flex items-center gap-2">
+                      <span className={colors.icon}>{blockDef.icon}</span>
+                      <span className={`text-[11px] font-black uppercase tracking-widest ${colors.text}`}>{blockDef.label}</span>
                     </div>
-                  ) : (
-                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
-                      <p className="text-[10px] font-bold text-amber-600 flex items-center gap-1.5 mb-2">
-                        <AlertCircle size={11} /> Not configured yet
-                      </p>
-                      <p className="text-[10px] text-amber-500">Open the table builder to set up columns and create the database collection.</p>
+                    <p className={`text-[10px] ${colors.text} opacity-80 leading-relaxed`}>
+                      {blockDef.description}
+                    </p>
+                    <div className={`text-[10px] font-bold ${colors.text} opacity-70 space-y-1`}>
+                      <p>✓ Fully functional in prescription generator</p>
+                      <p>✓ DB search &amp; auto-complete built-in</p>
+                      <p>✓ Drag the card left to reorder its position</p>
                     </div>
-                  )}
-
-                  <button
-                    onClick={() => setTableModalFieldId(selectedField.id)}
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-bold text-[11px] shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all"
-                  >
-                    <Table2 size={13} />
-                    {selectedField.collectionName ? 'Edit Table & Columns' : 'Configure Table →'}
-                  </button>
-
-                  {/* Column list summary */}
-                  {selectedField.columns?.length > 0 && (
-                    <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 block">Columns</label>
-                      {selectedField.columns.map((col, i) => (
-                        <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                          <span className="text-[11px] font-bold text-slate-600">{col.name}</span>
-                          <span className="text-[8px] font-black text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded uppercase">{col.type}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Symptom field config */}
-              {selectedField.type === 'symptom' && (
-                <div className="space-y-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5"><Stethoscope size={11} /> Symptom Field Info</p>
-                  <p className="text-[10px] text-blue-500 font-medium leading-relaxed">Doctors can search symptoms stored in your database during prescription creation.</p>
-                  <button onClick={() => setShowSymptomPanel(true)} className="w-full py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Open Symptom Manager →</button>
-                </div>
-              )}
-
-              {/* Placeholder */}
-              {['text','number','textarea'].includes(selectedField.type) && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Placeholder</label>
-                  <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-[12px] font-bold focus:ring-4 focus:ring-blue-500/5 outline-none transition-all" value={selectedField.placeholder || ''} onChange={(e) => updateField(selectedId, { placeholder: e.target.value })} />
-                </div>
-              )}
-
-              {/* Rich text default content */}
-              {selectedField.type === 'richtext' && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Default Content</label>
-                  <div key={selectedId}><TiptapEditor value={selectedField.value || ''} placeholder={selectedField.placeholder} onChange={(html) => updateField(selectedId, { value: html })} /></div>
-                </div>
-              )}
-
-              {/* Required toggle */}
-              {!['heading','symptom','table'].includes(selectedField.type) && (
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <span className="text-[11px] font-bold text-slate-600">Is Required?</span>
-                  <input type="checkbox" className="w-5 h-5 accent-blue-600" checked={!!selectedField.required} onChange={(e) => updateField(selectedId, { required: e.target.checked })} />
-                </div>
-              )}
-
-              {/* Options editor */}
-              {['dropdown','checkbox'].includes(selectedField.type) && (
-                <div className="space-y-3 pt-4 border-t border-slate-100">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 block">Value Options</label>
-                  <div className="space-y-2">
-                    {selectedField.options?.map((opt, idx) => (
-                      <div key={idx} className="flex gap-1.5">
-                        <input className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] font-bold outline-none" value={opt} onChange={(e) => { const newOpts = [...selectedField.options]; newOpts[idx] = e.target.value; updateField(selectedId, { options: newOpts }); }} />
-                        <button onClick={() => updateField(selectedId, { options: selectedField.options.filter((_, i) => i !== idx) })} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"><X size={14} /></button>
-                      </div>
-                    ))}
-                    <button onClick={() => updateField(selectedId, { options: [...(selectedField.options || []), 'New Option'] })} className="w-full py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-100 transition-all border border-blue-100 border-dashed">+ Add Option</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteField(selectedField.id); }}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-white border border-red-100 text-red-400 rounded-xl text-[10px] font-bold hover:bg-red-50 transition-all"
+                    >
+                      <Trash2 size={11} /> Remove from layout
+                    </button>
                   </div>
-                </div>
+                );
+              })()}
+
+              {/* Non-predefined field settings */}
+              {!PREDEFINED_BLOCKS[selectedField.type] && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Question Label</label>
+                    <input
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-[12px] font-bold focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
+                      value={selectedField.label}
+                      onChange={(e) => updateField(selectedId, { label: e.target.value })}
+                    />
+                  </div>
+
+                  {selectedField.type === 'table' && (
+                    <div className="space-y-3">
+                      {selectedField.collectionName ? (
+                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3">
+                          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5"><Database size={11} /> Collection Info</p>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px]"><span className="text-blue-400 font-bold">Table Name</span><span className="text-blue-700 font-black">{selectedField.tableName}</span></div>
+                            <div className="flex items-center justify-between text-[10px]"><span className="text-blue-400 font-bold">Columns</span><span className="text-blue-700 font-black">{selectedField.columns?.length || 0}</span></div>
+                            <div className="mt-2 p-2 bg-white rounded-lg border border-blue-100"><p className="text-[8px] text-blue-400 font-bold uppercase tracking-widest mb-1">Collection</p><p className="text-[9px] font-mono font-black text-blue-700 break-all">{selectedField.collectionName}</p></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                          <p className="text-[10px] font-bold text-amber-600 flex items-center gap-1.5 mb-2"><AlertCircle size={11} /> Not configured yet</p>
+                          <p className="text-[10px] text-amber-500">Open the table builder to set up columns and create the database collection.</p>
+                        </div>
+                      )}
+                      <button onClick={() => setTableModalFieldId(selectedField.id)} className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-bold text-[11px] shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">
+                        <Table2 size={13} />{selectedField.collectionName ? 'Edit Table & Columns' : 'Configure Table →'}
+                      </button>
+                      {selectedField.columns?.length > 0 && (
+                        <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 block">Columns</label>
+                          {selectedField.columns.map((col, i) => (<div key={i} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[11px] font-bold text-slate-600">{col.name}</span><span className="text-[8px] font-black text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded uppercase">{col.type}</span></div>))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedField.type === 'symptom' && (
+                    <div className="space-y-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5"><Stethoscope size={11} /> Symptom Field Info</p>
+                      <p className="text-[10px] text-blue-500 font-medium leading-relaxed">Doctors can search symptoms stored in your database during prescription creation.</p>
+                      <button onClick={() => setShowSymptomPanel(true)} className="w-full py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all">Open Symptom Manager →</button>
+                    </div>
+                  )}
+
+                  {['text','number','textarea'].includes(selectedField.type) && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Placeholder</label>
+                      <input className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-[12px] font-bold focus:ring-4 focus:ring-blue-500/5 outline-none transition-all" value={selectedField.placeholder || ''} onChange={(e) => updateField(selectedId, { placeholder: e.target.value })} />
+                    </div>
+                  )}
+
+                  {selectedField.type === 'richtext' && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Default Content</label>
+                      <div key={selectedId}><TiptapEditor value={selectedField.value || ''} placeholder={selectedField.placeholder} onChange={(html) => updateField(selectedId, { value: html })} /></div>
+                    </div>
+                  )}
+
+                  {!['heading','symptom','table'].includes(selectedField.type) && (
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <span className="text-[11px] font-bold text-slate-600">Is Required?</span>
+                      <input type="checkbox" className="w-5 h-5 accent-blue-600" checked={!!selectedField.required} onChange={(e) => updateField(selectedId, { required: e.target.checked })} />
+                    </div>
+                  )}
+
+                  {['dropdown','checkbox'].includes(selectedField.type) && (
+                    <div className="space-y-3 pt-4 border-t border-slate-100">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 block">Value Options</label>
+                      <div className="space-y-2">
+                        {selectedField.options?.map((opt, idx) => (
+                          <div key={idx} className="flex gap-1.5">
+                            <input className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] font-bold outline-none" value={opt} onChange={(e) => { const newOpts = [...selectedField.options]; newOpts[idx] = e.target.value; updateField(selectedId, { options: newOpts }); }} />
+                            <button onClick={() => updateField(selectedId, { options: selectedField.options.filter((_, i) => i !== idx) })} className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"><X size={14} /></button>
+                          </div>
+                        ))}
+                        <button onClick={() => updateField(selectedId, { options: [...(selectedField.options || []), 'New Option'] })} className="w-full py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-100 transition-all border border-blue-100 border-dashed">+ Add Option</button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ) : (

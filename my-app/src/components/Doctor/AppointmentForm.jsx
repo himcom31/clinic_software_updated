@@ -29,13 +29,19 @@ const AppointmentForm = () => {
     });
 
     // BMI Calculation
-    useEffect(() => {
-        if (formData.weight && formData.height) {
-            const hMtrs = formData.height / 100;
-            const val = (formData.weight / (hMtrs * hMtrs)).toFixed(2);
-            setFormData(prev => ({ ...prev, bmi: val }));
-        }
-    }, [formData.weight, formData.height]);
+    // BMI Calculation — guard against 0 / empty to prevent NaN
+useEffect(() => {
+    const w = parseFloat(formData.weight);
+    const h = parseFloat(formData.height);
+    if (w > 0 && h > 0) {
+        const hMtrs = h / 100;
+        const val = (w / (hMtrs * hMtrs)).toFixed(2);
+        setFormData(prev => ({ ...prev, bmi: val }));
+    } else {
+        // Clear BMI so backend never receives NaN
+        setFormData(prev => ({ ...prev, bmi: '' }));
+    }
+}, [formData.weight, formData.height]);
 
     // Validity Date Calculation
     useEffect(() => {
@@ -197,33 +203,33 @@ const AppointmentForm = () => {
     };
 
     return (
-        <div className="h-screen bg-[#f1f5f9] p-2 font-sans text-slate-900 overflow-hidden flex items-center justify-center">
+        <div className="h-screen bg-[#f1f5f9]  font-sans text-slate-900 overflow-hidden flex items-center justify-center">
             <form onSubmit={handleSubmit} className="w-full max-w-[1250px] bg-white shadow-xl border border-slate-300 flex flex-col h-fit">
 
                 {/* Header */}
-                <div className="flex bg-slate-800 text-white items-center px-6 py-2 justify-between">
+                <div className="flex bg-blue-500 text-white items-center px-6 py-6 justify-between">
                     <div className="flex gap-4">
                         <button
                             type="button"
                             onClick={() => setIsNewPatient(true)}
-                            className={`text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded ${isNewPatient ? 'bg-blue-600' : 'text-slate-400'}`}
+                            className={`text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded ${isNewPatient ? 'bg-slate-800' : 'text-slate-200'}`}
                         >
                             New Patient
                         </button>
                         <button
                             type="button"
                             onClick={() => setIsNewPatient(false)}
-                            className={`text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded ${!isNewPatient ? 'bg-emerald-600' : 'text-slate-400'}`}
+                            className={`text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded ${!isNewPatient ? 'bg-emerald-400' : 'text-slate-200'}`}
                         >
                             Revisit
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-8">
                         <button
                             type="button"
                             onClick={() => navigate(`/${slug}/dashboard/appTable`)}
-                            className="text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded bg-indigo-600 hover:bg-indigo-500 transition-all flex items-center gap-1"
+                            className="text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded bg-green-600 hover:bg-indigo-500 transition-all flex items-center gap-1"
                         >
                             📋 View History
                         </button>
@@ -234,7 +240,7 @@ const AppointmentForm = () => {
                     </div>
                 </div>
 
-                <div className="p-5 grid grid-cols-4 gap-x-6 gap-y-4">
+                <div className="p-5 grid grid-cols-4 gap-x-7 gap-y-6">
 
                     {/* ROW 1 */}
                     <div className="space-y-1">
@@ -452,7 +458,7 @@ const AppointmentForm = () => {
                     padding: 8px 12px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none; transition: 0.2s; 
                 }
                 .input-style:focus { border-color: #0f172a; background: #fff; }
-                .label-style { font-size: 9px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-left: 2px; display: block; margin-bottom: 4px; }
+                .label-style { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-left: 2px; display: block; margin-bottom: 4px; }
             `}</style>
         </div>
     );
