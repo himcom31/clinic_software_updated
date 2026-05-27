@@ -135,6 +135,7 @@ exports.bookAppointment = async (req, res) => {
             patientId: patient._id,
             patientName: name,
             mobile: mobile,
+                email: data.email || '',   // ← ADD THIS LINE
             emMobile: data.emMobile,
             appointmentDate: data.bookingDate ? new Date(data.bookingDate) : new Date(),
             tokenNumber: tokenCount + 1,

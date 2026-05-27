@@ -6,6 +6,8 @@ const billingSchema = new mongoose.Schema({
     appointmentId:  { type: String },
     patientName:    { type: String, required: true },
     mobile:         { type: String, required: true },
+        email:          { type: String, default: '' },   // ← ADD THIS
+
     isRevisit:      { type: Boolean, default: false },
     visitType:      { type: String, default: 'New' },
     invoiceNo:      { type: String, unique: true },

@@ -7,6 +7,8 @@ const AppointmentSchema = new mongoose.Schema({
     // Redundancy data (Dashboard par bina populate kiye dikhane ke liye)
     patientName: { type: String, required: true },
     mobile:      { type: String, required: true },
+    email: { type: String, default: '' },
+
 
     appointmentDate: { type: Date, required: true },
     slotTime:        { type: String },

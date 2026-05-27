@@ -97,8 +97,8 @@ export default function Sidebar() {
     {
       group: "Premium Features",
       items: [
-        { label: "AI Assistant", icon: <Sparkles size={18} className="text-amber-500" />, path: `/${slug}/ai-assistant` },
-        { label: "Subscription", icon: <CreditCard size={18} />, path: `/${slug}/subscription` },
+        // { label: "AI Assistant", icon: <Sparkles size={18} className="text-amber-500" />, path: `/${slug}/ai-assistant` },
+        // { label: "Subscription", icon: <CreditCard size={18} />, path: `/${slug}/subscription` },
         { label: "Notifications", icon: <CreditCard size={18} />, path: `/${slug}/dashboard/notification` },
       ]
     },
@@ -140,10 +140,11 @@ export default function Sidebar() {
       {/* ── Mobile Top Header ── */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-tr from-blue-700 to-blue-400 rounded-lg flex items-center justify-center shadow-md">
-            <span className="text-white font-black text-sm">D</span>
-          </div>
-          <span className="font-extrabold text-slate-800 tracking-tight text-lg">DOCEDGE</span>
+          <img
+            src="/cghcgh.webp"
+            alt="DocEdge Logo"
+            className="h-10 w-auto object-contain"
+          />
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -175,12 +176,16 @@ export default function Sidebar() {
         {/* LOGO — hidden on mobile (shown in top bar instead) */}
         <div className="hidden md:flex p-5 items-center justify-between shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="h-10 w-10 bg-gradient-to-tr from-blue-700 to-blue-400 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-200 ring-2 ring-white">
-              <span className="text-white font-black text-xl">D</span>
-            </div>
+            
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="font-extrabold text-slate-900 tracking-tight text-xl leading-none">DOCEDGE</span>
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/cghcgh.webp"
+                    alt="DocEdge Logo"
+                    className="h-10 w-auto object-contain"
+                  />
+                </div>
                 <span className="text-[10px] text-blue-600 font-bold tracking-widest uppercase mt-1">
                   {isDoctor ? 'Doctor Portal' : 'Staff Portal'}
                 </span>
@@ -192,11 +197,14 @@ export default function Sidebar() {
         {/* Mobile logo inside sidebar (shown when open on mobile) */}
         <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 bg-gradient-to-tr from-blue-700 to-blue-400 rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-white font-black text-lg">D</span>
-            </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-slate-900 tracking-tight text-lg leading-none">DOCEDGE</span>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/cghcgh.webp"
+                  alt="DocEdge Logo"
+                  className="h-10 w-auto object-contain"
+                />
+              </div>
               <span className="text-[10px] text-blue-600 font-bold tracking-widest uppercase mt-0.5">
                 {isDoctor ? 'Doctor Portal' : 'Staff Portal'}
               </span>

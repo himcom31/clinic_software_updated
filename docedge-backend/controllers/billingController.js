@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  billingController.js  — full updated file
 // ─────────────────────────────────────────────────────────────────────────────
-const mongoose   = require('mongoose');
+const mongoose = require('mongoose');
 const billingSchema = require('../models/billingSchema');
-const Appointment   = require('../models/Appointment');
+const Appointment = require('../models/Appointment');
 
 // Utility: get dynamic billing model per clinic slug
 const getBillingModel = (slug) => {
@@ -38,6 +38,7 @@ exports.createInvoice = async (req, res) => {
 
         const newInvoice = new Bill({
             ...req.body,
+            email: req.body.email || '',   // ← ADD THIS explicitly
             clinicSlug: slug,
             invoiceNo,
             status,
@@ -147,19 +148,19 @@ exports.update = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Invoice not found' });
 
         const grandTotal = inv.subTotal - Number(discount);
-        const dueAmount  = inv.isRevisit ? 0 : Math.max(0, grandTotal - Number(paidAmount));
-        const status     = dueAmount <= 0    ? 'Paid'
-                         : paidAmount > 0    ? 'Partially Paid'
-                         : 'Unpaid';
+        const dueAmount = inv.isRevisit ? 0 : Math.max(0, grandTotal - Number(paidAmount));
+        const status = dueAmount <= 0 ? 'Paid'
+            : paidAmount > 0 ? 'Partially Paid'
+                : 'Unpaid';
 
         // findByIdAndUpdate with { new: true } returns the fully updated document
         const updated = await Bill.findByIdAndUpdate(
             invoiceId,
             {
                 $set: {
-                    paidAmount:  Number(paidAmount),
+                    paidAmount: Number(paidAmount),
                     paymentMode,
-                    discount:    Number(discount),
+                    discount: Number(discount),
                     grandTotal,
                     dueAmount,
                     status
