@@ -24,12 +24,12 @@ import {
   CalendarDays, SlidersHorizontal, Wallet, Eye,
 } from 'lucide-react';
 
-import { buildPDF, openPDFInNewTab, downloadPDF, fmt, paymentStatusBadge } from './pdfGenerator';
+import { buildPDF, openPDFInNewTab, downloadPDF, fmt, paymentStatusBadge } from './Pdfgenerator';
 
 import useBillingData, {
   STATUS_OPTIONS, VISIT_OPTIONS, DATE_PRESET_OPTIONS,
   today, toLocalISO,
-} from './useBillingData';
+} from './Usebillingdata';
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
