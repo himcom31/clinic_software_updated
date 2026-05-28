@@ -1906,8 +1906,8 @@ const GeneratePrescription = () => {
             } else if (item.kind === 'section') {
                 const section = item.section;
                 const MID = MARGIN_L + USABLE_W / 2;
-                const COL1_LABEL_W = 110; const COL1_VAL_X = MARGIN_L + COL1_LABEL_W + 4;
-                const COL2_X = MID + 8; const COL2_VAL_X = COL2_X + 100 + 4;
+                const COL1_LABEL_W = 75; const COL1_VAL_X = MARGIN_L + COL1_LABEL_W + 4;
+                const COL2_X = MID + 8; const COL2_VAL_X = COL2_X + 75 + 4;
                 const nonTableFields = (section.fields || []).filter(f => f.type !== 'table');
                 const tableFields = (section.fields || []).filter(f => f.type === 'table');
 
@@ -1930,25 +1930,56 @@ const GeneratePrescription = () => {
                         doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
                         curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                         let fieldY = curY + 15;
-                        for (let i = 0; i < filledFields.length; i += 2) {
-                            if (fieldY + 25 > FOOTER_TOP_PT) {
-                                fieldY = addContinuationPage();
-                            }
-                            const rowStartY = fieldY; let maxRowHeight = 18;
-                            doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(30, 78, 121); doc.text(`${filledFields[i].label}:`, MARGIN_L, fieldY);
-                            const val1 = String(dynamicValues[String(filledFields[i].id)]);
-                            if (val1.startsWith('data:image')) { try { doc.addImage(val1, 'PNG', MARGIN_L, fieldY + 5, 120, 100); maxRowHeight = 110; } catch (_) { doc.text("[Image Error]", COL1_VAL_X, fieldY); } }
+                        
+                    for (let i = 0; i < filledFields.length; i += 2) {
+    if (fieldY + 25 > FOOTER_TOP_PT) {
+        fieldY = addContinuationPage();
+    }
+    const rowStartY = fieldY;
+    let maxRowHeight = 14;
 
-                            else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val1, COL1_VAL_X, fieldY, { maxWidth: MID - COL1_VAL_X - 5 }); }
-                            if (filledFields[i + 1]) {
-                                doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(`${filledFields[i + 1].label}:`, COL2_X, rowStartY);
-                                const val2 = String(dynamicValues[String(filledFields[i + 1].id)]);
-                                if (val2.startsWith('data:image')) { try { doc.addImage(val2, 'PNG', COL2_X, rowStartY + 5, 120, 100); maxRowHeight = Math.max(maxRowHeight, 110); } catch (_) { doc.text("[Image Error]", COL2_VAL_X, rowStartY); } }
+    // ── Left column ──
+    const label1 = `${filledFields[i].label}:`;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(30, 78, 121);
+    doc.text(label1, MARGIN_L, fieldY);
+    const label1W = doc.getTextWidth(label1);
+    const val1X = MARGIN_L + label1W + 10; // value starts just after label + small gap
 
-                                else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val2, COL2_VAL_X, rowStartY, { maxWidth: MARGIN_R - COL2_VAL_X }); }
-                            }
-                            fieldY += maxRowHeight;
-                        }
+    const val1 = String(dynamicValues[String(filledFields[i].id)]);
+    if (val1.startsWith('data:image')) {
+        try { doc.addImage(val1, 'PNG', val1X, fieldY + 5, 100, 80); maxRowHeight = 90; }
+        catch (_) { doc.setFont("helvetica", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val1X, fieldY); }
+    } else {
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        doc.text(val1, val1X, fieldY, { maxWidth: MID - val1X - 5 });
+    }
+
+    // ── Right column ──
+    if (filledFields[i + 1]) {
+        const label2 = `${filledFields[i + 1].label}:`;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(30, 78, 121);
+        doc.text(label2, COL2_X, rowStartY);
+        const label2W = doc.getTextWidth(label2);
+        const val2X = COL2_X + label2W + 10; // value starts just after label + small gap
+
+        const val2 = String(dynamicValues[String(filledFields[i + 1].id)]);
+        if (val2.startsWith('data:image')) {
+            try { doc.addImage(val2, 'PNG', val2X, rowStartY + 5, 100, 80); maxRowHeight = Math.max(maxRowHeight, 90); }
+            catch (_) { doc.setFont("helvetica", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val2X, rowStartY); }
+        } else {
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            doc.text(val2, val2X, rowStartY, { maxWidth: MARGIN_R - val2X });
+        }
+    }
+
+    fieldY += maxRowHeight;
+} 
                         curY = fieldY + 20;
                     }
                 }
