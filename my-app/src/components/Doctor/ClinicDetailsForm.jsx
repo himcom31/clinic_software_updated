@@ -263,11 +263,11 @@ const ClinicDetailsForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
               <div className="relative md:col-span-1">
-                <label className={labelStyle}>Doctor Name *</label>
+                <label className={labelStyle}>Degree</label>
                 <User className="absolute left-4 top-[38px] text-slate-400" size={16} />
                 <input
                   type="text"
-                  placeholder="Dr. Full Name"
+                  placeholder=""
                   className={inputStyle}
                   value={formData.doctorName}
                   onChange={e => setFormData({ ...formData, doctorName: e.target.value })}
@@ -275,11 +275,11 @@ const ClinicDetailsForm = () => {
               </div>
 
               <div className="relative">
-                <label className={labelStyle}>Degree</label>
+                <label className={labelStyle}>Doctor Name *</label>
                 <Award className="absolute left-4 top-[38px] text-slate-400" size={16} />
                 <input
                   type="text"
-                  placeholder="e.g. MBBS, MD"
+                  placeholder=""
                   className={inputStyle}
                   value={formData.degree}
                   onChange={e => setFormData({ ...formData, degree: e.target.value })}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useRef} from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Loader2, CheckCircle2 } from 'lucide-react';
@@ -12,6 +12,10 @@ const AppointmentForm = () => {
     const [loading, setLoading] = useState(false);
     const [isNewPatient, setIsNewPatient] = useState(true);
     const [clinicConfig, setClinicConfig] = useState({ currentFee: 0, currentValidity: 7 });
+    const [patientSuggestions, setPatientSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [searchField, setSearchField] = useState(null); // 'mobile' or 'name'
+    const searchDebounceRef = useRef(null);
 
     const [formData, setFormData] = useState({
         mobile: '', emMobile: '', name: '', email: '', age: '', gender: 'Male',
@@ -30,18 +34,18 @@ const AppointmentForm = () => {
 
     // BMI Calculation
     // BMI Calculation — guard against 0 / empty to prevent NaN
-useEffect(() => {
-    const w = parseFloat(formData.weight);
-    const h = parseFloat(formData.height);
-    if (w > 0 && h > 0) {
-        const hMtrs = h / 100;
-        const val = (w / (hMtrs * hMtrs)).toFixed(2);
-        setFormData(prev => ({ ...prev, bmi: val }));
-    } else {
-        // Clear BMI so backend never receives NaN
-        setFormData(prev => ({ ...prev, bmi: '' }));
-    }
-}, [formData.weight, formData.height]);
+    useEffect(() => {
+        const w = parseFloat(formData.weight);
+        const h = parseFloat(formData.height);
+        if (w > 0 && h > 0) {
+            const hMtrs = h / 100;
+            const val = (w / (hMtrs * hMtrs)).toFixed(2);
+            setFormData(prev => ({ ...prev, bmi: val }));
+        } else {
+            // Clear BMI so backend never receives NaN
+            setFormData(prev => ({ ...prev, bmi: '' }));
+        }
+    }, [formData.weight, formData.height]);
 
     // Validity Date Calculation
     useEffect(() => {
@@ -81,6 +85,86 @@ useEffect(() => {
         } catch (err) {
             console.error("Clinic Profile fetch failed", err);
         }
+    };
+
+
+    const searchPatients = async (query, field) => {
+        setSearchField(field);
+        if (!query || query.length < 2) {
+            setPatientSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(async () => {
+            try {
+                const res = await axios.get(
+                    `${API_BAS}/api/appointments/${slug}/search-patients?q=${query}`
+                );
+                setPatientSuggestions(res.data.data || []);
+                setShowSuggestions(true);
+            } catch (err) {
+                console.error(err);
+            }
+        }, 300);
+    };
+
+    const selectPatient = async (patient) => {
+        setShowSuggestions(false);
+        setPatientSuggestions([]);
+
+        // Check their last appointment for revisit/validity
+        const res = await axios.get(
+            `${API_BAS}/api/appointments/${slug}/check-status/${patient.mobile}`
+        );
+
+        const fee = clinicConfig.currentFee || 0;
+        let visitType = 'New Patient';
+        let expirChecker = 'New Patient';
+        let consultFeeStatus = 'Yes';
+        let paidAmount = fee;
+
+        if (res.data.success && res.data.appointment) {
+            const appt = res.data.appointment;
+            const lastDate = new Date(appt.appointmentDate);
+            const diffDays = Math.ceil(
+                Math.abs(new Date() - lastDate) / (1000 * 60 * 60 * 24)
+            );
+            const isValid = diffDays <= (parseInt(clinicConfig.currentValidity) || 7);
+
+            visitType = isValid ? 'Revisit Patient' : 'New Patient';
+            expirChecker = isValid ? 'Within Validity' : 'Validity Expired';
+            consultFeeStatus = isValid ? 'No' : 'Yes';
+            paidAmount = isValid ? 0 : fee;
+            setIsNewPatient(false);
+        } else {
+            setIsNewPatient(true);
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            mobile: patient.mobile || '',
+            name: patient.name || '',
+            emMobile: patient.emMobile || '',
+            email: patient.email || '',
+            age: patient.age || '',
+            gender: patient.gender || 'Male',
+            bloodGroup: patient.bloodGroup || '',
+            weight: patient.weight || '',
+            height: patient.height || '',
+            bmi: patient.bmi || '',
+            address: patient.address || '',
+            allergies: patient.allergies || '',
+            reference: patient.referenceType || 'Self',
+            refName: patient.referenceName || '',
+            refMobile: patient.referenceMobile || '',
+            visitType,
+            expirChecker,
+            consultFeeStatus,
+            consultationFee: fee,
+            paidAmount,
+            validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
+        }));
     };
 
     // Helper: Expiry Date Calculate
@@ -243,24 +327,61 @@ useEffect(() => {
                 <div className="p-5 grid grid-cols-4 gap-x-7 gap-y-6">
 
                     {/* ROW 1 */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 relative">
                         <label className="label-style">1. Mobile Number / whatsapp</label>
                         <input
                             required
                             className="input-style"
                             value={formData.mobile}
-                            onChange={(e) => handleMobileSearch(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                setFormData(prev => ({ ...prev, mobile: val }));
+                                searchPatients(val, 'mobile');
+                                if (val.length === 10) handleMobileSearch(val);
+                            }}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                             maxLength={10}
                         />
+                        {showSuggestions && searchField === 'mobile' && patientSuggestions.length > 0 && (
+                            <div className="absolute z-50 top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg max-h-48 overflow-y-auto">
+                                {patientSuggestions.map((p, i) => (
+                                    <div key={i} onMouseDown={() => selectPatient(p)}
+                                        className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-slate-100">
+                                        <div className="font-bold text-xs text-slate-800">{p.name}</div>
+                                        <div className="text-[10px] text-slate-400">{p.mobile} · {p.age}Y · {p.gender}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-1">
                         <label className="label-style">2. Emergency Mobile</label>
                         <input className="input-style" value={formData.emMobile} onChange={(e) => setFormData({ ...formData, emMobile: e.target.value })} />
                     </div>
-                    <div className="col-span-2 space-y-1">
-                        <label className="label-style">3. Full Name</label>
-                        <input required className="input-style uppercase" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                    </div>
+                    <div className="col-span-2 space-y-1 relative">
+    <label className="label-style">3. Full Name</label>
+    <input
+        required
+        className="input-style uppercase"
+        value={formData.name}
+        onChange={(e) => {
+            setFormData(prev => ({ ...prev, name: e.target.value }));
+            searchPatients(e.target.value, 'name');
+        }}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+    />
+    {showSuggestions && searchField === 'name' && patientSuggestions.length > 0 && (
+        <div className="absolute z-50 top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg max-h-48 overflow-y-auto">
+            {patientSuggestions.map((p, i) => (
+                <div key={i} onMouseDown={() => selectPatient(p)}
+                    className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-slate-100">
+                    <div className="font-bold text-xs text-slate-800">{p.name}</div>
+                    <div className="text-[10px] text-slate-400">{p.mobile} · {p.age}Y · {p.gender}</div>
+                </div>
+            ))}
+        </div>
+    )}
+</div>                    
 
                     {/* ROW 2 */}
                     <div className="col-span-2 space-y-1">
@@ -281,34 +402,34 @@ useEffect(() => {
                             </select>
                         </div>
                     </div>
-<div className="space-y-1">
-  <label className="label-style">7. Blood Group</label>
-  <select
-    className="input-style"
-    value={formData.bloodGroup}
-    onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-  >
-    <option value="">— Select Blood Group —</option>
-    <option value="A+">A+ (A Positive)</option>
-    <option value="A-">A− (A Negative)</option>
-    <option value="B+">B+ (B Positive)</option>
-    <option value="B-">B− (B Negative)</option>
-    <option value="AB+">AB+ (AB Positive)</option>
-    <option value="AB-">AB− (AB Negative)</option>
-    <option value="O+">O+ (O Positive)</option>
-    <option value="O-">O− (O Negative)</option>
-    <option value="A1+">A1+ (A1 Positive)</option>
-    <option value="A1-">A1− (A1 Negative)</option>
-    <option value="A2+">A2+ (A2 Positive)</option>
-    <option value="A2-">A2− (A2 Negative)</option>
-    <option value="A1B+">A1B+ (A1B Positive)</option>
-    <option value="A1B-">A1B− (A1B Negative)</option>
-    <option value="A2B+">A2B+ (A2B Positive)</option>
-    <option value="A2B-">A2B− (A2B Negative)</option>
-    <option value="Bombay">Bombay (Oh / hh)</option>
-    <option value="Unknown">Unknown</option>
-  </select>
-</div>
+                    <div className="space-y-1">
+                        <label className="label-style">7. Blood Group</label>
+                        <select
+                            className="input-style"
+                            value={formData.bloodGroup}
+                            onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+                        >
+                            <option value="">— Select Blood Group —</option>
+                            <option value="A+">A+ (A Positive)</option>
+                            <option value="A-">A− (A Negative)</option>
+                            <option value="B+">B+ (B Positive)</option>
+                            <option value="B-">B− (B Negative)</option>
+                            <option value="AB+">AB+ (AB Positive)</option>
+                            <option value="AB-">AB− (AB Negative)</option>
+                            <option value="O+">O+ (O Positive)</option>
+                            <option value="O-">O− (O Negative)</option>
+                            <option value="A1+">A1+ (A1 Positive)</option>
+                            <option value="A1-">A1− (A1 Negative)</option>
+                            <option value="A2+">A2+ (A2 Positive)</option>
+                            <option value="A2-">A2− (A2 Negative)</option>
+                            <option value="A1B+">A1B+ (A1B Positive)</option>
+                            <option value="A1B-">A1B− (A1B Negative)</option>
+                            <option value="A2B+">A2B+ (A2B Positive)</option>
+                            <option value="A2B-">A2B− (A2B Negative)</option>
+                            <option value="Bombay">Bombay (Oh / hh)</option>
+                            <option value="Unknown">Unknown</option>
+                        </select>
+                    </div>
                     {/* ROW 3: VITALS */}
                     <div className="space-y-1">
                         <label className="label-style text-blue-600">8. Weight (kg)</label>

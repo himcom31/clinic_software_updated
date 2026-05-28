@@ -100,7 +100,7 @@ const globalStyles = `
   }
   .rx-no-match-btn:hover { background: #1565c0; }
 
-  /* ── CKEditor 4 faithful replica ── */
+  /* ── CK itor 4 faithful replica ── */
   .cke4-outer {
     border: 1px solid #b6b6b6;
     border-radius: 0;
@@ -830,9 +830,9 @@ const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 
 const USABLE_W = MARGIN_R - MARGIN_L; const HEADER_BOTTOM_PT = 270;
 const FOOTER_TOP_PT = A4_H - 80; const PAGE2_START_Y = 110;
 
-const EMPTY_MED    = { name: '', brandName: '', strength: '', unit_per_Dose: '', timing: '', duration: '', action: '', instructions: '', category: '', saltComposition: '' };
-const EMPTY_INV    = { testName: '', category: '', action: '' };
-const EMPTY_VAC    = { vaccineName: '', note: '', action: '' };
+const EMPTY_MED = { name: '', brandName: '', strength: '', unit_per_Dose: '', timing: '', duration: '', action: '', instructions: '', category: '', saltComposition: '' };
+const EMPTY_INV = { testName: '', category: '', action: '' };
+const EMPTY_VAC = { vaccineName: '', note: '', action: '' };
 const EMPTY_REPORT = { reportName: '', impression: '', action: '', date: new Date().toISOString().split('T')[0] };
 
 const buildEmptyRow = (columns = []) => {
@@ -910,11 +910,11 @@ const stripHtml = (html) => {
 
 /* ─── PREDEFINED BLOCK ORDER ────────────────────────────────────────────────── */
 const DEFAULT_BLOCK_ORDER = [
-    { type: 'symptoms_block',       position: 0 },
-    { type: 'medicines_block',      position: 1 },
+    { type: 'symptoms_block', position: 0 },
+    { type: 'medicines_block', position: 1 },
     { type: 'investigations_block', position: 2 },
-    { type: 'vaccinations_block',   position: 3 },
-    { type: 'reports_block',        position: 4 },
+    { type: 'vaccinations_block', position: 3 },
+    { type: 'reports_block', position: 4 },
 ];
 
 const buildRenderOrder = (formStructure) => {
@@ -1059,8 +1059,8 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
                     {isSearchable && !searching && suggestions.length > 0 && <ChevronDown size={11} style={{ position: 'absolute', right: 7, color: '#94a3b8', pointerEvents: 'none' }} />}
                 </div>
                 {open && suggestions.length > 0 && (
-    <div className="rx-suggestion-list" style={{ bottom: '100%', top: 'auto', marginTop: 0, marginBottom: 2 }}>
-                    
+                    <div className="rx-suggestion-list" style={{ bottom: '100%', top: 'auto', marginTop: 0, marginBottom: 2 }}>
+
                         {suggestions.map((s, idx) => {
                             const displayCols = Object.entries(s).filter(([k]) => !['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'].includes(k));
                             const primary = displayCols[0]; const secondary = displayCols.slice(1, 3);
@@ -1269,7 +1269,7 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onSaveExit, navigate, 
                         : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#94a3b8', gap: 10 }}>
                             <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
                             <span style={{ fontSize: 14, fontWeight: 600 }}>Generating PDF...</span>
-                          </div>
+                        </div>
                     }
                 </div>
                 <div className="preview-action-bar">
@@ -1374,7 +1374,7 @@ const GeneratePrescription = () => {
     const [isRevisit, setIsRevisit] = useState(false);
     const [isRevisitAutoFilled, setIsRevisitAutoFilled] = useState(false);
     const [tableRows, setTableRows] = useState({});
-const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null, prefill: '', customField: null, customRowId: null, customColumns: [], customCollectionName: '' });
+    const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null, prefill: '', customField: null, customRowId: null, customColumns: [], customCollectionName: '' });
     const [dbModalSaving, setDbModalSaving] = useState(false);
     const [clinicProfile, setClinicProfile] = useState(null);
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -1394,8 +1394,10 @@ const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null
 
     useEffect(() => {
         const fetchClinicProfile = async () => {
-            try { const res = await axios.get(`${API_BAS}/api/clinic/${slug}/clinicData`); setClinicProfile(res.data.data); }
-            catch (err) { console.error("Clinic profile fetch error:", err.message); }
+            const res = await axios.get(`${API_BAS}/api/clinic/${slug}/clinicData`);
+            console.log('Clinic profile raw:', res.data);
+
+            setClinicProfile(res.data.data || res.data);
         };
         fetchClinicProfile();
     }, [slug]);
@@ -1444,12 +1446,12 @@ const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null
                 const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
                 setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
                 setIsRevisit(!!revisitFlag);
-                if (revisitFlag && lastPrescription) { applyRevisitData(lastPrescription, formStructure, patient); const prevTableData = lastPrescription.tableData || {}; await initTableRows(formStructure, prevTableData, patient?._id); prefillDefaultFileValues(formStructure);setIsRevisitAutoFilled(true); }
-else {
-  await initTableRows(formStructure, {}, patient?._id);
-  prefillDefaultFileValues(formStructure);
+                if (revisitFlag && lastPrescription) { applyRevisitData(lastPrescription, formStructure, patient); const prevTableData = lastPrescription.tableData || {}; await initTableRows(formStructure, prevTableData, patient?._id); prefillDefaultFileValues(formStructure); setIsRevisitAutoFilled(true); }
+                else {
+                    await initTableRows(formStructure, {}, patient?._id);
+                    prefillDefaultFileValues(formStructure);
 
-}
+                }
             }
         } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
         finally { setSearching(false); }
@@ -1474,12 +1476,12 @@ else {
                 setMasterData(data); setDynamicValues({}); setMedicines([{ ...EMPTY_MED }]); setInvestigations([{ ...EMPTY_INV }]);
                 setVaccinations([{ ...EMPTY_VAC }]); setReports([{ ...EMPTY_REPORT }]); setSymptomsHtml(''); setSymptomInput('');
                 setIsRevisit(false); setIsRevisitAutoFilled(false);
-                if (data.isRevisit && data.lastPrescription) { applyRevisitData(data.lastPrescription, data.formStructure, data.patient); const prevTableData = data.lastPrescription.tableData || {}; await initTableRows(data.formStructure, prevTableData, data.patient?._id); prefillDefaultFileValues(data.formStructure);setIsRevisit(true); setIsRevisitAutoFilled(true); }
-else {
-  await initTableRows(data?.formStructure, {}, data.patient?._id);
-  prefillDefaultFileValues(data.formStructure);
+                if (data.isRevisit && data.lastPrescription) { applyRevisitData(data.lastPrescription, data.formStructure, data.patient); const prevTableData = data.lastPrescription.tableData || {}; await initTableRows(data.formStructure, prevTableData, data.patient?._id); prefillDefaultFileValues(data.formStructure); setIsRevisit(true); setIsRevisitAutoFilled(true); }
+                else {
+                    await initTableRows(data?.formStructure, {}, data.patient?._id);
+                    prefillDefaultFileValues(data.formStructure);
 
-}
+                }
             }
         } catch (err) { alert(err.response?.data?.message || "Error fetching data"); }
         finally { setSearching(false); }
@@ -1562,21 +1564,21 @@ else {
 
     /* ── Report handlers ── */
     const handleReportTopSearch = (query) => {
-    setReportSearchInput(query); setActiveReportIndex('top');
-    setReportNoResults(false);
-    if (!query || query.length < 1) { setReportSuggestions([]); return; }
-    clearTimeout(reportDebounceRef.current);
-    reportDebounceRef.current = setTimeout(async () => {
-        setReportSearching(true);
-        try {
-            const res = await axios.get(`${API_BAS}/api/p_reports/${slug}/list?search=${encodeURIComponent(query)}`);
-            const results = res.data.data || [];
-            setReportSuggestions(results);
-            setReportNoResults(results.length === 0 && query.length >= 1);
-        } catch (_) { setReportSuggestions([]); }
-        finally { setReportSearching(false); }
-    }, 250);
-};
+        setReportSearchInput(query); setActiveReportIndex('top');
+        setReportNoResults(false);
+        if (!query || query.length < 1) { setReportSuggestions([]); return; }
+        clearTimeout(reportDebounceRef.current);
+        reportDebounceRef.current = setTimeout(async () => {
+            setReportSearching(true);
+            try {
+                const res = await axios.get(`${API_BAS}/api/p_reports/${slug}/list?search=${encodeURIComponent(query)}`);
+                const results = res.data.data || [];
+                setReportSuggestions(results);
+                setReportNoResults(results.length === 0 && query.length >= 1);
+            } catch (_) { setReportSuggestions([]); }
+            finally { setReportSearching(false); }
+        }, 250);
+    };
 
     const selectReportFromTop = (report) => {
         reportPointerDownRef.current = false;
@@ -1606,19 +1608,19 @@ else {
         setSymptomInput(''); setSymptomSuggestions([]); setSymptomNoResults(false);
     };
     const prefillDefaultFileValues = useCallback((formStructure) => {
-  if (!formStructure?.sections) return;
-  const prefills = {};
-  formStructure.sections.forEach(section => {
-    (section.fields || []).forEach(field => {
-      if (field.type === 'file' && field.defaultFileValue) {
-        prefills[String(field.id)] = field.defaultFileValue;
-      }
-    });
-  });
-  if (Object.keys(prefills).length === 0) return;
-  // defaults come first; revisit data from setDynamicValues wins over them
-  setDynamicValues(prev => ({ ...prefills, ...prev }));
-}, []);
+        if (!formStructure?.sections) return;
+        const prefills = {};
+        formStructure.sections.forEach(section => {
+            (section.fields || []).forEach(field => {
+                if (field.type === 'file' && field.defaultFileValue) {
+                    prefills[String(field.id)] = field.defaultFileValue;
+                }
+            });
+        });
+        if (Object.keys(prefills).length === 0) return;
+        // defaults come first; revisit data from setDynamicValues wins over them
+        setDynamicValues(prev => ({ ...prefills, ...prev }));
+    }, []);
 
     const addCustomSymptom = () => {
         const trimmed = symptomInput.trim();
@@ -1630,93 +1632,93 @@ else {
     /* ── DB Modal ── */
     const openAddModal = (type, rowIndex, prefill) => setDbModal({ open: true, type, rowIndex, prefill });
     const closeAddModal = () => setDbModal({ open: false, type: null, rowIndex: null, prefill: '' });
-const openCustomTableAddModal = (field, rowId, prefillVal, columns, collectionName) => {
-    setDbModal({
-        open: true,
-        type: 'custom_table',
-        rowIndex: null,
-        prefill: prefillVal,
-        customField: field,
-        customRowId: rowId,
-        customColumns: columns,
-        customCollectionName: collectionName,
-    });
-};
+    const openCustomTableAddModal = (field, rowId, prefillVal, columns, collectionName) => {
+        setDbModal({
+            open: true,
+            type: 'custom_table',
+            rowIndex: null,
+            prefill: prefillVal,
+            customField: field,
+            customRowId: rowId,
+            customColumns: columns,
+            customCollectionName: collectionName,
+        });
+    };
     const handleSaveNewToDB = async (formData) => {
         setDbModalSaving(true);
         try {
             const { type, rowIndex, prefill } = dbModal;
             if (type === 'medicine') {
-    const payload = { name: formData.name || prefill, brandName: formData.brandName || prefill, strength: formData.strength || '', unit_per_Dose: formData.unit_per_Dose || '', timing: formData.timing || '', duration: formData.duration || '', action: formData.action || '', instructions: formData.instructions || '', category: formData.category || '', route: formData.route || '', saltComposition: formData.saltComposition || '' };
-    await axios.post(`${API_BAS}/api/medicines/${slug}/add`, payload);
-    const emptyIdx = medicines.findIndex(m => !m.name && !m.brandName);
-    if (emptyIdx >= 0) {
-        setMedicines(prev => prev.map((m, i) => i === emptyIdx ? { ...m, ...payload } : m));
-    } else {
-        setMedicines(prev => [...prev, { ...EMPTY_MED, ...payload }]);
-    }
-    setMedNoResults({});
-}
-if (type === 'investigation') {
-    const payload = { testName: formData.testName || prefill, category: formData.category || '', action: formData.action || '' };
-    await axios.post(`${API_BAS}/api/investigations/${slug}/save`, payload);
-    const emptyIdx = investigations.findIndex(i => !i.testName);
-    if (emptyIdx >= 0) {
-        setInvestigations(prev => prev.map((item, i) => i === emptyIdx ? { ...item, ...payload } : item));
-    } else {
-        setInvestigations(prev => [...prev, { ...EMPTY_INV, ...payload }]);
-    }
-    setInvNoResults({});
-}
-if (type === 'vaccination') {
-    const payload = { vaccineName: formData.vaccineName || prefill, note: formData.note || '', action: formData.action || '' };
-    await axios.post(`${API_BAS}/api/vaccination/${slug}/add`, payload);
-    const emptyIdx = vaccinations.findIndex(v => !v.vaccineName);
-    if (emptyIdx >= 0) {
-        setVaccinations(prev => prev.map((item, i) => i === emptyIdx ? { ...item, ...payload } : item));
-    } else {
-        setVaccinations(prev => [...prev, { ...EMPTY_VAC, ...payload }]);
-    }
-    setVacNoResults({});
-}
+                const payload = { name: formData.name || prefill, brandName: formData.brandName || prefill, strength: formData.strength || '', unit_per_Dose: formData.unit_per_Dose || '', timing: formData.timing || '', duration: formData.duration || '', action: formData.action || '', instructions: formData.instructions || '', category: formData.category || '', route: formData.route || '', saltComposition: formData.saltComposition || '' };
+                await axios.post(`${API_BAS}/api/medicines/${slug}/add`, payload);
+                const emptyIdx = medicines.findIndex(m => !m.name && !m.brandName);
+                if (emptyIdx >= 0) {
+                    setMedicines(prev => prev.map((m, i) => i === emptyIdx ? { ...m, ...payload } : m));
+                } else {
+                    setMedicines(prev => [...prev, { ...EMPTY_MED, ...payload }]);
+                }
+                setMedNoResults({});
+            }
+            if (type === 'investigation') {
+                const payload = { testName: formData.testName || prefill, category: formData.category || '', action: formData.action || '' };
+                await axios.post(`${API_BAS}/api/investigations/${slug}/save`, payload);
+                const emptyIdx = investigations.findIndex(i => !i.testName);
+                if (emptyIdx >= 0) {
+                    setInvestigations(prev => prev.map((item, i) => i === emptyIdx ? { ...item, ...payload } : item));
+                } else {
+                    setInvestigations(prev => [...prev, { ...EMPTY_INV, ...payload }]);
+                }
+                setInvNoResults({});
+            }
+            if (type === 'vaccination') {
+                const payload = { vaccineName: formData.vaccineName || prefill, note: formData.note || '', action: formData.action || '' };
+                await axios.post(`${API_BAS}/api/vaccination/${slug}/add`, payload);
+                const emptyIdx = vaccinations.findIndex(v => !v.vaccineName);
+                if (emptyIdx >= 0) {
+                    setVaccinations(prev => prev.map((item, i) => i === emptyIdx ? { ...item, ...payload } : item));
+                } else {
+                    setVaccinations(prev => [...prev, { ...EMPTY_VAC, ...payload }]);
+                }
+                setVacNoResults({});
+            }
             if (type === 'symptom') { const payload = { name: formData.name || prefill }; await axios.post(`${API_BAS}/api/symptoms/${slug}/add`, payload); if (symptomEditorRef.current?.insertText) symptomEditorRef.current.insertText(payload.name); setSymptomInput(''); setSymptomNoResults(false); }
             if (type === 'report') {
-    const payload = {
-         reportName: formData.reportName || prefill,
-        impression: formData.impression || '',
-        action: formData.action || '',
-        date: formData.date || new Date().toISOString().split('T')[0],
-        patientId: masterData.patient?._id || null,
-        appointmentId: appointmentId || null,
-    };
-    await axios.post(`${API_BAS}/api/p_reports/${slug}/add`, payload);
-    const newR = { ...payload };
-    const emptyIdx = reports.findIndex(r => !r.reportName);
-    if (emptyIdx >= 0) {
-        setReports(prev => prev.map((r, i) => i === emptyIdx ? { ...r, ...newR } : r));
-    } else {
-        setReports(prev => [...prev, { ...EMPTY_REPORT, ...newR }]);
-    }
-    setReportSearchInput(''); setReportNoResults(false);
-    if (type === 'custom_table') {
-    const { customField, customRowId, customColumns, customCollectionName } = dbModal;
-    const payload = {};
-    customColumns.forEach(col => { payload[col.name] = formData[col.name] || ''; });
-    await axios.post(`${API_BAS}/api/prescriptions/${customCollectionName}/rows`, { ...payload, slug });
-    // Fill the row in the table
-    setTableRows(prev => {
-        const fieldId = customField.id;
-        const updated = (prev[fieldId] || []).map(r => {
-            if (r._rowId !== customRowId) return r;
-            const filledRow = { ...r };
-            customColumns.forEach(col => { filledRow[col.name] = payload[col.name]; });
-            return filledRow;
-        });
-        return { ...prev, [fieldId]: updated };
-    });
-}
-}
-            closeAddModal(); alert("✅ Saved to database successfully!");
+                const payload = {
+                    reportName: formData.reportName || prefill,
+                    impression: formData.impression || '',
+                    action: formData.action || '',
+                    date: formData.date || new Date().toISOString().split('T')[0],
+                    patientId: masterData.patient?._id || null,
+                    appointmentId: appointmentId || null,
+                };
+                await axios.post(`${API_BAS}/api/p_reports/${slug}/add`, payload);
+                const newR = { ...payload };
+                const emptyIdx = reports.findIndex(r => !r.reportName);
+                if (emptyIdx >= 0) {
+                    setReports(prev => prev.map((r, i) => i === emptyIdx ? { ...r, ...newR } : r));
+                } else {
+                    setReports(prev => [...prev, { ...EMPTY_REPORT, ...newR }]);
+                }
+                setReportSearchInput(''); setReportNoResults(false);
+                if (type === 'custom_table') {
+                    const { customField, customRowId, customColumns, customCollectionName } = dbModal;
+                    const payload = {};
+                    customColumns.forEach(col => { payload[col.name] = formData[col.name] || ''; });
+                    await axios.post(`${API_BAS}/api/prescriptions/${customCollectionName}/rows`, { ...payload, slug });
+                    // Fill the row in the table
+                    setTableRows(prev => {
+                        const fieldId = customField.id;
+                        const updated = (prev[fieldId] || []).map(r => {
+                            if (r._rowId !== customRowId) return r;
+                            const filledRow = { ...r };
+                            customColumns.forEach(col => { filledRow[col.name] = payload[col.name]; });
+                            return filledRow;
+                        });
+                        return { ...prev, [fieldId]: updated };
+                    });
+                }
+            }
+            closeAddModal();
         } catch (err) { alert("Error saving: " + (err.response?.data?.message || err.message)); }
         finally { setDbModalSaving(false); }
     };
@@ -1728,35 +1730,35 @@ if (type === 'vaccination') {
         if (type === 'vaccination') return { title: 'Add New Vaccination', fields: [{ key: 'vaccineName', label: 'Vaccine Name', placeholder: 'e.g. Hepatitis B', required: true, defaultValue: prefill }, { key: 'note', label: 'Note', placeholder: 'e.g. 2nd dose at 6 weeks' }, { key: 'action', label: 'Action', placeholder: 'e.g. IM injection 0.5ml', type: 'textarea' }] };
         if (type === 'symptom') return { title: 'Add New Symptom', fields: [{ key: 'name', label: 'Symptom Name', placeholder: 'e.g. Headache', required: true, defaultValue: prefill }, { key: 'category', label: 'Category (optional)', placeholder: 'e.g. Neurological' }] };
         if (type === 'report') return {
-    title: 'Add New Report',
-    fields: [
-        { key: 'reportName', label: 'Report Name', placeholder: 'e.g. CBC Report', required: true, defaultValue: prefill },
-        { key: 'date', label: 'Date', type: 'date', defaultValue: new Date().toISOString().split('T')[0] },
-        { key: 'impression', label: 'Impression', placeholder: 'e.g. Normal findings', type: 'textarea' },
-        { key: 'action', label: 'Action', placeholder: 'e.g. Repeat in 3 months', type: 'textarea' },
-    ]
-};
-if (type === 'custom_table') {
-    const { customColumns, prefill } = dbModal;
-    return {
-        title: `Add to ${dbModal.customCollectionName || 'Table'}`,
-        fields: (customColumns || []).map((col, i) => ({
-            key: col.name,
-            label: col.name,
-            placeholder: `Enter ${col.name}`,
-            required: i === 0,
-            defaultValue: i === 0 ? prefill : '',
-            type: col.type === 'date' ? 'date' : col.type === 'number' ? 'number' : 'text',
-        }))
-    };
-}
+            title: 'Add New Report',
+            fields: [
+                { key: 'reportName', label: 'Report Name', placeholder: 'e.g. CBC Report', required: true, defaultValue: prefill },
+                { key: 'date', label: 'Date', type: 'date', defaultValue: new Date().toISOString().split('T')[0] },
+                { key: 'impression', label: 'Impression', placeholder: 'e.g. Normal findings', type: 'textarea' },
+                { key: 'action', label: 'Action', placeholder: 'e.g. Repeat in 3 months', type: 'textarea' },
+            ]
+        };
+        if (type === 'custom_table') {
+            const { customColumns, prefill } = dbModal;
+            return {
+                title: `Add to ${dbModal.customCollectionName || 'Table'}`,
+                fields: (customColumns || []).map((col, i) => ({
+                    key: col.name,
+                    label: col.name,
+                    placeholder: `Enter ${col.name}`,
+                    required: i === 0,
+                    defaultValue: i === 0 ? prefill : '',
+                    type: col.type === 'date' ? 'date' : col.type === 'number' ? 'number' : 'text',
+                }))
+            };
+        }
         return { title: '', fields: [] };
     };
 
     const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Clinical_Summary_${masterData.patient?.name || 'Doc'}` });
 
     /* ── Build PDF ── */
-    const buildPdfDoc = async (design, patient, formStructure) => {
+    const buildPdfDoc = async (design, patient, formStructure, clinicProfileData = clinicProfile) => {
         const doc = new jsPDF('p', 'pt', 'a4');
         const [cr, cg, cb] = hexToRgb(design.color || "#ec4899");
         const S = A4_W / 794;
@@ -1764,12 +1766,10 @@ if (type === 'custom_table') {
         const addContinuationPage = () => {
             doc.addPage();
             doc.setFillColor(cr, cg, cb); doc.rect(0, 0, A4_W, 14, 'F');
-            doc.setFontSize(9); doc.setTextColor(150); doc.text("RX CONTINUED...", MARGIN_L, PAGE2_START_Y - 20);
             return PAGE2_START_Y;
         };
         const checkPageBreak = (currentY, neededHeight = 20) => { if (currentY + neededHeight > FOOTER_TOP_PT) return addContinuationPage(); return currentY; };
 
-        doc.setFontSize(220); doc.setTextColor(245, 245, 245); doc.text("Rx", 60, 520);
         doc.setFillColor(cr, cg, cb); doc.rect(0, 0, A4_W, px(25), 'F'); doc.rect(0, A4_H - 14, A4_W, 14, 'F');
 
         if (design.elements?.length) {
@@ -1785,13 +1785,60 @@ if (type === 'custom_table') {
         autoTable(doc, {
             startY: curY, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'plain',
             styles: { fontSize: 9, cellPadding: 4, font: "helvetica", fillColor: [240, 247, 255], textColor: [0, 0, 0], valign: 'middle', lineWidth: 0 },
+            // Add this to your autoTable options:
+            columnStyles: {
+                0: { cellWidth: 38 },   // labels: Name:, Gender:, Weight:, Height:
+                1: { cellWidth: 75 },   // values
+                2: { cellWidth: 80 },   // labels: Age:, Date:, BMI:, Patient Id:
+                3: { cellWidth: 75 },   // values
+                4: { cellWidth: 55 },   // labels: Mobile:, Valid Upto:, Address:
+                5: { cellWidth: 'auto' },
+            },
+
             body: [
-                [{ content: 'Name:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: patient.name || '—' }, { content: 'Age:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: String(patient.age || '—') }, { content: 'Mobile:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: patient.mobile || '—' }],
-                [{ content: 'Gender:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: patient.gender || '—' }, { content: 'Date:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: new Date().toLocaleDateString('en-GB') }, { content: 'Valid Upto:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: calculateValidityUpto(patient.createdAt, clinicProfile?.appointmentValidity) }],
-                [{ content: 'Weight:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: patient.weight ? `${patient.weight} kg` : '—' }, { content: 'Height:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: patient.height ? `${patient.height} cm` : '—' }, { content: 'BMI:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: patient.bmi || '—' }],
-                [{ content: 'Address:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: patient.address || '—', colSpan: 3 }, { content: 'Patient Id:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } }, { content: `${patient.clinicSlug?.toUpperCase() || 'CLI'}${String(patient._id || '').slice(-6).toUpperCase()}` }]
+                // Row 1: Name | Age | Mobile
+                [
+                    { content: 'Name:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: patient.name || '—' },
+                    { content: 'Age:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: String(patient.age || '—') },
+                    { content: 'Mobile:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: patient.mobile || '—' },
+                ],
+
+                // Row 2: Gender | Date | Valid Upto
+                [
+                    { content: 'Gender:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: patient.gender || '—' },
+                    { content: 'Date:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: new Date().toLocaleDateString('en-GB') },
+                    { content: 'Valid Upto:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: calculateValidityUpto(patient.createdAt, clinicProfileData?.appointmentValidity) },
+                ],
+
+                // Row 3: Weight | BMI | Address
+                [
+                    { content: 'Weight:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: patient.weight ? `${patient.weight} kg` : '—' },
+                    { content: 'BMI:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: patient.bmi || '—' },
+                    { content: 'Patient Id:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    {
+                        content: `${patient.clinicSlug?.toUpperCase().slice(0, 6) || 'CLI'}${String(patient._id || '').slice(-6).toUpperCase()}`,
+                    },            //    this correctly spans the remaining 3 columns
+                ],
+
+                // Row 4: Height | Patient ID (spans remaining cols for alignment)
+                [
+                    { content: 'Height:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    { content: patient.height ? `${patient.height} cm` : '—' },
+                    { content: 'Address:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
+                    // ✅ Removed colSpan:3 — it was meaningless on the last column
+                    // and caused the cell to stay tiny. 'auto' width handles the rest.
+                    { content: patient.address || '—' },
+                ],
             ],
-            columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 90 }, 2: { cellWidth: 40 }, 3: { cellWidth: 90 }, 4: { cellWidth: 50 }, 5: { cellWidth: 'auto' } }
+            columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 120 }, 2: { cellWidth: 56 }, 3: { cellWidth: 170 }, 4: { cellWidth: 55 }, 5: { cellWidth: 'auto' } }
         });
         doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.7); doc.line(MARGIN_L, doc.lastAutoTable.finalY, doc.internal.pageSize.width - MARGIN_L, doc.lastAutoTable.finalY);
         curY = doc.lastAutoTable.finalY + 30;
@@ -1865,38 +1912,45 @@ if (type === 'custom_table') {
                 const tableFields = (section.fields || []).filter(f => f.type === 'table');
 
                 if (nonTableFields.length > 0) {
-    // Calculate total height needed for this section
-    const rowCount = Math.ceil(nonTableFields.length / 2);
-    const estimatedSectionHeight = 40 + 15 + (rowCount * 25) + 20; // header + gap + rows + bottom margin
+                    // Only keep fields that have a non-empty value
+                    const filledFields = nonTableFields.filter(f => {
+                        const val = dynamicValues[String(f.id)];
+                        return val !== undefined && val !== null && String(val).trim() !== '';
+                    });
 
-    // If entire section fits on remaining page space, keep it there.
-    // If not, move the whole section to a new page.
-    if (curY + estimatedSectionHeight > FOOTER_TOP_PT) {
-        curY = addContinuationPage();
-    }
+                    // If no fields are filled, skip the entire section
+                    if (filledFields.length > 0) {
+                        const rowCount = Math.ceil(filledFields.length / 2);
+                        const estimatedSectionHeight = 40 + 15 + (rowCount * 25) + 20;
 
-    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
-    curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-    let fieldY = curY + 15;
-    for (let i = 0; i < nonTableFields.length; i += 2) {
-        // Still keep per-row check for very long sections that span multiple pages
-        if (fieldY + 25 > FOOTER_TOP_PT) {
-            fieldY = addContinuationPage();
-        }
-        const rowStartY = fieldY; let maxRowHeight = 18;
-                        doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(30, 78, 121); doc.text(`${nonTableFields[i].label}:`, MARGIN_L, fieldY);
-                        const val1 = String(dynamicValues[String(nonTableFields[i].id)] || '—');
-                        if (val1.startsWith('data:image')) { try { doc.addImage(val1, 'PNG', MARGIN_L, fieldY + 5, 50, 40); maxRowHeight = 50; } catch (_) { doc.text("[Image Error]", COL1_VAL_X, fieldY); } }
-                        else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val1, COL1_VAL_X, fieldY, { maxWidth: MID - COL1_VAL_X - 5 }); }
-                        if (nonTableFields[i + 1]) {
-                            doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(`${nonTableFields[i + 1].label}:`, COL2_X, rowStartY);
-                            const val2 = String(dynamicValues[String(nonTableFields[i + 1].id)] || '—');
-                            if (val2.startsWith('data:image')) { try { doc.addImage(val2, 'PNG', COL2_X, rowStartY + 5, 50, 40); maxRowHeight = Math.max(maxRowHeight, 50); } catch (_) { doc.text("[Image Error]", COL2_VAL_X, rowStartY); } }
-                            else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val2, COL2_VAL_X, rowStartY, { maxWidth: MARGIN_R - COL2_VAL_X }); }
+                        if (curY + estimatedSectionHeight > FOOTER_TOP_PT) {
+                            curY = addContinuationPage();
                         }
-                        fieldY += maxRowHeight;
+
+                        doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
+                        curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                        let fieldY = curY + 15;
+                        for (let i = 0; i < filledFields.length; i += 2) {
+                            if (fieldY + 25 > FOOTER_TOP_PT) {
+                                fieldY = addContinuationPage();
+                            }
+                            const rowStartY = fieldY; let maxRowHeight = 18;
+                            doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(30, 78, 121); doc.text(`${filledFields[i].label}:`, MARGIN_L, fieldY);
+                            const val1 = String(dynamicValues[String(filledFields[i].id)]);
+                            if (val1.startsWith('data:image')) { try { doc.addImage(val1, 'PNG', MARGIN_L, fieldY + 5, 120, 100); maxRowHeight = 110; } catch (_) { doc.text("[Image Error]", COL1_VAL_X, fieldY); } }
+
+                            else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val1, COL1_VAL_X, fieldY, { maxWidth: MID - COL1_VAL_X - 5 }); }
+                            if (filledFields[i + 1]) {
+                                doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(`${filledFields[i + 1].label}:`, COL2_X, rowStartY);
+                                const val2 = String(dynamicValues[String(filledFields[i + 1].id)]);
+                                if (val2.startsWith('data:image')) { try { doc.addImage(val2, 'PNG', COL2_X, rowStartY + 5, 120, 100); maxRowHeight = Math.max(maxRowHeight, 110); } catch (_) { doc.text("[Image Error]", COL2_VAL_X, rowStartY); } }
+
+                                else { doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); doc.text(val2, COL2_VAL_X, rowStartY, { maxWidth: MARGIN_R - COL2_VAL_X }); }
+                            }
+                            fieldY += maxRowHeight;
+                        }
+                        curY = fieldY + 20;
                     }
-                    curY = fieldY + 20;
                 }
 
                 tableFields.forEach(tField => {
@@ -1914,26 +1968,44 @@ if (type === 'custom_table') {
         }
 
         // ── Doctor Signature ──────────────────────────────────────────────────
-        curY = checkPageBreak(curY, 80);
-        curY += 24;
-        const sigBlockX = MARGIN_R - 160;
-        if (clinicProfile?.signature) {
-            try {
-                const fullUrl = clinicProfile.signature.startsWith('data:') ? clinicProfile.signature : `${API_BAS}${clinicProfile.signature}`;
-                const toBase64 = (url) => fetch(url).then(r => r.blob()).then(blob => new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); }));
-                const base64Sig = await toBase64(fullUrl);
-                doc.addImage(base64Sig, base64Sig.includes('image/png') ? 'PNG' : 'JPEG', sigBlockX, curY, 120, 40);
-                curY += 44;
-            } catch (_) { }
+        // ── Doctor Signature ──────────────────────────────────────────────────
+        // Calculate total height needed for signature block
+
+        const displayDrName = clinicProfileData?.doctorName || design?.drName || '—';
+        const displayDegree = clinicProfileData?.degree || design?.degree || '';
+        const sigTotalHeight = 14 + (displayDegree ? 12 : 0) + 14 + 20;
+
+        if (curY + sigTotalHeight > FOOTER_TOP_PT) {
+            curY = addContinuationPage();
         }
-        doc.setDrawColor(cr, cg, cb); doc.setLineWidth(0.8); doc.line(sigBlockX, curY, sigBlockX + 160, curY); curY += 5;
-        const displayDrName = clinicProfile?.doctors?.[0]?.doctorName || clinicProfile?.doctorName || design?.drName || '—';
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(cr, cg, cb);
-        doc.text(displayDrName, sigBlockX + 80, curY + 11, { align: 'center' }); curY += 14;
-        const displayDegree = clinicProfile?.doctors?.[0]?.degree || clinicProfile?.degree || design?.degree || '';
-        if (displayDegree) { doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(100, 116, 139); doc.text(displayDegree, sigBlockX + 80, curY + 4, { align: 'center' }); curY += 12; }
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(100, 116, 139);
-        doc.text(`Reg. No: ${clinicProfile?.regNumber || design?.regNo || '—'}`, sigBlockX + 80, curY + 4, { align: 'center' });
+
+        curY += 24;
+        const sigCenterX = MARGIN_R - 80;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(cr, cg, cb);
+        const nameWidth = doc.getTextWidth(displayDrName);
+        doc.text(displayDrName, sigCenterX - nameWidth / 2, curY);
+        curY += 14;
+
+        if (displayDegree) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
+            const degreeWidth = doc.getTextWidth(displayDegree);
+            doc.text(displayDegree, sigCenterX - degreeWidth / 2, curY);
+            curY += 18;
+        }
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139);
+        const regText = `Reg. No: ${clinicProfileData?.regNumber || design?.regNo || '—'}`;
+        const regWidth = doc.getTextWidth(regText);
+        doc.text(regText, sigCenterX - regWidth / 2, curY);
+
+
 
         // ── Footer on every page ──────────────────────────────────────────────
         const totalPages = doc.internal.getNumberOfPages();
@@ -1956,9 +2028,9 @@ if (type === 'custom_table') {
         const { design, patient, formStructure } = masterData;
         const pdfBase64 = doc.output('datauristring');
         const patientId = patient?._id;
-        const filledMeds    = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
-        const filledInvs    = investigations.filter(inv => inv.testName?.trim());
-        const filledVacs    = vaccinations.filter(vac => vac.vaccineName?.trim());
+        const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
+        const filledInvs = investigations.filter(inv => inv.testName?.trim());
+        const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
         const filledReports = reports.filter(r => r.reportName?.trim());
 
         await Promise.all(filledReports.map(r =>
@@ -1997,7 +2069,8 @@ if (type === 'custom_table') {
         if (!patient || !design) return alert("Patient/Design data missing!");
         setSaving(true);
         try {
-            const doc = await buildPdfDoc(design, patient, formStructure);
+            const doc = await buildPdfDoc(design, patient, formStructure, clinicProfile);
+
             setPreviewPdfDoc(doc);
             setPreviewOpen(true);
         } catch (err) { console.error(err); alert("Error generating PDF: " + err.message); }
@@ -2020,17 +2093,31 @@ if (type === 'custom_table') {
     /* ── Render a custom form field ── */
     const renderDynamicField = (field) => {
         if (field.type === 'table') {
-return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id] || []} slug={slug}
-    onChange={(updatedRows) => setTableRows(prev => ({ ...prev, [field.id]: updatedRows }))}
-    onOpenAddToDB={openCustomTableAddModal}
-/>;
+            return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id] || []} slug={slug}
+                onChange={(updatedRows) => setTableRows(prev => ({ ...prev, [field.id]: updatedRows }))}
+                onOpenAddToDB={openCustomTableAddModal}
+            />;
         }
+
         if (field.type === 'file') {
             return (
                 <div key={field.id}>
                     <label className="rx-field-label">{field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}</label>
-                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, field.id)} style={{ width: '100%', fontSize: 12, color: '#64748b' }} />
-                    {dynamicValues[String(field.id)]?.startsWith('data:image') && <img src={dynamicValues[String(field.id)]} style={{ maxHeight: 60, maxWidth: 120, objectFit: 'contain', marginTop: 6 }} alt={field.label} />}
+
+                    {dynamicValues[String(field.id)]?.startsWith('data:image') ? (
+                        <img
+                            src={dynamicValues[String(field.id)]}
+                            style={{ maxHeight: 60, maxWidth: 120, objectFit: 'contain', marginTop: 6 }}
+                            alt={field.label}
+                        />
+                    ) : (
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileChange(e, field.id)}
+                            style={{ width: '100%', fontSize: 12, color: '#64748b' }}
+                        />
+                    )}
                 </div>
             );
         }
@@ -2297,13 +2384,13 @@ return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id]
                                         </div>
                                     )}
                                     {activeReportIndex === 'top' && reportNoResults && !reportSearching && reportSearchInput.length >= 1 && (
-    <div className="rx-no-match">
-        <span>No match for "<strong>{reportSearchInput}</strong>"</span>
-        <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('report', reports.length, reportSearchInput); }}>
-            <PlusCircle size={10} /> Add to DB
-        </button>
-    </div>
-)}
+                                        <div className="rx-no-match">
+                                            <span>No match for "<strong>{reportSearchInput}</strong>"</span>
+                                            <button className="rx-no-match-btn" onPointerDown={(e) => { e.preventDefault(); openAddModal('report', reports.length, reportSearchInput); }}>
+                                                <PlusCircle size={10} /> Add to DB
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <button className="rx-add-btn" onClick={addReport}>+ Add Report</button>
                             </div>
@@ -2333,7 +2420,7 @@ return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id]
 
     /* ── Render a custom form section ── */
     const renderFormSection = (section, sIdx) => {
-        const tableFields    = (section.fields || []).filter(f => f.type === 'table');
+        const tableFields = (section.fields || []).filter(f => f.type === 'table');
         const nonTableFields = (section.fields || []).filter(f => f.type !== 'table');
         return (
             <React.Fragment key={`section-${sIdx}`}>
@@ -2421,7 +2508,7 @@ return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id]
                             {/* ── DYNAMIC RENDER ORDER from FormBuilder ── */}
                             {renderOrder.map((item) => {
                                 if (item.kind === 'predefined') return renderPredefinedBlock(item.type);
-                                if (item.kind === 'section')    return renderFormSection(item.section, item.sectionIndex);
+                                if (item.kind === 'section') return renderFormSection(item.section, item.sectionIndex);
                                 return null;
                             })}
 
@@ -2430,7 +2517,7 @@ return <DynamicTableField key={field.id} field={field} rows={tableRows[field.id]
                                 <button className="rx-btn-print" onClick={async () => {
                                     const { design: d, patient: p, formStructure: fs } = masterData;
                                     if (!p || !d) return alert("Patient/Design data missing!");
-                                    const doc = await buildPdfDoc(d, p, fs);
+                                    const doc = await buildPdfDoc(d, p, fs, clinicProfile);
                                     const url = URL.createObjectURL(doc.output('blob'));
                                     const win = window.open(url, '_blank');
                                     if (win) win.addEventListener('load', () => { win.focus(); win.print(); });

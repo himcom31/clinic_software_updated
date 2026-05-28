@@ -22,4 +22,7 @@ router.get('/:slug/revisit-payment/:mobile', appointmentController.getRevisitPay
 router.get('/:slug/today',   appointmentController.getByDate);   // no date = defaults to today
 router.get('/:slug/by-date', appointmentController.getByDate);   // ?date=YYYY-MM-DD
 router.get('/context/:appointmentId', appointmentController.getAppointmentContext);
+
+////////////////////
+router.get('/:slug/search-patients', appointmentController.searchPatients);
 module.exports = router;

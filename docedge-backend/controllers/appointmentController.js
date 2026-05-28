@@ -856,3 +856,30 @@ exports.getByDate = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+
+exports.searchPatients = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const { q } = req.query;
+
+        if (!q || q.length < 2) {
+            return res.status(200).json({ success: true, data: [] });
+        }
+
+        const patients = await Patient.find({
+            clinicSlug: slug,
+            $or: [
+                { mobile: { $regex: q, $options: 'i' } },
+                { name: { $regex: q, $options: 'i' } }
+            ]
+        })
+        .select('name mobile email age gender bloodGroup weight height bmi address allergies referenceType referenceName referenceMobile emMobile')
+        .limit(8)
+        .lean();
+
+        res.status(200).json({ success: true, data: patients });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
