@@ -105,7 +105,7 @@ const globalStyles = `
     border: 1px solid #b6b6b6;
     border-radius: 0;
     background: #fff;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial, times, sans-serif;
     box-shadow: 0 1px 3px rgba(0,0,0,0.10);
   }
   .cke4-toolbar {
@@ -194,7 +194,7 @@ const globalStyles = `
     max-height: 320px;
     overflow-y: auto;
     padding: 8px 12px;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial, times, sans-serif;
     font-size: 13px;
     color: #333;
     line-height: 1.7;
@@ -226,7 +226,7 @@ const globalStyles = `
     display: flex;
     align-items: center;
     gap: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial, times, sans-serif;
   }
   .cke4-statusbar-path-item {
     cursor: pointer;
@@ -874,11 +874,11 @@ const renderHtmlSegmentsToPdf = (doc, segments, startX, startY, maxWidth, checkP
         if (lineBuffer.length === 0 && !isListItem) return;
         curY = checkPageBreakFn(curY, lineHeight + 4);
         let x = startX;
-        if (isListItem && listCtx) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(30, 41, 59); const prefix = listCtx.ordered ? `${listCtx.listIndex}. ` : '• '; doc.text(prefix, x, curY); x += doc.getTextWidth(prefix) + 2; }
+        if (isListItem && listCtx) { doc.setFont('times', 'normal'); doc.setFontSize(9.5); doc.setTextColor(30, 41, 59); const prefix = listCtx.ordered ? `${listCtx.listIndex}. ` : '• '; doc.text(prefix, x, curY); x += doc.getTextWidth(prefix) + 2; }
         for (const seg of lineBuffer) {
             let style = 'normal';
             if (seg.bold && seg.italic) style = 'bolditalic'; else if (seg.bold) style = 'bold'; else if (seg.italic) style = 'italic';
-            doc.setFont('helvetica', style); doc.setFontSize(9.5);
+            doc.setFont('times', style); doc.setFontSize(9.5);
             let r = 30, g = 41, b = 59;
             const col = seg.color || '#1e293b';
             if (col.startsWith('#')) { const rgb = hexToRgb(col); r = rgb[0]; g = rgb[1]; b = rgb[2]; } else if (col.startsWith('rgb')) { const m = col.match(/(\d+),\s*(\d+),\s*(\d+)/); if (m) { r = parseInt(m[1]); g = parseInt(m[2]); b = parseInt(m[3]); } }
@@ -1776,15 +1776,15 @@ const GeneratePrescription = () => {
             design.elements.forEach(el => { if (el.src?.startsWith('data:image')) { try { doc.addImage(el.src, el.src.includes('png') ? 'PNG' : 'JPEG', px(el.x), px(el.y), px(el.w), px(el.h)); } catch (_) { } } });
         } else {
             if (design.logo) { try { doc.addImage(design.logo, 'PNG', px(design.layout?.logo?.x || 40), px(design.layout?.logo?.y || 40), px(design.layout?.logo?.w || 120), px(design.layout?.logo?.h || 120)); } catch (_) { } }
-            if (design.drName) { const rx = px((design.layout?.drInfo?.x || 400) + (design.layout?.drInfo?.w || 300)); const ry = px(design.layout?.drInfo?.y || 40); doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(cr, cg, cb); doc.text(design.drName.toUpperCase(), rx, ry + 18, { align: 'right' }); doc.setFontSize(11); doc.setTextColor(100, 116, 139); doc.text(design.degree || '', rx, ry + 33, { align: 'right' }); doc.setFontSize(8); doc.setTextColor(148, 163, 184); doc.text(`REG: ${design.regNo || ''}`, rx, ry + 46, { align: 'right' }); }
-            if (design.clinicName) { const cx = px(design.layout?.clinicInfo?.x || 40); const cy = px(design.layout?.clinicInfo?.y || 190); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(15, 23, 42); doc.text(design.clinicName.toUpperCase(), cx, cy + 16); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(100, 116, 139); doc.text(design.address || '', cx, cy + 30, { maxWidth: px(design.layout?.clinicInfo?.w || 450) }); }
+            if (design.drName) { const rx = px((design.layout?.drInfo?.x || 400) + (design.layout?.drInfo?.w || 300)); const ry = px(design.layout?.drInfo?.y || 40); doc.setFont("times", "bold"); doc.setFontSize(18); doc.setTextColor(cr, cg, cb); doc.text(design.drName.toUpperCase(), rx, ry + 18, { align: 'right' }); doc.setFontSize(11); doc.setTextColor(100, 116, 139); doc.text(design.degree || '', rx, ry + 33, { align: 'right' }); doc.setFontSize(8); doc.setTextColor(148, 163, 184); doc.text(`REG: ${design.regNo || ''}`, rx, ry + 46, { align: 'right' }); }
+            if (design.clinicName) { const cx = px(design.layout?.clinicInfo?.x || 40); const cy = px(design.layout?.clinicInfo?.y || 190); doc.setFont("times", "bold"); doc.setFontSize(15); doc.setTextColor(15, 23, 42); doc.text(design.clinicName.toUpperCase(), cx, cy + 16); doc.setFont("times", "normal"); doc.setFontSize(9); doc.setTextColor(100, 116, 139); doc.text(design.address || '', cx, cy + 30, { maxWidth: px(design.layout?.clinicInfo?.w || 450) }); }
         }
 
         let curY = HEADER_BOTTOM_PT;
         doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.7); doc.line(MARGIN_L, curY, doc.internal.pageSize.width - MARGIN_L, curY);
         autoTable(doc, {
             startY: curY, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'plain',
-            styles: { fontSize: 9, cellPadding: 4, font: "helvetica", fillColor: [240, 247, 255], textColor: [0, 0, 0], valign: 'middle', lineWidth: 0 },
+            styles: { fontSize: 9, cellPadding: 4, font: "times", fillColor: [240, 247, 255], textColor: [0, 0, 0], valign: 'middle', lineWidth: 0 },
             // Add this to your autoTable options:
             columnStyles: {
                 0: { cellWidth: 38 },   // labels: Name:, Gender:, Weight:, Height:
@@ -1851,7 +1851,7 @@ const GeneratePrescription = () => {
                     case 'symptoms_block': {
                         if (symptomsHtml && symptomsHtml.trim() && symptomsHtml.trim() !== '<br>') {
                             curY = checkPageBreak(curY, 40);
-                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Symptoms", MARGIN_L, curY);
+                            doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Symptoms", MARGIN_L, curY);
                             curY += 4; doc.setDrawColor(30, 78, 121); doc.setLineWidth(1); doc.line(MARGIN_L, curY, MARGIN_R, curY); curY += 14;
                             curY = renderHtmlSegmentsToPdf(doc, parseHtmlToSegments(symptomsHtml), MARGIN_L + 5, curY, USABLE_W - 10, checkPageBreak, 14);
                             curY += 20;
@@ -1862,7 +1862,7 @@ const GeneratePrescription = () => {
                         const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
                         if (filledMeds.length) {
                             curY = checkPageBreak(curY, 50);
-                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
+                            doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['S.No', 'Medicine', 'Dose', 'Freq', 'Route', 'Timing', 'Instruction', 'Duration']], body: filledMeds.map((m, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: m.brandName || m.name, styles: { fontStyle: 'bold' } }, m.unit_per_Dose || '—', m.strength || '—', m.route || '—', m.timing || '—', m.instructions || '—', m.duration || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } } });
                             curY = doc.lastAutoTable.finalY + 30;
@@ -1873,7 +1873,7 @@ const GeneratePrescription = () => {
                         const filledInvs = investigations.filter(inv => inv.testName?.trim());
                         if (filledInvs.length) {
                             curY = checkPageBreak(curY, 50);
-                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
+                            doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 100 }, 3: { cellWidth: 120 } } });
                             curY = doc.lastAutoTable.finalY + 30;
@@ -1884,7 +1884,7 @@ const GeneratePrescription = () => {
                         const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
                         if (filledVacs.length) {
                             curY = checkPageBreak(curY, 50);
-                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
+                            doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Vaccination Name', 'Note', 'Action']], body: filledVacs.map((vac, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } }, vac.note || '—', vac.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 140 }, 3: { cellWidth: 120 } } });
                             curY = doc.lastAutoTable.finalY + 30;
@@ -1895,7 +1895,7 @@ const GeneratePrescription = () => {
                         const filledReports = reports.filter(r => r.reportName?.trim());
                         if (filledReports.length) {
                             curY = checkPageBreak(curY, 50);
-                            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text("Available Reports", MARGIN_L, curY);
+                            doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Available Reports", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Report Name', 'Date', 'Impression', 'Action']], body: filledReports.map((r, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: r.reportName || '—', styles: { fontStyle: 'bold' } }, r.date ? new Date(r.date).toLocaleDateString('en-GB') : '—', r.impression || '—', r.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 120 }, 4: { cellWidth: 100 } } });
                             curY = doc.lastAutoTable.finalY + 30;
@@ -1927,7 +1927,7 @@ const GeneratePrescription = () => {
                             curY = addContinuationPage();
                         }
 
-                        doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
+                        doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
                         curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                         let fieldY = curY + 15;
                         
@@ -1936,11 +1936,11 @@ const GeneratePrescription = () => {
         fieldY = addContinuationPage();
     }
     const rowStartY = fieldY;
-    let maxRowHeight = 14;
+    let maxRowHeight = 20;
 
     // ── Left column ──
     const label1 = `${filledFields[i].label}:`;
-    doc.setFont("helvetica", "bold");
+    doc.setFont("times", "bold");
     doc.setFontSize(9);
     doc.setTextColor(30, 78, 121);
     doc.text(label1, MARGIN_L, fieldY);
@@ -1950,9 +1950,9 @@ const GeneratePrescription = () => {
     const val1 = String(dynamicValues[String(filledFields[i].id)]);
     if (val1.startsWith('data:image')) {
         try { doc.addImage(val1, 'PNG', val1X, fieldY + 5, 100, 80); maxRowHeight = 90; }
-        catch (_) { doc.setFont("helvetica", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val1X, fieldY); }
+        catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val1X, fieldY); }
     } else {
-        doc.setFont("helvetica", "normal");
+        doc.setFont("times", "normal");
         doc.setTextColor(0, 0, 0);
         doc.text(val1, val1X, fieldY, { maxWidth: MID - val1X - 5 });
     }
@@ -1960,7 +1960,7 @@ const GeneratePrescription = () => {
     // ── Right column ──
     if (filledFields[i + 1]) {
         const label2 = `${filledFields[i + 1].label}:`;
-        doc.setFont("helvetica", "bold");
+        doc.setFont("times", "bold");
         doc.setFontSize(9);
         doc.setTextColor(30, 78, 121);
         doc.text(label2, COL2_X, rowStartY);
@@ -1970,9 +1970,9 @@ const GeneratePrescription = () => {
         const val2 = String(dynamicValues[String(filledFields[i + 1].id)]);
         if (val2.startsWith('data:image')) {
             try { doc.addImage(val2, 'PNG', val2X, rowStartY + 5, 100, 80); maxRowHeight = Math.max(maxRowHeight, 90); }
-            catch (_) { doc.setFont("helvetica", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val2X, rowStartY); }
+            catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val2X, rowStartY); }
         } else {
-            doc.setFont("helvetica", "normal");
+            doc.setFont("times", "normal");
             doc.setTextColor(0, 0, 0);
             doc.text(val2, val2X, rowStartY, { maxWidth: MARGIN_R - val2X });
         }
@@ -1988,7 +1988,7 @@ const GeneratePrescription = () => {
                     const tRows = (tableRows[tField.id] || []).filter(r => Object.entries(r).some(([k, v]) => k !== '_rowId' && v !== ''));
                     if (tRows.length === 0) return;
                     curY = checkPageBreak(curY, 50);
-                    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(tField.label || tField.tableName || 'Custom Table', MARGIN_L, curY);
+                    doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(tField.label || tField.tableName || 'Custom Table', MARGIN_L, curY);
                     curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                     const colNames = (tField.columns || []).map(c => c.name);
                     autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', ...colNames]], body: tRows.map((row, i) => [{ content: i + 1, styles: { halign: 'center' } }, ...colNames.map(name => row[name] || '—')]), columnStyles: { 0: { cellWidth: 25 } } });
@@ -2013,7 +2013,7 @@ const GeneratePrescription = () => {
         curY += 24;
         const sigCenterX = MARGIN_R - 80;
 
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('times', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(cr, cg, cb);
         const nameWidth = doc.getTextWidth(displayDrName);
@@ -2021,7 +2021,7 @@ const GeneratePrescription = () => {
         curY += 14;
 
         if (displayDegree) {
-            doc.setFont('helvetica', 'bold');
+            doc.setFont('times', 'bold');
             doc.setFontSize(14);
             doc.setTextColor(0, 0, 0);
             const degreeWidth = doc.getTextWidth(displayDegree);
@@ -2029,7 +2029,7 @@ const GeneratePrescription = () => {
             curY += 18;
         }
 
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('times', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(100, 116, 139);
         const regText = `Reg. No: ${clinicProfileData?.regNumber || design?.regNo || '—'}`;
@@ -2045,7 +2045,7 @@ const GeneratePrescription = () => {
             doc.setFillColor(cr, cg, cb); doc.rect(0, A4_H - 14, A4_W, 14, 'F');
             const footerY = A4_H - 55;
             doc.setDrawColor(cr, cg, cb); doc.setLineWidth(3); doc.line(MARGIN_L, footerY, MARGIN_L, footerY + 22);
-            doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
+            doc.setFont("times", "bold"); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
             doc.text(design.contact || '', MARGIN_L + 10, footerY + 10);
             if (design.elements?.length) {
                 design.elements.filter(el => el.src?.startsWith('data:image') && px(el.y) > A4_H - 120)
