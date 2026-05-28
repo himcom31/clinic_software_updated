@@ -9,13 +9,13 @@ const AddStaffForm = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
-    
+
     const [newStaff, setNewStaff] = useState({
         name: '', email: '', password: '', role: 'Receptionist',
         permissions: {
             canAddPatients: true, canManageAppointments: true, canEditBilling: false,
             canViewReports: false, canAddPrescription: false, canAddMedicine: false,
-            canAddTest: false, canAddAdvice: false, canDeleteData: false
+            canAddTest: false, canAddAdvice: false, canDeleteData: false, canCreateAppointment: true,
         }
     });
 
@@ -28,6 +28,8 @@ const AddStaffForm = () => {
         { key: "canAddMedicine", label: "Medicines", desc: "Update drug list" },
         { key: "canAddTest", label: "Lab Tests", desc: "Manage investigations" },
         { key: "canAddAdvice", label: "Advice", desc: "Edit instructions" },
+        { key: "canCreateAppointment", label: "Create Appointment", desc: "Schedule new appointments" },
+
     ];
 
     const handleToggle = (key) => {
@@ -63,30 +65,30 @@ const AddStaffForm = () => {
 
             <form onSubmit={handleSubmit} className="max-w-6xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-                    
+
                     {/* Left Column: Identity */}
                     <div className="lg:col-span-5 space-y-8">
                         <section className="bg-slate-50/50 p-8 rounded-[40px] border border-slate-100 space-y-5 shadow-inner">
-                             <div className="relative group">
+                            <div className="relative group">
                                 <User size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-500 transition-colors" />
-                                <input required className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-[22px] font-bold text-sm outline-none focus:border-teal-500/50 transition-all" placeholder="Staff Name" onChange={(e) => setNewStaff({...newStaff, name: e.target.value})} />
-                             </div>
-                             <div className="relative group">
+                                <input required className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-[22px] font-bold text-sm outline-none focus:border-teal-500/50 transition-all" placeholder="Staff Name" onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} />
+                            </div>
+                            <div className="relative group">
                                 <Mail size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-500 transition-colors" />
-                                <input required type="email" className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-[22px] font-bold text-sm outline-none focus:border-teal-500/50 transition-all" placeholder="Email Address" onChange={(e) => setNewStaff({...newStaff, email: e.target.value})} />
-                             </div>
-                             <div className="relative group">
+                                <input required type="email" className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-[22px] font-bold text-sm outline-none focus:border-teal-500/50 transition-all" placeholder="Email Address" onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })} />
+                            </div>
+                            <div className="relative group">
                                 <Lock size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-500 transition-colors" />
-                                <input required type={showPassword ? "text" : "password"} className="w-full pl-14 pr-14 py-4 bg-white border border-slate-200 rounded-[22px] font-bold text-sm outline-none focus:border-teal-500/50 transition-all" placeholder="Create Password" onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} />
+                                <input required type={showPassword ? "text" : "password"} className="w-full pl-14 pr-14 py-4 bg-white border border-slate-200 rounded-[22px] font-bold text-sm outline-none focus:border-teal-500/50 transition-all" placeholder="Create Password" onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })} />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300">
-                                    {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
-                             </div>
+                            </div>
                         </section>
 
                         <div className="bg-slate-100 p-2 rounded-[30px] flex gap-2 border border-slate-200 shadow-sm">
-                            <button type="button" onClick={() => setNewStaff({...newStaff, role: 'Receptionist'})} className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[24px] font-black text-[11px] uppercase tracking-widest transition-all ${newStaff.role === 'Receptionist' ? 'bg-white text-teal-600 shadow-md' : 'text-slate-400'}`}><Headset size={16}/> Receptionist</button>
-                            <button type="button" onClick={() => setNewStaff({...newStaff, role: 'Assistant'})} className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[24px] font-black text-[11px] uppercase tracking-widest transition-all ${newStaff.role === 'Assistant' ? 'bg-white text-teal-600 shadow-md' : 'text-slate-400'}`}><Stethoscope size={16}/> Assistant</button>
+                            <button type="button" onClick={() => setNewStaff({ ...newStaff, role: 'Receptionist' })} className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[24px] font-black text-[11px] uppercase tracking-widest transition-all ${newStaff.role === 'Receptionist' ? 'bg-white text-teal-600 shadow-md' : 'text-slate-400'}`}><Headset size={16} /> Receptionist</button>
+                            <button type="button" onClick={() => setNewStaff({ ...newStaff, role: 'Assistant' })} className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[24px] font-black text-[11px] uppercase tracking-widest transition-all ${newStaff.role === 'Assistant' ? 'bg-white text-teal-600 shadow-md' : 'text-slate-400'}`}><Stethoscope size={16} /> Assistant</button>
                         </div>
                     </div>
 

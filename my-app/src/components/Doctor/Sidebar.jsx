@@ -52,7 +52,11 @@ export default function Sidebar() {
     "Consultation Form Builder": "doctorOnly",
     "AI Assistant": "doctorOnly",
     "Account Settings": "doctorOnly",
-    "Symptoms": "doctorOnly"
+    "Symptoms": "doctorOnly",
+    "Notifications": "doctorOnly",
+    "Vaccination": "doctorOnly",
+    "Create Appointment": "canCreateAppointment",
+
   };
 
   const menuSections = [
@@ -71,6 +75,7 @@ export default function Sidebar() {
     {
       group: "Patient Care",
       items: [
+        { label: "Create Appointment", icon: <PlusCircle size={18} />, path: `/${slug}/dashboard/appointment/new` },
         { label: "Patients", icon: <Users size={18} />, path: `/${slug}/dashboard/patients` },
         { label: "Appointments", icon: <Calendar size={18} />, path: `/${slug}/dashboard/appointment` },
         { label: "New Prescription", icon: <PlusCircle size={18} />, path: `/${slug}/dashboard/prescription` },
@@ -125,7 +130,10 @@ export default function Sidebar() {
       if (isDoctor) return true;
       const permKey = permissionMap[item.label];
       if (permKey === "doctorOnly") return false;
-      if (permKey) return staffInfo?.permissions?.[permKey] === true;
+      if (permKey) {
+        const val = staffInfo?.permissions?.[permKey];
+        return val === true || val === undefined;
+      }
       return true;
     })
   })).filter(section => section.items.length > 0);
@@ -176,7 +184,7 @@ export default function Sidebar() {
         {/* LOGO — hidden on mobile (shown in top bar instead) */}
         <div className="hidden md:flex p-5 items-center justify-between shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            
+
             {!isCollapsed && (
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">

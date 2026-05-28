@@ -446,6 +446,7 @@ const SortableField = ({ field, isSelected, onSelect, onDelete, onDuplicate, onE
 
     switch (field.type) {
       case 'heading':
+          if (!field.label?.trim()) return null; // ← don't render blank headings
         return <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 mb-1">{field.label || 'New Section'}</h3>;
       case 'text': case 'number': case 'date':
         return <div className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-[12px] text-slate-400">{field.placeholder || `Enter ${field.label}...`}</div>;
@@ -458,10 +459,28 @@ const SortableField = ({ field, isSelected, onSelect, onDelete, onDuplicate, onE
       case 'checkbox':
         return <div className="grid grid-cols-2 gap-2">{(field.options || ['Option A', 'Option B']).slice(0,2).map((opt, i) => (<div key={i} className="flex items-center gap-2 p-1.5 bg-slate-50 rounded border border-slate-100"><div className="w-3 h-3 border border-slate-300 rounded bg-white" /><span className="text-[10px] text-slate-500 truncate">{opt}</span></div>))}</div>;
       case 'richtext':
-        return <div className="w-full bg-slate-50 border border-slate-200 rounded-lg p-4"><div className="flex gap-2 mb-3 opacity-30"><div className="w-6 h-3 bg-slate-300 rounded" /><div className="w-6 h-3 bg-slate-300 rounded" /></div><div className="space-y-2"><div className="w-full h-1.5 bg-slate-100 rounded" /><div className="w-3/4 h-1.5 bg-slate-100 rounded" /></div><p className="text-[9px] text-slate-300 mt-2 italic">Text Editor Box</p></div>;
+       return <div className="w-full border border-dashed border-slate-200 rounded-lg py-4 flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-1"><FileUp size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">Medical Docs</span></div>;
       case 'file':
-        return <div className="w-full border border-dashed border-slate-200 rounded-lg py-4 flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-1"><FileUp size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">Medical Docs</span></div>;
-      case 'symptom':
+  return (
+    <div className="w-full border border-dashed border-slate-200 rounded-lg overflow-hidden bg-slate-50">
+      {field.defaultFileValue ? (
+        <div className="relative">
+          <img src={field.defaultFileValue} alt="Default"
+            className="w-full h-20 object-contain" />
+          <span style={{position:'absolute',bottom:4,right:6,fontSize:8,
+            fontWeight:700,color:'#94a3b8',background:'#fff',
+            padding:'1px 6px',borderRadius:10,border:'1px solid #e2e8f0'
+          }}>default</span>
+        </div>
+      ) : (
+        <div className="py-4 flex flex-col items-center justify-center text-slate-400 gap-1">
+          <FileUp size={16} />
+          <span className="text-[9px] font-bold uppercase tracking-widest">Medical Docs</span>
+        </div>
+      )}
+    </div>
+  );
+       case 'symptom':
         return (
           <div className="w-full bg-blue-50 border border-blue-100 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2"><Stethoscope size={12} className="text-blue-500" /><span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Symptom Entry</span></div>
@@ -670,88 +689,84 @@ export default function FormBuilder() {
   const placedPredefinedTypes = fields.filter(f => !!PREDEFINED_BLOCKS[f.type]).map(f => f.type);
 
   // ── Fetch saved form ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!slug) return;
-    const fetchForm = async () => {
-      setFetching(true);
-      try {
-        const { data } = await axios.get(`${API_BAS}/api/clinic/${slug}/get-form`);
-        if (data?.data?.sections) {
-          const flatFields = [];
-          data.data.sections.forEach((section, sIdx) => {
-            // Restore heading
+
+useEffect(() => {
+  if (!slug) return;
+  const fetchForm = async () => {
+    setFetching(true);
+    try {
+      const { data } = await axios.get(`${API_BAS}/api/clinic/${slug}/get-form`);
+      if (data?.data?.sections) {
+        const flatFields = [];
+
+        data.data.sections.forEach((section, sIdx) => {
+          // Only add heading if sectionTitle is non-empty and not the ghost 'General'
+          if (section.sectionTitle && section.sectionTitle.trim() && section.sectionTitle !== 'General') {
             flatFields.push({
               id:    `heading-${sIdx}-${section.sectionTitle}`,
               type:  'heading',
               label: section.sectionTitle,
             });
-            section.fields.forEach(f => flatFields.push({ ...f }));
-          });
-
-          // Restore predefined blocks from saved blockOrder
-          const savedBlockOrder = data.data.blockOrder || [];
-          const allFieldsWithBlocks = [];
-
-          if (savedBlockOrder.length > 0) {
-            // Interleave: build from saved blockOrder which may reference sections by title
-            // For simplicity, append predefined blocks as saved (they store position index)
-            // We'll use a merged approach: flatFields first, then insert predefined blocks at saved positions
-            const predefinedFromSave = savedBlockOrder.map((b, i) => ({
-              id: `predefined-${b.type}-${i}`,
-              type: b.type,
-              label: PREDEFINED_BLOCKS[b.type]?.label || b.type,
-              _predefined: true,
-              _savedPosition: b.position,
-            }));
-
-            // Merge: insert predefined blocks at their saved positions
-            const merged = [...flatFields];
-            predefinedFromSave.forEach(pb => {
-              const pos = Math.min(pb._savedPosition ?? merged.length, merged.length);
-              merged.splice(pos, 0, pb);
-            });
-            allFieldsWithBlocks.push(...merged);
-          } else {
-            // No saved block order — append all predefined blocks that aren't already inline
-            allFieldsWithBlocks.push(...flatFields);
-            // Add defaults at the end
-            Object.keys(PREDEFINED_BLOCKS).forEach((type, i) => {
-              allFieldsWithBlocks.push({
-                id: `predefined-${type}-default`,
-                type,
-                label: PREDEFINED_BLOCKS[type].label,
-                _predefined: true,
-              });
-            });
           }
+          section.fields.forEach(f => flatFields.push({ ...f }));
+        });
 
-          setFields(allFieldsWithBlocks);
-          setFormName(data.data.formName);
+        // Build predefined blocks from blockOrder (only predefined kinds, not sections)
+        const savedBlockOrder = (data.data.blockOrder || []).filter(b => b.kind === 'predefined');
+
+        if (savedBlockOrder.length > 0) {
+          // Insert predefined blocks at their saved positions into flatFields
+          const merged = [...flatFields];
+          // Sort by position descending so splicing doesn't shift earlier indices
+          const sorted = [...savedBlockOrder].sort((a, b) => b.position - a.position);
+          sorted.forEach(pb => {
+            if (!PREDEFINED_BLOCKS[pb.type]) return; // skip unknown types
+            const pos = Math.min(pb.position, merged.length);
+            merged.splice(pos, 0, {
+              id:          `predefined-${pb.type}-${pb.position}`,
+              type:        pb.type,
+              label:       PREDEFINED_BLOCKS[pb.type]?.label || pb.type,
+              _predefined: true,
+            });
+          });
+          setFields(merged);
         } else {
-          // No saved form — populate with default predefined blocks at the bottom
+          // No saved block order — append predefined blocks at the end
           const defaultPredefined = Object.keys(PREDEFINED_BLOCKS).map((type, i) => ({
-            id: `predefined-${type}-default`,
+            id:          `predefined-${type}-default-${i}`,
             type,
-            label: PREDEFINED_BLOCKS[type].label,
+            label:       PREDEFINED_BLOCKS[type].label,
             _predefined: true,
           }));
-          setFields([...TEMPLATES.general.fields, ...defaultPredefined]);
+          setFields([...flatFields, ...defaultPredefined]);
         }
-      } catch (err) {
-        console.error('Fetch error:', err);
+
+        setFormName(data.data.formName);
+      } else {
+        // No saved form — use template + default predefined blocks
         const defaultPredefined = Object.keys(PREDEFINED_BLOCKS).map((type, i) => ({
-          id: `predefined-${type}-default`,
+          id:          `predefined-${type}-default-${i}`,
           type,
-          label: PREDEFINED_BLOCKS[type].label,
+          label:       PREDEFINED_BLOCKS[type].label,
           _predefined: true,
         }));
         setFields([...TEMPLATES.general.fields, ...defaultPredefined]);
-      } finally {
-        setFetching(false);
       }
-    };
-    fetchForm();
-  }, [slug]);
+    } catch (err) {
+      console.error('Fetch error:', err);
+      const defaultPredefined = Object.keys(PREDEFINED_BLOCKS).map((type, i) => ({
+        id:          `predefined-${type}-default-${i}`,
+        type,
+        label:       PREDEFINED_BLOCKS[type].label,
+        _predefined: true,
+      }));
+      setFields([...TEMPLATES.general.fields, ...defaultPredefined]);
+    } finally {
+      setFetching(false);
+    }
+  };
+  fetchForm();
+}, [slug]);
 
   useEffect(() => {
     if (!slug || !showSymptomPanel) return;
@@ -789,85 +804,71 @@ export default function FormBuilder() {
   };
 
   // ── Save form layout — now includes predefined block positions ─────────────
-  
-const saveBuilderData = async () => {
-    const sections = [];
-    let currentSection = { sectionTitle: 'General', fields: [] };
+  const saveBuilderData = async () => {
+  const sections = [];
+  const blockOrder = [];
+  let currentSection = null; // ← Start as null, not a ghost section
 
-    // Extract predefined block order AND section positions from the flat fields array
-    const blockOrder = [];
-    let sectionIndexCounter = 0;
+  fields.forEach((field, idx) => {
+    if (PREDEFINED_BLOCKS[field.type]) {
+      blockOrder.push({ type: field.type, position: idx, kind: 'predefined' });
+      return;
+    }
 
-    fields.forEach((field, idx) => {
-        if (PREDEFINED_BLOCKS[field.type]) {
-            // Predefined block — record its canvas position
-            blockOrder.push({ type: field.type, position: idx, kind: 'predefined' });
-            return;
-        }
-
-        if (field.type === 'heading') {
-            // If previous section had fields, push it and record its position
-            if (currentSection.fields.length > 0 || sections.length > 0) {
-                sections.push(currentSection);
-                // Record this section's canvas position
-                blockOrder.push({
-                    type: 'section',
-                    sectionIndex: sectionIndexCounter,
-                    position: idx,
-                    kind: 'section'
-                });
-                sectionIndexCounter++;
-            }
-            currentSection = { sectionTitle: field.label || 'New Section', fields: [] };
-        } else {
-            currentSection.fields.push({
-                id:              field.id,
-                type:            field.type,
-                label:           field.label,
-                placeholder:     field.placeholder     || '',
-                required:        field.required        || false,
-                options:         field.options         || [],
-                value:           field.value           || '',
-                defaultSymptoms: field.defaultSymptoms || [],
-                tableName:       field.tableName       || '',
-                collectionName:  field.collectionName  || '',
-                columns:         (field.columns || []).map(c => ({ name: c.name, type: c.type })),
-                order:           currentSection.fields.length,
-            });
-        }
-    });
-
-    // Push the last section
-    if (currentSection.fields.length > 0 || currentSection.sectionTitle !== 'General') {
+    if (field.type === 'heading') {
+      // Push previous section only if it actually has fields
+      if (currentSection && currentSection.fields.length > 0) {
         sections.push(currentSection);
-        // Find the last heading position for this section
-        const lastHeadingIdx = fields.map((f, i) => f.type === 'heading' ? i : -1)
-            .filter(i => i !== -1)
-            .pop() ?? fields.length - 1;
-        blockOrder.push({
-            type: 'section',
-            sectionIndex: sectionIndexCounter,
-            position: lastHeadingIdx,
-            kind: 'section'
-        });
+      }
+      currentSection = { sectionTitle: field.label || 'New Section', fields: [], position: idx };
+      blockOrder.push({
+        type: 'section',
+        sectionIndex: sections.length, // index it will have when pushed
+        position: idx,
+        kind: 'section',
+      });
+    } else {
+      // Fields before any heading — create an implicit section only when needed
+      if (!currentSection) {
+        currentSection = { sectionTitle: 'General', fields: [], position: idx };
+      }
+      currentSection.fields.push({
+        id:               field.id,
+        type:             field.type,
+        label:            field.label,
+        placeholder:      field.placeholder     || '',
+        required:         field.required        || false,
+        options:          field.options         || [],
+        value:            field.value           || '',
+        defaultSymptoms:  field.defaultSymptoms || [],
+        tableName:        field.tableName       || '',
+        collectionName:   field.collectionName  || '',
+        columns:          (field.columns || []).map(c => ({ name: c.name, type: c.type })),
+        defaultFileValue: field.defaultFileValue || '',
+        order:            currentSection.fields.length,
+      });
     }
+  });
 
-    const cleanedSections = sections.filter(s => s.sectionTitle !== 'General' || s.fields.length > 0);
+  // Push the final section only if it has fields
+  if (currentSection && currentSection.fields.length > 0) {
+    sections.push(currentSection);
+  }
 
-    setLoading(true);
-    try {
-        await axios.post(`${API_BAS}/api/clinic/${slug}/save-form`, {
-            slug,
-            formName,
-            sections: cleanedSections,
-            blockOrder,
-        });
-        alert('Template saved!');
-    } catch (err) {
-        alert('Error saving form template.');
-    } finally {
-        setLoading(false);
-    }
+  setLoading(true);
+  try {
+    await axios.post(`${API_BAS}/api/clinic/${slug}/save-form`, {
+      slug,
+      formName,
+      sections,
+      blockOrder,
+    });
+    alert('Template saved!');
+  } catch (err) {
+    alert('Error saving form template.');
+  } finally {
+    setLoading(false);
+  }
 };
 
   // ── Field CRUD ──────────────────────────────────────────────────────────────
@@ -1238,6 +1239,59 @@ const saveBuilderData = async () => {
                       value={selectedField.label}
                       onChange={(e) => updateField(selectedId, { label: e.target.value })}
                     />
+                    {selectedField.type === 'file' && (
+  <div className="space-y-3 pt-4 border-t border-slate-100">
+    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 block">
+      Default Image / File
+    </label>
+    <p className="text-[9px] text-slate-400 px-1">
+      This image will auto-appear when a new prescription is created.
+    </p>
+
+    {/* Preview existing default */}
+    {selectedField.defaultFileValue && (
+      <div className="relative rounded-xl overflow-hidden border border-slate-200">
+        <img
+          src={selectedField.defaultFileValue}
+          alt="Default"
+          className="w-full h-32 object-contain bg-slate-50"
+        />
+        <button
+          onClick={() => updateField(selectedId, { defaultFileValue: '' })}
+          className="absolute top-2 right-2 p-1 bg-white rounded-lg shadow border border-slate-200 text-red-400 hover:bg-red-50"
+        >
+          <X size={12} />
+        </button>
+      </div>
+    )}
+
+    {/* Upload input */}
+    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all bg-slate-50">
+      <FileUp size={18} className="text-slate-300 mb-1" />
+      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+        Click to upload default
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          if (!file.type.startsWith('image/')) {
+            alert('Only images allowed!');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            updateField(selectedId, { defaultFileValue: ev.target.result });
+          };
+          reader.readAsDataURL(file);
+        }}
+      />
+    </label>
+  </div>
+)}
                   </div>
 
                   {selectedField.type === 'table' && (

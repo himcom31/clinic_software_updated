@@ -78,6 +78,8 @@ const StaffManagement = () => {
                                 <div className="bg-slate-50/50 rounded-[24px] p-6 space-y-3">
                                     <PermissionRow label="Patient Access" active={s.permissions.canAddPatients} />
                                     <PermissionRow label="Appt. Manager" active={s.permissions.canManageAppointments} />
+                                    <PermissionRow label="Create Appointment" active={s.permissions.canCreateAppointment} />
+
                                     {/* 2. Billing & Finance */}
                                     <PermissionRow label="Billing Edit" active={s.permissions.canEditBilling} />
                                     <PermissionRow label="Financial Reports" active={s.permissions.canViewReports} />

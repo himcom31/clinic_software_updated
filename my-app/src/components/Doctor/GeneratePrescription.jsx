@@ -39,7 +39,7 @@ const globalStyles = `
   .rx-section-body { background: #fff; padding: 14px 12px; }
   .rx-search-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
   .rx-search-input {
-    flex: 1;     min-width: 600px; border: 4px solid #87CEEB; border-radius: 5px; padding: 7px 11px;
+    flex: 1;     min-width: 600px; border: 2px solid #87CEEB; border-radius: 5px; padding: 7px 11px;
     font-size: 15px; color: #000; outline: none; background: #fff;
     transition: border-color 0.15s; height: 32px; box-sizing: border-box;
   }
@@ -1444,8 +1444,12 @@ const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null
                 const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
                 setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
                 setIsRevisit(!!revisitFlag);
-                if (revisitFlag && lastPrescription) { applyRevisitData(lastPrescription, formStructure, patient); const prevTableData = lastPrescription.tableData || {}; await initTableRows(formStructure, prevTableData, patient?._id); setIsRevisitAutoFilled(true); }
-                else await initTableRows(formStructure, {}, patient?._id);
+                if (revisitFlag && lastPrescription) { applyRevisitData(lastPrescription, formStructure, patient); const prevTableData = lastPrescription.tableData || {}; await initTableRows(formStructure, prevTableData, patient?._id); prefillDefaultFileValues(formStructure);setIsRevisitAutoFilled(true); }
+else {
+  await initTableRows(formStructure, {}, patient?._id);
+  prefillDefaultFileValues(formStructure);
+
+}
             }
         } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
         finally { setSearching(false); }
@@ -1470,8 +1474,12 @@ const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null
                 setMasterData(data); setDynamicValues({}); setMedicines([{ ...EMPTY_MED }]); setInvestigations([{ ...EMPTY_INV }]);
                 setVaccinations([{ ...EMPTY_VAC }]); setReports([{ ...EMPTY_REPORT }]); setSymptomsHtml(''); setSymptomInput('');
                 setIsRevisit(false); setIsRevisitAutoFilled(false);
-                if (data.isRevisit && data.lastPrescription) { applyRevisitData(data.lastPrescription, data.formStructure, data.patient); const prevTableData = data.lastPrescription.tableData || {}; await initTableRows(data.formStructure, prevTableData, data.patient?._id); setIsRevisit(true); setIsRevisitAutoFilled(true); }
-                else await initTableRows(data?.formStructure, {}, data.patient?._id);
+                if (data.isRevisit && data.lastPrescription) { applyRevisitData(data.lastPrescription, data.formStructure, data.patient); const prevTableData = data.lastPrescription.tableData || {}; await initTableRows(data.formStructure, prevTableData, data.patient?._id); prefillDefaultFileValues(data.formStructure);setIsRevisit(true); setIsRevisitAutoFilled(true); }
+else {
+  await initTableRows(data?.formStructure, {}, data.patient?._id);
+  prefillDefaultFileValues(data.formStructure);
+
+}
             }
         } catch (err) { alert(err.response?.data?.message || "Error fetching data"); }
         finally { setSearching(false); }
@@ -1597,6 +1605,20 @@ const [dbModal, setDbModal] = useState({ open: false, type: null, rowIndex: null
         if (symptomEditorRef.current?.insertText) symptomEditorRef.current.insertText(symptom.name);
         setSymptomInput(''); setSymptomSuggestions([]); setSymptomNoResults(false);
     };
+    const prefillDefaultFileValues = useCallback((formStructure) => {
+  if (!formStructure?.sections) return;
+  const prefills = {};
+  formStructure.sections.forEach(section => {
+    (section.fields || []).forEach(field => {
+      if (field.type === 'file' && field.defaultFileValue) {
+        prefills[String(field.id)] = field.defaultFileValue;
+      }
+    });
+  });
+  if (Object.keys(prefills).length === 0) return;
+  // defaults come first; revisit data from setDynamicValues wins over them
+  setDynamicValues(prev => ({ ...prefills, ...prev }));
+}, []);
 
     const addCustomSymptom = () => {
         const trimmed = symptomInput.trim();
@@ -1843,12 +1865,25 @@ if (type === 'custom_table') {
                 const tableFields = (section.fields || []).filter(f => f.type === 'table');
 
                 if (nonTableFields.length > 0) {
-                    curY = checkPageBreak(curY, 40);
-                    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
-                    curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-                    let fieldY = curY + 15;
-                    for (let i = 0; i < nonTableFields.length; i += 2) {
-                        fieldY = checkPageBreak(fieldY, 25); const rowStartY = fieldY; let maxRowHeight = 18;
+    // Calculate total height needed for this section
+    const rowCount = Math.ceil(nonTableFields.length / 2);
+    const estimatedSectionHeight = 40 + 15 + (rowCount * 25) + 20; // header + gap + rows + bottom margin
+
+    // If entire section fits on remaining page space, keep it there.
+    // If not, move the whole section to a new page.
+    if (curY + estimatedSectionHeight > FOOTER_TOP_PT) {
+        curY = addContinuationPage();
+    }
+
+    doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
+    curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
+    let fieldY = curY + 15;
+    for (let i = 0; i < nonTableFields.length; i += 2) {
+        // Still keep per-row check for very long sections that span multiple pages
+        if (fieldY + 25 > FOOTER_TOP_PT) {
+            fieldY = addContinuationPage();
+        }
+        const rowStartY = fieldY; let maxRowHeight = 18;
                         doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(30, 78, 121); doc.text(`${nonTableFields[i].label}:`, MARGIN_L, fieldY);
                         const val1 = String(dynamicValues[String(nonTableFields[i].id)] || '—');
                         if (val1.startsWith('data:image')) { try { doc.addImage(val1, 'PNG', MARGIN_L, fieldY + 5, 50, 40); maxRowHeight = 50; } catch (_) { doc.text("[Image Error]", COL1_VAL_X, fieldY); } }

@@ -320,7 +320,7 @@ useEffect(() => {
                     </div>
                     <div className="space-y-1">
                         <label className="label-style text-blue-600">10. BMI Index</label>
-                        <div className="h-[38px] bg-slate-900 text-white rounded flex items-center justify-center font-black text-sm uppercase">
+                        <div className="h-[38px] bg-blue-600 text-white rounded flex items-center justify-center font-black text-sm uppercase">
                             {formData.bmi || '0.00'}
                         </div>
                     </div>
@@ -330,14 +330,14 @@ useEffect(() => {
                             <button
                                 type="button"
                                 onClick={() => setFormData({ ...formData, reference: 'Self' })}
-                                className={`flex-1 text-[9px] font-black ${formData.reference === 'Self' ? 'bg-slate-800 text-white' : 'bg-white'}`}
+                                className={`flex-1 text-[9px] font-black ${formData.reference === 'Self' ? 'bg-blue-600 text-white' : 'bg-white'}`}
                             >
                                 SELF
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setFormData({ ...formData, reference: 'Other' })}
-                                className={`flex-1 text-[9px] font-black ${formData.reference === 'Other' ? 'bg-slate-800 text-white' : 'bg-white'}`}
+                                className={`flex-1 text-[9px] font-black ${formData.reference === 'Other' ? 'bg-blue-600 text-white' : 'bg-white'}`}
                             >
                                 OTHER
                             </button>
@@ -398,7 +398,7 @@ useEffect(() => {
                                                 }));
                                             }}
                                             className={`flex-1 py-1 text-[9px] font-black border rounded transition-all
-                                                ${formData.consultFeeStatus === s ? 'bg-slate-800 text-white' : 'bg-white text-slate-500'}
+                                                ${formData.consultFeeStatus === s ? 'bg-blue-600 text-white' : 'bg-white text-slate-500'}
                                                 ${isLocked ? 'opacity-50 cursor-not-allowed bg-slate-100' : 'hover:bg-green-300'}
                                             `}
                                         >
@@ -444,7 +444,7 @@ useEffect(() => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="px-16 py-3 bg-slate-900 text-white rounded font-black text-[11px] uppercase tracking-[3px] hover:bg-black transition-all flex items-center gap-3"
+                        className="px-16 py-3 bg-blue-600 text-white rounded font-black text-[11px] uppercase tracking-[3px] hover:bg-black transition-all flex items-center gap-3"
                     >
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                         Confirm Appointment

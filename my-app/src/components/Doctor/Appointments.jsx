@@ -334,12 +334,7 @@ const Appointments = () => {
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
-          <Link
-            to={`/${slug}/dashboard/appointmentHistory`}
-            className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-600 transition-all flex items-center gap-2"
-          >
-            <History size={16} /> History
-          </Link>
+          
           <Link
             to={`/${slug}/dashboard/appointment/new`}
             className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl hover:shadow-slate-200 transition-all active:scale-95 flex items-center gap-2"

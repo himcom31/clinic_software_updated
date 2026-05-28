@@ -95,7 +95,7 @@ const BillingPreviewModal = ({ isOpen, onClose, pdfDoc, inv, slug }) => {
       const b64 = raw.substring(raw.indexOf(',') + 1);
       if (!b64.startsWith('JVBERi')) { setEmailStatus('error'); setEmailError('PDF generation failed.'); return; }
       const res = await axios.post(
-        `${API_BASE}/api/notifications/send-email/${slug}`,
+        `${API_BASE}/api/notifications/send-email-invoice/${slug}`,
         { pdfBase64: b64, patientName: inv.patientName, patientEmail: inv.email, patientMobile: inv.mobile },
         { timeout: 60000 }
       );

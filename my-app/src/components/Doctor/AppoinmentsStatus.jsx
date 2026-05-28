@@ -69,23 +69,68 @@ const statusTabColors = {
   'Cancelled': { active: 'bg-red-500 text-white', inactive: 'text-red-500 hover:bg-red-50 bg-white' },
 };
 
+// ─── EDIT MODAL FIELD COMPONENTS ─────────────────────────────────────────────
+// IMPORTANT: These MUST live at module level (outside EditModal).
+// If defined inside EditModal, React treats them as new components on every
+// keystroke → unmounts/remounts every input → focus loss + lag.
+
+const EditSectionLabel = ({ children }) => (
+  <p className="col-span-2 text-[9px] font-black text-slate-400 uppercase tracking-widest pt-4 pb-1 border-b border-slate-100">
+    {children}
+  </p>
+);
+
+const ApptField = ({ label, k, type = 'text', opts, span2 = false, value, onChange }) => (
+  <div className={`space-y-2 ${span2 ? 'col-span-2' : ''}`}>
+    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+    {opts
+      ? (
+        <select value={value} onChange={e => onChange(k, e.target.value)} className="professional-input">
+          {opts.map(o => <option key={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input type={type} value={value} onChange={e => onChange(k, e.target.value)} className="professional-input" />
+      )
+    }
+  </div>
+);
+
+const PatField = ({ label, k, type = 'text', opts, span2 = false, readOnly = false, value, onChange }) => (
+  <div className={`space-y-2 ${span2 ? 'col-span-2' : ''}`}>
+    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+    {opts
+      ? (
+        <select value={value} onChange={e => onChange(k, e.target.value)} className="professional-input" disabled={readOnly}>
+          {opts.map(o => <option key={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(k, e.target.value)}
+          className={`professional-input ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
+          readOnly={readOnly}
+        />
+      )
+    }
+  </div>
+);
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ─── VIEW MODAL ───────────────────────────────────────────────────────────────
 function ViewModal({ appt, onClose }) {
   const { slug } = useParams();
 
-  // patientId from the appointment API is a raw ID string (not populated).
-  // We fetch the full patient document separately.
-  const [patient, setPatient]       = useState(null);
+  const [patient, setPatient] = useState(null);
   const [patientLoading, setPatientLoading] = useState(true);
-  const [patientError, setPatientError]     = useState(false);
+  const [patientError, setPatientError] = useState(false);
 
   useEffect(() => {
     if (!appt) return;
 
-    // Determine the patient ID — could be a string or a partially-populated obj
     const pid = typeof appt.patientId === 'object' && appt.patientId?._id
-      ? appt.patientId._id          // already partially populated
-      : appt.patientId;             // raw string ID
+      ? appt.patientId._id
+      : appt.patientId;
 
     if (!pid) {
       setPatientLoading(false);
@@ -99,16 +144,12 @@ function ViewModal({ appt, onClose }) {
     axios.get(`${API_BAS}/api/patients/${slug}/profile/${pid}`)
       .then(res => {
         if (cancelled) return;
-        // Support both { data: {...} } and { patient: {...} } response shapes
         const data = res.data?.data || res.data?.patient || res.data;
         setPatient(data);
       })
       .catch(() => {
         if (cancelled) return;
-        // If the dedicated endpoint fails, fall back to whatever is on the appt
-        setPatient(
-          typeof appt.patientId === 'object' ? appt.patientId : null
-        );
+        setPatient(typeof appt.patientId === 'object' ? appt.patientId : null);
         setPatientError(true);
       })
       .finally(() => { if (!cancelled) setPatientLoading(false); });
@@ -118,13 +159,10 @@ function ViewModal({ appt, onClose }) {
 
   if (!appt) return null;
 
-  // p = the fetched patient document (or fallback to the appt's patientId obj)
   const p = patient || (typeof appt.patientId === 'object' ? appt.patientId : {});
-
   const sc = statusConfig[appt.status] || statusConfig['Waiting'];
   const pc = paymentConfig[appt.billing?.paymentStatus] || paymentConfig['Unpaid'];
 
-  // ── Reusable row component ─────────────────────────────────────────────────
   const InfoRow = ({ icon, label, value }) => {
     if (value === null || value === undefined || value === '') return null;
     return (
@@ -140,74 +178,54 @@ function ViewModal({ appt, onClose }) {
     );
   };
 
-  // ── Section header ─────────────────────────────────────────────────────────
   const SectionLabel = ({ children }) => (
     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pt-2 pb-1 border-b border-slate-100 mb-1">
       {children}
     </p>
   );
 
-  // ── Resolve all fields using your exact DB field names ────────────────────
-  const fullName    = p.name        || appt.patientName || '';
-  const mobile      = appt.mobile   || p.mobile         || '';
-  const emMobile    = p.emMobile    || '';
-  const email       = p.email       || '';
-  const age         = p.age         ?? null;
-  const gender      = p.gender      || '';
-  const ageGender   = [age != null ? `${age} yrs` : null, gender || null]
-                        .filter(Boolean).join(' • ') || null;
-  const bloodGroup  = p.bloodGroup  || '';
-
-  // referenceType: "Self" | "Doctor" | etc.  referenceName: doctor/ref name
-  const refType     = p.referenceType || '';
-  const refName     = p.referenceName || '';
+  const fullName   = p.name        || appt.patientName || '';
+  const mobile     = appt.mobile   || p.mobile         || '';
+  const emMobile   = p.emMobile    || '';
+  const email      = p.email       || '';
+  const age        = p.age         ?? null;
+  const gender     = p.gender      || '';
+  const ageGender  = [age != null ? `${age} yrs` : null, gender || null].filter(Boolean).join(' • ') || null;
+  const bloodGroup = p.bloodGroup  || '';
+  const refType    = p.referenceType || '';
+  const refName    = p.referenceName || '';
   const referenceBy = refType === 'Self'
     ? 'Self'
     : [refName, refType].filter(Boolean).join(' — ') || null;
-
-  // Vitals — appointment vitals object takes priority, patient fields as backup
-  const weight      = appt.vitals?.weight ?? p.weight ?? null;
-  const height      = appt.vitals?.height ?? p.height ?? null;
-  const bmi         = appt.vitals?.bmi    ?? p.bmi    ?? null;
-
-  const address     = p.address    || '';
-  const allergies   = p.allergies  || '';
+  const weight     = appt.vitals?.weight ?? p.weight ?? null;
+  const height     = appt.vitals?.height ?? p.height ?? null;
+  const bmi        = appt.vitals?.bmi    ?? p.bmi    ?? null;
+  const address    = p.address    || '';
+  const allergies  = p.allergies  || '';
   const bookingDate = appt.appointmentDate
-    ? new Date(appt.appointmentDate).toLocaleDateString('en-IN', {
-        day: '2-digit', month: 'long', year: 'numeric',
-      })
+    ? new Date(appt.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
       <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
 
-        {/* ── Modal header ─────────────────────────────────────────────────── */}
         <div className="p-8 border-b border-slate-50 flex justify-between items-center">
           <div>
             <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider mb-2 ${sc.bar}`}>
               <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
               {appt.status}
             </div>
-            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">
-              {fullName}
-            </h2>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5">
-              Token #{appt.tokenNumber} • {appt.visitType}
-            </p>
+            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">{fullName}</h2>
+            <p className="text-[10px] font-bold text-slate-400 mt-0.5">Token #{appt.tokenNumber} • {appt.visitType}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full text-slate-300 transition-colors"
-          >
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full text-slate-300 transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        {/* ── Scrollable body ───────────────────────────────────────────────── */}
         <div className="p-8 max-h-[65vh] overflow-y-auto space-y-1">
 
-          {/* ── Loading skeleton ─────────────────────────────────────────────── */}
           {patientLoading && (
             <div className="space-y-3 animate-pulse py-2">
               {[...Array(8)].map((_, i) => (
@@ -222,7 +240,6 @@ function ViewModal({ appt, onClose }) {
             </div>
           )}
 
-          {/* ── Soft warning if patient fetch failed ─────────────────────────── */}
           {!patientLoading && patientError && (
             <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-2">
               <AlertTriangle size={12} className="text-amber-500 flex-shrink-0" />
@@ -232,115 +249,31 @@ function ViewModal({ appt, onClose }) {
             </div>
           )}
 
-          {/* ── All fields — only render after patient data is loaded ─────────── */}
           {!patientLoading && (
             <>
-              {/* ── CONTACT ────────────────────────────────────────────────────── */}
               <SectionLabel>Contact</SectionLabel>
+              <InfoRow icon={<Phone size={13} className="text-slate-500" />} label="Mobile / WhatsApp" value={mobile} />
+              <InfoRow icon={<Phone size={13} className="text-amber-500" />} label="Emergency Mobile" value={emMobile} />
+              <InfoRow icon={<Mail size={13} className="text-slate-500" />} label="Email Address" value={email} />
 
-              {/* 1. Mobile / WhatsApp */}
-              <InfoRow
-                icon={<Phone size={13} className="text-slate-500" />}
-                label="Mobile / WhatsApp"
-                value={mobile}
-              />
-
-              {/* 2. Emergency Mobile — DB: emMobile */}
-              <InfoRow
-                icon={<Phone size={13} className="text-amber-500" />}
-                label="Emergency Mobile"
-                value={emMobile}
-              />
-
-              {/* 3. Email — DB: email */}
-              <InfoRow
-                icon={<Mail size={13} className="text-slate-500" />}
-                label="Email Address"
-                value={email}
-              />
-
-              {/* ── PERSONAL ───────────────────────────────────────────────────── */}
               <SectionLabel>Personal Details</SectionLabel>
+              <InfoRow icon={<User size={13} className="text-slate-500" />} label="Full Name" value={fullName} />
+              <InfoRow icon={<User size={13} className="text-slate-500" />} label="Age / Gender" value={ageGender} />
+              <InfoRow icon={<Droplets size={13} className="text-red-400" />} label="Blood Group" value={bloodGroup} />
+              <InfoRow icon={<UserCheck size={13} className="text-slate-500" />} label="Reference By" value={referenceBy} />
 
-              {/* 4. Full Name — DB: name */}
-              <InfoRow
-                icon={<User size={13} className="text-slate-500" />}
-                label="Full Name"
-                value={fullName}
-              />
-
-              {/* 5 & 6. Age / Gender */}
-              <InfoRow
-                icon={<User size={13} className="text-slate-500" />}
-                label="Age / Gender"
-                value={ageGender}
-              />
-
-              {/* 7. Blood Group */}
-              <InfoRow
-                icon={<Droplets size={13} className="text-red-400" />}
-                label="Blood Group"
-                value={bloodGroup}
-              />
-
-              {/* 8. Reference By — DB: referenceType + referenceName */}
-              <InfoRow
-                icon={<UserCheck size={13} className="text-slate-500" />}
-                label="Reference By"
-                value={referenceBy}
-              />
-
-              {/* ── VITALS ─────────────────────────────────────────────────────── */}
               <SectionLabel>Vitals</SectionLabel>
+              <InfoRow icon={<Activity size={13} className="text-slate-500" />} label="Weight (kg)" value={weight != null ? `${weight} kg` : null} />
+              <InfoRow icon={<Activity size={13} className="text-slate-500" />} label="Height (cm)" value={height != null ? `${height} cm` : null} />
+              <InfoRow icon={<Activity size={13} className="text-slate-500" />} label="BMI Index" value={bmi != null ? `${bmi}` : null} />
 
-              {/* 9. Weight — DB: weight */}
-              <InfoRow
-                icon={<Activity size={13} className="text-slate-500" />}
-                label="Weight (kg)"
-                value={weight != null ? `${weight} kg` : null}
-              />
-
-              {/* 10. Height — DB: height */}
-              <InfoRow
-                icon={<Activity size={13} className="text-slate-500" />}
-                label="Height (cm)"
-                value={height != null ? `${height} cm` : null}
-              />
-
-              {/* 11. BMI — DB: bmi */}
-              <InfoRow
-                icon={<Activity size={13} className="text-slate-500" />}
-                label="BMI Index"
-                value={bmi != null ? `${bmi}` : null}
-              />
-
-              {/* ── OTHER ──────────────────────────────────────────────────────── */}
               <SectionLabel>Other</SectionLabel>
-
-              {/* 12. Address */}
-              <InfoRow
-                icon={<MapPin size={13} className="text-slate-500" />}
-                label="Address"
-                value={address}
-              />
-
-              {/* 13. Allergies */}
-              <InfoRow
-                icon={<AlertCircle size={13} className="text-red-400" />}
-                label="Allergies"
-                value={allergies}
-              />
-
-              {/* 14. Booking Date */}
-              <InfoRow
-                icon={<CalendarDays size={13} className="text-slate-500" />}
-                label="Booking Date"
-                value={bookingDate}
-              />
+              <InfoRow icon={<MapPin size={13} className="text-slate-500" />} label="Address" value={address} />
+              <InfoRow icon={<AlertCircle size={13} className="text-red-400" />} label="Allergies" value={allergies} />
+              <InfoRow icon={<CalendarDays size={13} className="text-slate-500" />} label="Booking Date" value={bookingDate} />
             </>
           )}
 
-          {/* ── BILLING — always visible ──────────────────────────────────────── */}
           <div className="mt-4 p-5 rounded-[20px] bg-slate-50 border border-slate-100">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Billing</p>
             <div className="flex items-center justify-between">
@@ -393,7 +326,6 @@ function PaymentModal({ appt, onClose, onSave }) {
     paymentMethod: appt?.billing?.paymentMethod || 'Cash',
   });
   const [saving, setSaving] = useState(false);
-
   const [revisitInfo, setRevisitInfo] = useState(null);
   const [revisitInfoLoading, setRevisitInfoLoading] = useState(false);
 
@@ -448,7 +380,6 @@ function PaymentModal({ appt, onClose, onSave }) {
     if (paid === 0 && total > 0) finalStatus = 'Unpaid';
 
     const payload = { ...form, paymentStatus: finalStatus };
-
     setSaving(true);
     try {
       const res = await axios.patch(
@@ -466,7 +397,6 @@ function PaymentModal({ appt, onClose, onSave }) {
   };
 
   const balance = Math.max(0, (Number(form.totalFees) || 0) - (Number(form.paidAmount) || 0));
-
   const currentAlreadyPaid = appt?.billing?.paymentStatus === 'Paid';
   const prevStatus = revisitInfo?.previousPaymentStatus;
   const prevDue = revisitInfo?.previousDue || 0;
@@ -584,11 +514,9 @@ function PaymentModal({ appt, onClose, onSave }) {
 function EditModal({ appt, onClose, onSave }) {
   const { slug } = useParams();
 
-  // ── Fetch patient on mount (patientId is a raw string, not populated) ───────
   const [patientLoading, setPatientLoading] = useState(true);
-  const [patientId, setPatientId]           = useState(null); // resolved _id string
+  const [patientId, setPatientId] = useState(null);
 
-  // ── Two form slices: appointment fields + patient fields ─────────────────────
   const [apptForm, setApptForm] = useState({
     patientName:     appt?.patientName || '',
     mobile:          appt?.mobile      || '',
@@ -617,7 +545,27 @@ function EditModal({ appt, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // ── Load patient data ────────────────────────────────────────────────────────
+  // ── Stable handlers using useCallback so PatField/ApptField never get stale refs
+  const handleApptChange = useCallback((k, v) => {
+    setApptForm(f => ({ ...f, [k]: v }));
+  }, []);
+
+  const handlePatientChange = useCallback((key, value) => {
+    setPatientForm(prev => {
+      const updated = { ...prev, [key]: value };
+      if (key === 'weight' || key === 'height') {
+        const w = parseFloat(key === 'weight' ? value : prev.weight);
+        const h = parseFloat(key === 'height' ? value : prev.height) / 100;
+        if (w > 0 && h > 0) {
+          updated.bmi = (w / (h * h)).toFixed(1);
+        } else {
+          updated.bmi = '';
+        }
+      }
+      return updated;
+    });
+  }, []);
+
   useEffect(() => {
     const pid = typeof appt?.patientId === 'object' && appt.patientId?._id
       ? appt.patientId._id
@@ -628,7 +576,7 @@ function EditModal({ appt, onClose, onSave }) {
     setPatientId(pid);
     let cancelled = false;
 
-    axios.get(`${API_BAS}/api/patients/${slug}/${pid}`)
+    axios.get(`${API_BAS}/api/patients/${slug}/profile/${pid}`)
       .then(res => {
         if (cancelled) return;
         const p = res.data?.data || res.data?.patient || res.data;
@@ -652,7 +600,6 @@ function EditModal({ appt, onClose, onSave }) {
         }
       })
       .catch(() => {
-        // Fall back to whatever is on the appointment
         if (cancelled) return;
         const p = typeof appt?.patientId === 'object' ? appt.patientId : {};
         setPatientForm(f => ({
@@ -676,24 +623,6 @@ function EditModal({ appt, onClose, onSave }) {
     return () => { cancelled = true; };
   }, [appt?.patientId, slug]);
 
-  // ── Auto-calculate BMI when weight or height changes ─────────────────────────
-  const handlePatientChange = (key, value) => {
-    setPatientForm(prev => {
-      const updated = { ...prev, [key]: value };
-      if (key === 'weight' || key === 'height') {
-        const w = parseFloat(key === 'weight' ? value : prev.weight);
-        const h = parseFloat(key === 'height' ? value : prev.height) / 100; // cm → m
-        if (w > 0 && h > 0) {
-          updated.bmi = (w / (h * h)).toFixed(1);
-        } else {
-          updated.bmi = '';
-        }
-      }
-      return updated;
-    });
-  };
-
-  // ── Save: update appointment + patient in parallel ───────────────────────────
   const handleSave = async () => {
     setSaveError('');
     setSaving(true);
@@ -707,7 +636,7 @@ function EditModal({ appt, onClose, onSave }) {
 
       if (patientId) {
         requests.push(
-          axios.put(`${API_BAS}/api/patients/${slug}/${patientId}`, patientPayload)
+          axios.put(`${API_BAS}/api/patients/${slug}/update/${patientId}`, patientPayload)
         );
       }
 
@@ -715,7 +644,6 @@ function EditModal({ appt, onClose, onSave }) {
 
       if (apptRes.data.success) {
         clearCache();
-        // Merge updated patient data into the returned appointment for local state
         onSave({
           ...apptRes.data.data,
           patientId: { ...patientPayload, _id: patientId },
@@ -727,55 +655,10 @@ function EditModal({ appt, onClose, onSave }) {
     setSaving(false);
   };
 
-  // ── Reusable field components ────────────────────────────────────────────────
-  const SectionLabel = ({ children }) => (
-    <p className="col-span-2 text-[9px] font-black text-slate-400 uppercase tracking-widest
-       pt-4 pb-1 border-b border-slate-100">
-      {children}
-    </p>
-  );
-
-  // Field that writes to the APPOINTMENT form slice
-  const ApptField = ({ label, k, type = 'text', opts, span2 = false }) => (
-    <div className={`space-y-2 ${span2 ? 'col-span-2' : ''}`}>
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-      {opts
-        ? <select value={apptForm[k]}
-            onChange={e => setApptForm(f => ({ ...f, [k]: e.target.value }))}
-            className="professional-input">
-            {opts.map(o => <option key={o}>{o}</option>)}
-          </select>
-        : <input type={type} value={apptForm[k]}
-            onChange={e => setApptForm(f => ({ ...f, [k]: e.target.value }))}
-            className="professional-input" />
-      }
-    </div>
-  );
-
-  // Field that writes to the PATIENT form slice
-  const PatField = ({ label, k, type = 'text', opts, span2 = false, readOnly = false }) => (
-    <div className={`space-y-2 ${span2 ? 'col-span-2' : ''}`}>
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-      {opts
-        ? <select value={patientForm[k]}
-            onChange={e => handlePatientChange(k, e.target.value)}
-            className="professional-input"
-            disabled={readOnly}>
-            {opts.map(o => <option key={o}>{o}</option>)}
-          </select>
-        : <input type={type} value={patientForm[k]}
-            onChange={e => handlePatientChange(k, e.target.value)}
-            className={`professional-input ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
-            readOnly={readOnly} />
-      }
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
       <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
 
-        {/* ── Header ────────────────────────────────────────────────────────── */}
         <div className="p-8 border-b border-slate-50 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">Edit Appointment</h2>
@@ -787,10 +670,8 @@ function EditModal({ appt, onClose, onSave }) {
           </button>
         </div>
 
-        {/* ── Body ──────────────────────────────────────────────────────────── */}
         <div className="p-8 max-h-[68vh] overflow-y-auto">
 
-          {/* Loading skeleton */}
           {patientLoading && (
             <div className="grid grid-cols-2 gap-4 animate-pulse">
               {[...Array(12)].map((_, i) => (
@@ -806,65 +687,63 @@ function EditModal({ appt, onClose, onSave }) {
             <div className="grid grid-cols-2 gap-4">
 
               {/* ── APPOINTMENT ─────────────────────────────────────────────── */}
-              <SectionLabel>Appointment</SectionLabel>
+              <EditSectionLabel>Appointment</EditSectionLabel>
 
-              <ApptField label="Booking Date" k="appointmentDate" type="date" />
-              <ApptField label="Visit Type"   k="visitType" opts={['New Patient', 'Revisit Patient']} />
-              <ApptField label="Status"       k="status"    opts={['Waiting', 'In-Consultation', 'Completed', 'Cancelled']} />
+              <ApptField label="Booking Date" k="appointmentDate" type="date"
+                value={apptForm.appointmentDate} onChange={handleApptChange} />
+              <ApptField label="Visit Type" k="visitType"
+                opts={['New Patient', 'Revisit Patient']}
+                value={apptForm.visitType} onChange={handleApptChange} />
+              <ApptField label="Status" k="status"
+                opts={['Waiting', 'In-Consultation', 'Completed', 'Cancelled']}
+                value={apptForm.status} onChange={handleApptChange} />
 
               {/* ── CONTACT ─────────────────────────────────────────────────── */}
-              <SectionLabel>Contact</SectionLabel>
+              <EditSectionLabel>Contact</EditSectionLabel>
 
-              {/* 1. Mobile / WhatsApp — on both appointment + patient */}
-              <PatField label="Mobile / WhatsApp" k="mobile" />
-
-              {/* 2. Emergency Mobile — DB: emMobile */}
-              <PatField label="Emergency Mobile"  k="emMobile" />
-
-              {/* 3. Email — DB: email */}
-              <PatField label="Email Address" k="email" type="email" span2 />
+              <PatField label="Mobile / WhatsApp" k="mobile"
+                value={patientForm.mobile} onChange={handlePatientChange} />
+              <PatField label="Emergency Mobile" k="emMobile"
+                value={patientForm.emMobile} onChange={handlePatientChange} />
+              <PatField label="Email Address" k="email" type="email" span2
+                value={patientForm.email} onChange={handlePatientChange} />
 
               {/* ── PERSONAL ────────────────────────────────────────────────── */}
-              <SectionLabel>Personal Details</SectionLabel>
+              <EditSectionLabel>Personal Details</EditSectionLabel>
 
-              {/* 4. Full Name — DB: name */}
-              <PatField label="Full Name" k="name" span2 />
-
-              {/* 5. Age */}
-              <PatField label="Age" k="age" type="number" />
-
-              {/* 6. Gender */}
-              <PatField label="Gender" k="gender" opts={['Male', 'Female', 'Other']} />
-
-              {/* 7. Blood Group */}
+              <PatField label="Full Name" k="name" span2
+                value={patientForm.name} onChange={handlePatientChange} />
+              <PatField label="Age" k="age" type="number"
+                value={patientForm.age} onChange={handlePatientChange} />
+              <PatField label="Gender" k="gender"
+                opts={['Male', 'Female', 'Other']}
+                value={patientForm.gender} onChange={handlePatientChange} />
               <PatField label="Blood Group" k="bloodGroup"
-                opts={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} />
-
-              {/* 11. Reference By */}
+                opts={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']}
+                value={patientForm.bloodGroup} onChange={handlePatientChange} />
               <PatField label="Reference Type" k="referenceType"
-                opts={['Self', 'Doctor', 'Friend', 'Family', 'Other']} />
-              <PatField label="Reference Name" k="referenceName" />
+                opts={['Self', 'Doctor', 'Friend', 'Family', 'Other']}
+                value={patientForm.referenceType} onChange={handlePatientChange} />
+              <PatField label="Reference Name" k="referenceName"
+                value={patientForm.referenceName} onChange={handlePatientChange} />
 
               {/* ── VITALS ──────────────────────────────────────────────────── */}
-              <SectionLabel>Vitals</SectionLabel>
+              <EditSectionLabel>Vitals</EditSectionLabel>
 
-              {/* 8. Weight */}
-              <PatField label="Weight (kg)" k="weight" type="number" />
-
-              {/* 9. Height */}
-              <PatField label="Height (cm)" k="height" type="number" />
-
-              {/* 10. BMI — auto-calculated, shown read-only */}
-              <PatField label="BMI Index (auto)" k="bmi" type="number" readOnly />
+              <PatField label="Weight (kg)" k="weight" type="number"
+                value={patientForm.weight} onChange={handlePatientChange} />
+              <PatField label="Height (cm)" k="height" type="number"
+                value={patientForm.height} onChange={handlePatientChange} />
+              <PatField label="BMI Index (auto)" k="bmi" type="number" readOnly
+                value={patientForm.bmi} onChange={handlePatientChange} />
 
               {/* ── OTHER ───────────────────────────────────────────────────── */}
-              <SectionLabel>Other</SectionLabel>
+              <EditSectionLabel>Other</EditSectionLabel>
 
-              {/* 12. Address */}
-              <PatField label="Address"   k="address"   span2 />
-
-              {/* 13. Allergies */}
-              <PatField label="Allergies" k="allergies" span2 />
+              <PatField label="Address" k="address" span2
+                value={patientForm.address} onChange={handlePatientChange} />
+              <PatField label="Allergies" k="allergies" span2
+                value={patientForm.allergies} onChange={handlePatientChange} />
 
             </div>
           )}
@@ -877,7 +756,6 @@ function EditModal({ appt, onClose, onSave }) {
           )}
         </div>
 
-        {/* ── Footer ────────────────────────────────────────────────────────── */}
         <div className="px-8 pb-8 flex gap-3 border-t border-slate-50 pt-5">
           <button onClick={onClose}
             className="flex-1 py-4 rounded-[20px] border-2 border-slate-200 font-black text-[11px] uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">
@@ -921,7 +799,8 @@ function DeleteModal({ appt, onClose, onDeleted }) {
           </p>
         </div>
         <div className="px-8 pb-8 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-4 rounded-[20px] border-2 border-slate-200 font-black text-[11px] uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">
+          <button onClick={onClose}
+            className="flex-1 py-4 rounded-[20px] border-2 border-slate-200 font-black text-[11px] uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">
             Cancel
           </button>
           <button onClick={handleDelete} disabled={deleting}
@@ -1097,7 +976,7 @@ const AppointmentTable = () => {
           <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">{total} total records</p>
         </div>
 
-        <div className="flex items-center gap-3  flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => { clearCache(); fetchAppointments(page, true); }}
             disabled={loading}
@@ -1108,8 +987,9 @@ const AppointmentTable = () => {
           <Link
             to={`/${slug}/dashboard/appointment/new`}
             className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl hover:shadow-slate-200 transition-all active:scale-95 flex items-center gap-2">
-            <Plus size={16} /> <span className="hidden sm:inline">New Appointment</span><span className="sm:hidden">New</span>
-
+            <Plus size={16} />
+            <span className="hidden sm:inline">New Appointment</span>
+            <span className="sm:hidden">New</span>
           </Link>
         </div>
       </div>
@@ -1168,7 +1048,6 @@ const AppointmentTable = () => {
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap">
-
           {STATUS_OPTIONS.map(status => {
             const colors = statusTabColors[status];
             const isActive = statusFilter === status;
@@ -1188,7 +1067,6 @@ const AppointmentTable = () => {
           })}
 
           <div className="ml-2 pl-2 border-l border-slate-200 flex items-center gap-2 flex-shrink-0">
-
             {PAYMENT_OPTIONS.map(p => {
               const isActive = paymentFilter === p;
               const colors = {

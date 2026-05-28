@@ -29,6 +29,8 @@ const fieldSchema = new mongoose.Schema({
     tableName:      { type: String, default: '' },
     collectionName: { type: String, default: '' },
     columns:        [columnSchema],
+        defaultFileValue: { type: String, default: '' },   // base64 of default image
+
     order:          { type: Number }
 }, { _id: false });
 
