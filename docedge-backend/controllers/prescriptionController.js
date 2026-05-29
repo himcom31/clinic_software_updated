@@ -285,7 +285,6 @@ exports.searchTableRows = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
-
 exports.saveTableRow = async (req, res) => {
     try {
         const { collectionName } = req.params;
@@ -296,18 +295,24 @@ exports.saveTableRow = async (req, res) => {
         const Model = getDynamicModel(collectionName);
         const { patientId, appointmentId, slug, ...columnData } = req.body;
 
-        // ✅ Filter only by patientId + appointmentId, not by all fields
+        // Sanitize keys: trim spaces, replace dots with underscores, skip empty keys
+        const sanitizedData = {};
+        Object.entries(columnData).forEach(([key, val]) => {
+            const cleanKey = key.trim().replace(/\./g, '_');
+            if (cleanKey) sanitizedData[cleanKey] = val;
+        });
+
         const filter = {
             slug,
-            appointmentId,   // one row per appointment per collection
+            appointmentId,
         };
 
         const saved = await Model.findOneAndUpdate(
             filter,
             {
-                $set: { patientId, slug, appointmentId, ...columnData },
+                $set: { patientId, slug, appointmentId, ...sanitizedData },
             },
-            { upsert: true, new: true, lean: true }
+            { upsert: true, returnDocument: 'after', lean: true }
         );
 
         res.status(201).json({ success: true, data: saved });
@@ -316,7 +321,6 @@ exports.saveTableRow = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
-
 exports.getRowsByPatient = async (req, res) => {
     try {
         const { collectionName, patientId } = req.params;
