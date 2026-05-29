@@ -48,7 +48,6 @@ const AppointmentHistory = () => {
 
                         // CASE 2: Agar pichli visit mili, toh date compare karo
                         const lastVisitDate = new Date(previousVisits[0].appointmentDate);
-                        console.log("Last Visit Date:", lastVisitDate);
                         const currentDate = new Date(current.appointmentDate);
                         const diffDays = Math.ceil(Math.abs(currentDate - lastVisitDate) / (1000 * 60 * 60 * 24));
 

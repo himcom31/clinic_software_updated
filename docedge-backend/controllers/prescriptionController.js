@@ -42,14 +42,6 @@ exports.getInitialData = async (req, res) => {
             .lean();
 
         if (lastPrescription) {
-            console.log('[getInitialData] lastPrescription fields present:', {
-                _id: lastPrescription._id,
-                medicines_count: lastPrescription.medicines?.length ?? 'MISSING',
-                symptoms_count: lastPrescription.symptoms?.length ?? 'MISSING',
-                investigations_count: lastPrescription.investigations?.length ?? 'MISSING',
-                vaccinations_count: lastPrescription.vaccinations?.length ?? 'MISSING',
-                consultationResponses_count: lastPrescription.consultationResponses?.length ?? 'MISSING',
-            });
         }
 
         // 5. isRevisit = true if patient has any previous prescription
@@ -101,16 +93,6 @@ exports.saveFinalPrescription = async (req, res) => {
         const base64Data = pdfBinary.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
-        console.log('[saveFinalPrescription] saving:', {
-            patientId,
-            slug,
-            appointmentId,
-            medicines_count: (medicines || []).length,
-            symptoms_count: (symptoms || []).length,
-            investigations_count: (investigations || []).length,
-            vaccinations_count: (vaccinations || []).length,
-            consultationResponses_count: (consultationResponses || []).length,
-        });
 
         // ── UPSERT LOGIC ──────────────────────────────────────────────────────
         // If appointmentId is given, check whether a prescription already exists
@@ -147,7 +129,6 @@ exports.saveFinalPrescription = async (req, res) => {
                 );
 
                 isUpdate = true;
-                console.log('[saveFinalPrescription] UPDATED existing prescription:', existingPrescriptionId);
             }
         }
 
@@ -168,7 +149,6 @@ exports.saveFinalPrescription = async (req, res) => {
             });
 
             savedPrescription = await newRecord.save();
-            console.log('[saveFinalPrescription] CREATED new prescription:', savedPrescription._id);
 
             // Link prescription to patient
             await Patient.findByIdAndUpdate(
@@ -209,14 +189,6 @@ exports.saveFinalPrescription = async (req, res) => {
             }
         }
 
-        console.log('[saveFinalPrescription] saved doc fields:', {
-            _id: savedPrescription._id,
-            medicines_count: savedPrescription.medicines?.length,
-            symptoms_count: savedPrescription.symptoms?.length,
-            investigations_count: savedPrescription.investigations?.length,
-            vaccinations_count: savedPrescription.vaccinations?.length,
-            isUpdate,
-        });
 
         res.json({
             success: true,
@@ -322,19 +294,18 @@ exports.saveTableRow = async (req, res) => {
         }
 
         const Model = getDynamicModel(collectionName);
-
         const { patientId, appointmentId, slug, ...columnData } = req.body;
 
+        // ✅ Filter only by patientId + appointmentId, not by all fields
         const filter = {
             slug,
-            ...columnData,
+            appointmentId,   // one row per appointment per collection
         };
 
         const saved = await Model.findOneAndUpdate(
             filter,
             {
-                $setOnInsert: { patientId, slug, ...columnData },
-                $set: { appointmentId },
+                $set: { patientId, slug, appointmentId, ...columnData },
             },
             { upsert: true, new: true, lean: true }
         );

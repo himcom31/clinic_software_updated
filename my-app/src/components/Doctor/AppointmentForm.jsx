@@ -1,4 +1,4 @@
-import React, { useState, useEffect ,useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Loader2, CheckCircle2 } from 'lucide-react';
@@ -16,6 +16,8 @@ const AppointmentForm = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [searchField, setSearchField] = useState(null); // 'mobile' or 'name'
     const searchDebounceRef = useRef(null);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [bookedToken, setBookedToken] = useState(null);
 
     const [formData, setFormData] = useState({
         mobile: '', emMobile: '', name: '', email: '', age: '', gender: 'Male',
@@ -71,7 +73,6 @@ const AppointmentForm = () => {
                 const validity = clinic.appointmentValidity || 7;
 
                 setClinicConfig({ currentFee: fee, currentValidity: validity });
-                console.log("Clinic Config Loaded — Fee:", fee, "Validity:", validity);
 
                 // 🔥 FIX: Pre-fill consultationFee and paidAmount from clinic config
                 //         so that on first load (before mobile search), values are correct
@@ -267,16 +268,15 @@ const AppointmentForm = () => {
                 //    paidAmount      → backend saves as billing.paidAmount
             };
 
-            console.log("Submitting Payload:", {
-                consultationFee: payload.consultationFee,
-                paidAmount: payload.paidAmount,
-                consultFeeStatus: payload.consultFeeStatus
-            });
 
             const res = await axios.post(`${API_BAS}/api/appointments/${slug}/book`, payload);
+
             if (res.data.success) {
-                alert(`Success! Token #${res.data.token}`);
-                navigate(`/${slug}/dashboard/appTable`);
+                setShowSuccess(true);
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    navigate(`/${slug}/dashboard/appTable`);
+                }, 500);
             }
         } catch (err) {
             alert("Error booking appointment!");
@@ -359,29 +359,29 @@ const AppointmentForm = () => {
                         <input className="input-style" value={formData.emMobile} onChange={(e) => setFormData({ ...formData, emMobile: e.target.value })} />
                     </div>
                     <div className="col-span-2 space-y-1 relative">
-    <label className="label-style">3. Full Name</label>
-    <input
-        required
-        className="input-style uppercase"
-        value={formData.name}
-        onChange={(e) => {
-            setFormData(prev => ({ ...prev, name: e.target.value }));
-            searchPatients(e.target.value, 'name');
-        }}
-        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-    />
-    {showSuggestions && searchField === 'name' && patientSuggestions.length > 0 && (
-        <div className="absolute z-50 top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg max-h-48 overflow-y-auto">
-            {patientSuggestions.map((p, i) => (
-                <div key={i} onMouseDown={() => selectPatient(p)}
-                    className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-slate-100">
-                    <div className="font-bold text-xs text-slate-800">{p.name}</div>
-                    <div className="text-[10px] text-slate-400">{p.mobile} · {p.age}Y · {p.gender}</div>
-                </div>
-            ))}
-        </div>
-    )}
-</div>                    
+                        <label className="label-style">3. Full Name</label>
+                        <input
+                            required
+                            className="input-style uppercase"
+                            value={formData.name}
+                            onChange={(e) => {
+                                setFormData(prev => ({ ...prev, name: e.target.value }));
+                                searchPatients(e.target.value, 'name');
+                            }}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        />
+                        {showSuggestions && searchField === 'name' && patientSuggestions.length > 0 && (
+                            <div className="absolute z-50 top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg max-h-48 overflow-y-auto">
+                                {patientSuggestions.map((p, i) => (
+                                    <div key={i} onMouseDown={() => selectPatient(p)}
+                                        className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-slate-100">
+                                        <div className="font-bold text-xs text-slate-800">{p.name}</div>
+                                        <div className="text-[10px] text-slate-400">{p.mobile} · {p.age}Y · {p.gender}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     {/* ROW 2 */}
                     <div className="col-span-2 space-y-1">
@@ -574,13 +574,40 @@ const AppointmentForm = () => {
             </form>
 
             <style>{`
-                .input-style { 
-                    width: 100%; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 4px; 
-                    padding: 8px 12px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none; transition: 0.2s; 
-                }
-                .input-style:focus { border-color: #0f172a; background: #fff; }
-                .label-style { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-left: 2px; display: block; margin-bottom: 4px; }
-            `}</style>
+    .input-style { 
+        width: 100%; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 4px; 
+        padding: 8px 12px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none; transition: 0.2s; 
+    }
+    .input-style:focus { border-color: #0f172a; background: #fff; }
+    .label-style { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-left: 2px; display: block; margin-bottom: 4px; }
+    
+    @keyframes shrink {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+    @keyframes bounce-in {
+        0% { transform: scale(0.8); opacity: 0; }
+        70% { transform: scale(1.05); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-bounce-in { animation: bounce-in 0.4s ease forwards; }
+`}</style>
+
+            {showSuccess && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl px-12 py-10 flex flex-col items-center gap-4 animate-bounce-in">
+                        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                            <CheckCircle2 size={36} className="text-green-500" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Appointment Confirmed</p>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                            <div className="bg-green-500 h-1 rounded-full animate-[shrink_3s_linear_forwards]" />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

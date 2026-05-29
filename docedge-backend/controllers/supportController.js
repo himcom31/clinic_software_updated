@@ -30,7 +30,6 @@ exports.raiseTicket = async (req, res) => {
                 message: message
             });
         } catch (mailErr) {
-            console.log("Email failed to send, but ticket is saved in DB.");
         }
 
         res.status(201).json({ 

@@ -1395,7 +1395,7 @@ const GeneratePrescription = () => {
     useEffect(() => {
         const fetchClinicProfile = async () => {
             const res = await axios.get(`${API_BAS}/api/clinic/${slug}/clinicData`);
-            console.log('Clinic profile raw:', res.data);
+            
 
             setClinicProfile(res.data.data || res.data);
         };
@@ -1683,41 +1683,55 @@ const GeneratePrescription = () => {
             }
             if (type === 'symptom') { const payload = { name: formData.name || prefill }; await axios.post(`${API_BAS}/api/symptoms/${slug}/add`, payload); if (symptomEditorRef.current?.insertText) symptomEditorRef.current.insertText(payload.name); setSymptomInput(''); setSymptomNoResults(false); }
             if (type === 'report') {
-                const payload = {
-                    reportName: formData.reportName || prefill,
-                    impression: formData.impression || '',
-                    action: formData.action || '',
-                    date: formData.date || new Date().toISOString().split('T')[0],
-                    patientId: masterData.patient?._id || null,
-                    appointmentId: appointmentId || null,
-                };
-                await axios.post(`${API_BAS}/api/p_reports/${slug}/add`, payload);
-                const newR = { ...payload };
-                const emptyIdx = reports.findIndex(r => !r.reportName);
-                if (emptyIdx >= 0) {
-                    setReports(prev => prev.map((r, i) => i === emptyIdx ? { ...r, ...newR } : r));
-                } else {
-                    setReports(prev => [...prev, { ...EMPTY_REPORT, ...newR }]);
-                }
-                setReportSearchInput(''); setReportNoResults(false);
-                if (type === 'custom_table') {
-                    const { customField, customRowId, customColumns, customCollectionName } = dbModal;
-                    const payload = {};
-                    customColumns.forEach(col => { payload[col.name] = formData[col.name] || ''; });
-                    await axios.post(`${API_BAS}/api/prescriptions/${customCollectionName}/rows`, { ...payload, slug });
-                    // Fill the row in the table
-                    setTableRows(prev => {
-                        const fieldId = customField.id;
-                        const updated = (prev[fieldId] || []).map(r => {
-                            if (r._rowId !== customRowId) return r;
-                            const filledRow = { ...r };
-                            customColumns.forEach(col => { filledRow[col.name] = payload[col.name]; });
-                            return filledRow;
-                        });
-                        return { ...prev, [fieldId]: updated };
-                    });
-                }
-            }
+    const payload = {
+        reportName: formData.reportName || prefill,
+        impression: formData.impression || '',
+        action: formData.action || '',
+        date: formData.date || new Date().toISOString().split('T')[0],
+        patientId: masterData.patient?._id || null,
+        appointmentId: appointmentId || null,
+    };
+    await axios.post(`${API_BAS}/api/p_reports/${slug}/add`, payload);
+    const newR = { ...payload };
+    const emptyIdx = reports.findIndex(r => !r.reportName);
+    if (emptyIdx >= 0) {
+        setReports(prev => prev.map((r, i) => i === emptyIdx ? { ...r, ...newR } : r));
+    } else {
+        setReports(prev => [...prev, { ...EMPTY_REPORT, ...newR }]);
+    }
+    setReportSearchInput(''); setReportNoResults(false);
+}
+
+// ✅ FIXED — custom_table is now its own top-level block
+if (type === 'custom_table') {
+    const { customField, customRowId, customColumns, customCollectionName } = dbModal;
+
+    // Build payload from ALL columns using formData
+    const payload = {};
+    customColumns.forEach(col => {
+        payload[col.name] = formData[col.name] || '';
+    });
+
+    // Save to DB
+    await axios.post(
+        `${API_BAS}/api/prescriptions/${customCollectionName}/rows`,
+        { ...payload, patientId: masterData.patient?._id, appointmentId, slug }
+    );
+
+    // ✅ Fill ALL columns back into the correct row
+    setTableRows(prev => {
+        const fieldId = customField.id;
+        const updated = (prev[fieldId] || []).map(r => {
+            if (r._rowId !== customRowId) return r;
+            const filledRow = { ...r };
+            customColumns.forEach(col => {
+                filledRow[col.name] = payload[col.name];
+            });
+            return filledRow;
+        });
+        return { ...prev, [fieldId]: updated };
+    });
+}
             closeAddModal();
         } catch (err) { alert("Error saving: " + (err.response?.data?.message || err.message)); }
         finally { setDbModalSaving(false); }

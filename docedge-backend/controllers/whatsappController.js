@@ -42,7 +42,6 @@ exports.sendWhatsAppPrescription = async (req, res) => {
             }
         );
         const uploadData = await uploadRes.json();
-        console.log('Upload response:', uploadData);
 
         if (!uploadData.id) {
             return res.status(400).json({
@@ -88,7 +87,6 @@ exports.sendWhatsAppPrescription = async (req, res) => {
         );
 
         const sendData = await sendRes.json();
-        console.log('Send response:', sendData);
 
         if (sendData.messages?.[0]?.id) {
             return res.json({ success: true, message: 'Prescription sent on WhatsApp!' });

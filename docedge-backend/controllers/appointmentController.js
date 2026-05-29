@@ -14,7 +14,6 @@ const getAdviceModel = (slug) => {
 
 
 exports.bookAppointment = async (req, res) => {
-    console.log("Incoming Request Data:", req.body);
 
     try {
         const { clinicSlug, mobile, name, ...data } = req.body;
@@ -51,7 +50,6 @@ exports.bookAppointment = async (req, res) => {
             // If 'Paid' → previousDue stays 0, no carry-forward
         }
 
-        console.log(`Revisit: ${isRevisit} | Prev Payment Status: ${previousPaymentStatus} | Previous Due: ${previousDue}`);
 
         // ─── 2. Patient Upsert ────────────────────────────────────────────────────
         const patient = await Patient.findOneAndUpdate(
@@ -81,7 +79,6 @@ exports.bookAppointment = async (req, res) => {
             { new: true, upsert: true, setDefaultsOnInsert: true }
         );
 
-        console.log("Patient Saved/Updated ID:", patient._id);
 
         // ─── 3. Safe Token Count ──────────────────────────────────────────────────
         const startOfDay = new Date();
@@ -127,7 +124,6 @@ exports.bookAppointment = async (req, res) => {
             resolvedPaymentStatus = 'Paid';
         }
 
-        console.log(`Resolved Payment Status: ${resolvedPaymentStatus}`);
 
         // ─── 5. Appointment Save ──────────────────────────────────────────────────
         const newAppointment = new Appointment({
@@ -161,8 +157,8 @@ exports.bookAppointment = async (req, res) => {
         });
 
         const savedAppt = await newAppointment.save();
-        console.log("Appointment Booked Successfully:", savedAppt.tokenNumber);
-        console.log("Appointment Billing:", savedAppt.billing);
+       
+       
 
         res.status(201).json({
             success: true,
@@ -419,7 +415,6 @@ exports.getPatientStatusAndLatest = async (req, res) => {
     try {
         const { slug, mobile } = req.params;
 
-        console.log(`Checking Status for Mobile: ${mobile} in Clinic: ${slug}`);
 
         const latestAppt = await Appointment.findOne({
             clinicSlug: slug,
@@ -470,17 +465,14 @@ exports.getPatientStatusAndLatest = async (req, res) => {
 exports.getAppointmentContext1 = async (req, res) => {
     try {
         const { appointmentId } = req.params;
-        console.log("Fetching details for Appointment ID:", appointmentId);
 
         const appointment = await Appointment.findById(appointmentId).populate('patientId');
         if (!appointment) return res.status(404).json({ success: false, message: "Appointment Not Found" });
 
         const currentSlug = appointment.clinicSlug;
-        console.log("Clinic Slug:", currentSlug);
 
         const Form = getAdviceModel(currentSlug);
         const formData = await Form.findOne({ formName: "Consultation Form" }).lean();
-        console.log("Fetched Form Data:", formData);
 
         const designData = await Letterhead.findOne({ slug: currentSlug }).lean();
 
@@ -501,7 +493,6 @@ exports.getAppointmentContext1 = async (req, res) => {
             }
         }
 
-        console.log("Last Prescription Found:", lastPrescription);
 
         res.json({
             success: true,
@@ -523,17 +514,14 @@ exports.getAppointmentContext1 = async (req, res) => {
 exports.getAppointmentContext = async (req, res) => {
     try {
         const { appointmentId } = req.params;
-        console.log("Fetching details for Appointment ID:", appointmentId);
 
         const appointment = await Appointment.findById(appointmentId).populate('patientId');
         if (!appointment) return res.status(404).json({ success: false, message: "Appointment Not Found" });
 
         const currentSlug = appointment.clinicSlug;
-        console.log("Clinic Slug:", currentSlug);
 
         const Form = getAdviceModel(currentSlug);
         const formData = await Form.findOne({ formName: "Consultation Form" }).lean();
-        console.log("Fetched Form Data:", formData);
 
         const designData = await Letterhead.findOne({ slug: currentSlug }).lean();
 
@@ -545,7 +533,6 @@ exports.getAppointmentContext = async (req, res) => {
                 patientId: appointment.patientId._id
             }).sort({ createdAt: -1 });
 
-            console.log("Previous Prescription Found:", prevPrescription?._id || "None");
 
             if (prevPrescription) {
                 lastPrescription = {
@@ -559,8 +546,8 @@ exports.getAppointmentContext = async (req, res) => {
             }
         }
 
-        console.log("Last Prescription Found:", lastPrescription ? "YES ✅" : "null ❌");
-        console.log(lastPrescription?.consultationResponses ?? "No previous prescription");
+        
+        
 
         res.json({
             success: true,

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Syringe, NotebookPen, CheckCircle2, Clock, History, Plus, X, ShieldCheck } from 'lucide-react';
+import { Syringe, NotebookPen, CheckCircle2, Clock, History, Plus, ShieldCheck, List } from 'lucide-react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 
 const API_BAS = import.meta.env.VITE_API_URL;
 
-
 const VaccinationManager = () => {
-    const { slug } = useParams(); // Doctor's slug from URL
+    const { slug } = useParams();
 
     const [vaccineName, setVaccineName] = useState('');
     const [note, setNote] = useState('');
@@ -15,7 +14,6 @@ const VaccinationManager = () => {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // 1. Fetch History on Load
     useEffect(() => {
         fetchHistory();
     }, [slug]);
@@ -25,145 +23,318 @@ const VaccinationManager = () => {
             const res = await axios.get(`${API_BAS}/api/vaccination/${slug}/history`);
             if (res.data.success) setHistory(res.data.data);
         } catch (err) {
-            console.error("History fetch error", err);
+            console.error('History fetch error', err);
         }
     };
 
-    // 2. Add New Record
     const handleSave = async () => {
-        if (!vaccineName) return alert("Please enter Vaccine Name");
+        if (!vaccineName) return;
         setLoading(true);
         try {
             const res = await axios.post(`${API_BAS}/api/vaccination/${slug}/add`, {
-
                 vaccineName,
                 note,
-                action
+                action,
             });
             if (res.data.success) {
                 setVaccineName('');
                 setNote('');
                 setAction('');
-                fetchHistory(); // Refresh List
+                fetchHistory();
             }
         } catch (err) {
-            console.error("Save error", err);
+            console.error('Save error', err);
         } finally {
             setLoading(false);
         }
     };
 
+    const formatDate = (dateStr) => {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const isAdministered = (record) => record.action === 'Administered';
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-2">
+        <div style={styles.root}>
 
-            {/* --- LEFT: Entry Form (4 Cols) --- */}
-            <div className="lg:col-span-4 bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 space-y-6 self-start">
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2.5 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-100">
-                        <Syringe size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">New Dose</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">Record Immunization</p>
-                    </div>
+            {/* Left: Entry Form */}
+            <div style={styles.panel}>
+                <div style={styles.panelHeader}>
+                    <Syringe size={15} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={styles.panelTitle}>Record immunization</span>
                 </div>
+                <div style={styles.panelBody}>
 
-                <div className="space-y-4">
-                    {/* Vaccine Name */}
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Vaccine Name</label>
-                        <div className="relative">
-                            <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                            <input
-                                type="text"
-                                value={vaccineName}
-                                onChange={(e) => setVaccineName(e.target.value)}
-                                placeholder="e.g. Covaxin, BCG, MMR"
-                                className="w-full bg-slate-50 border border-slate-100 p-3.5 pl-12 rounded-2xl text-xs font-bold outline-none focus:border-indigo-500 transition-all"
-                            />
-                        </div>
+                    <div style={styles.field}>
+                        <label style={styles.label}>Vaccine name</label>
+                        <input
+                            type="text"
+                            value={vaccineName}
+                            onChange={(e) => setVaccineName(e.target.value)}
+                            placeholder="e.g. Covaxin, BCG, MMR"
+                            style={styles.input}
+                            onFocus={e => e.target.style.borderColor = '#6366f1'}
+                            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                        />
                     </div>
 
-                    {/* Note */}
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Observation Note</label>
-                        <div className="relative">
-                            <NotebookPen className="absolute left-4 top-4 text-slate-400" size={16} />
-                            <textarea
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                placeholder="Write dosage or reaction notes..."
-                                rows="3"
-                                className="w-full bg-slate-50 border border-slate-100 p-3.5 pl-12 rounded-2xl text-xs font-bold outline-none focus:border-indigo-500 transition-all resize-none"
-                            />
-                        </div>
+                    <div style={styles.field}>
+                        <label style={styles.label}>Observation note</label>
+                        <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="Dosage, site, patient response…"
+                            rows={3}
+                            style={styles.textarea}
+                            onFocus={e => e.target.style.borderColor = '#6366f1'}
+                            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                        />
                     </div>
 
-                    {/* Action / Status */}
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Action</label>
-                        <div className="relative">
-                            <CheckCircle2 className="absolute left-4 top-4 text-slate-400" size={16} />
-                            <textarea
-                                value={action}
-                                onChange={(e) => setAction(e.target.value)}
-                                placeholder="Write the action taken..."
-                                rows="3"
-                                className="w-full bg-slate-50 border border-slate-100 p-3.5 pl-12 rounded-2xl text-xs font-bold outline-none focus:border-indigo-500 transition-all resize-none"
-                            />
-                        </div>
+                    <div style={styles.field}>
+                        <label style={styles.label}>Action taken</label>
+                        <textarea
+                            value={action}
+                            onChange={(e) => setAction(e.target.value)}
+                            placeholder="Steps taken or follow-up required…"
+                            rows={3}
+                            style={styles.textarea}
+                            onFocus={e => e.target.style.borderColor = '#6366f1'}
+                            onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                        />
                     </div>
 
                     <button
                         onClick={handleSave}
-                        disabled={loading}
-                        className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-slate-200 disabled:opacity-50"
+                        disabled={loading || !vaccineName}
+                        style={{
+                            ...styles.btnPrimary,
+                            opacity: loading || !vaccineName ? 0.45 : 1,
+                            cursor: loading || !vaccineName ? 'not-allowed' : 'pointer',
+                        }}
                     >
-                        {loading ? 'Saving...' : <><Plus size={18} /> Save Vaccination</>}
+                        <Plus size={15} />
+                        {loading ? 'Saving…' : 'Save record'}
                     </button>
+
                 </div>
             </div>
 
-            {/* --- RIGHT: History List (8 Cols) --- */}
-            <div className="lg:col-span-8 space-y-4">
-                <div className="flex items-center gap-2 px-2">
-                    <History size={18} className="text-slate-400" />
-                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Immunization History</h4>
+            {/* Right: History */}
+            <div style={{ ...styles.panel, display: 'flex', flexDirection: 'column' }}>
+                <div style={styles.panelHeader}>
+                    <List size={15} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={styles.panelTitle}>Immunization history</span>
+                    {history.length > 0 && (
+                        <span style={styles.countBadge}>{history.length} records</span>
+                    )}
                 </div>
 
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {history.length > 0 ? history.map((record, idx) => (
-                        <div key={idx} className="bg-white p-5 rounded-[28px] border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all group">
-                            <div className={`p-4 rounded-2xl ${record.action === 'Administered' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                <ShieldCheck size={24} />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex justify-between items-start">
-                                    <h5 className="text-sm font-black text-slate-800 uppercase tracking-tight">{record.vaccineName}</h5>
-                                    <span className="text-[9px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-tighter">
-                                        {new Date(record.date).toLocaleDateString('en-GB')}
+                <div style={styles.historyList}>
+                    {history.length === 0 ? (
+                        <div style={styles.emptyState}>
+                            <Syringe size={28} style={{ color: '#cbd5e1', marginBottom: 10 }} />
+                            <p style={styles.emptyText}>No records found</p>
+                        </div>
+                    ) : (
+                        history.map((record, idx) => (
+                            <div
+                                key={idx}
+                                style={styles.recordRow}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <div style={{
+                                    ...styles.recordIcon,
+                                    backgroundColor: isAdministered(record) ? '#f0fdf4' : '#fffbeb',
+                                }}>
+                                    {isAdministered(record)
+                                        ? <CheckCircle2 size={16} style={{ color: '#16a34a' }} />
+                                        : <Clock size={16} style={{ color: '#d97706' }} />
+                                    }
+                                </div>
+
+                                <div style={styles.recordMain}>
+                                    <div style={styles.recordName}>{record.vaccineName}</div>
+                                    <div style={styles.recordNote}>{record.note || 'No notes added'}</div>
+                                </div>
+
+                                <div style={styles.recordMeta}>
+                                    <div style={styles.recordDate}>{formatDate(record.date)}</div>
+                                    <span style={{
+                                        ...styles.badge,
+                                        backgroundColor: isAdministered(record) ? '#f0fdf4' : '#fffbeb',
+                                        color: isAdministered(record) ? '#16a34a' : '#d97706',
+                                    }}>
+                                        {isAdministered(record)
+                                            ? <CheckCircle2 size={10} />
+                                            : <Clock size={10} />
+                                        }
+                                        {record.action || '—'}
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-slate-500 font-medium mt-1 italic">"{record.note || 'No notes added'}"</p>
                             </div>
-                            <div className="text-right">
-                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${record.action === 'Administered' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                    }`}>
-                                    {record.action === 'Administered' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                                    {record.action}
-                                </div>
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="text-center py-20 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-100">
-                            <Syringe size={40} className="mx-auto text-slate-200 mb-3" />
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">No Records Found</p>
-                        </div>
+                        ))
                     )}
                 </div>
             </div>
+
         </div>
     );
+};
+
+const styles = {
+    root: {
+        display: 'grid',
+        gridTemplateColumns: '300px 1fr',
+        gap: 16,
+        padding: '4px 0',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    },
+    panel: {
+        backgroundColor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    panelHeader: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '12px 16px',
+        borderBottom: '1px solid #e2e8f0',
+    },
+    panelTitle: {
+        fontSize: 13,
+        fontWeight: 500,
+        color: '#0f172a',
+    },
+    countBadge: {
+        marginLeft: 'auto',
+        fontSize: 12,
+        color: '#94a3b8',
+    },
+    panelBody: {
+        padding: 16,
+    },
+    field: {
+        marginBottom: 14,
+    },
+    label: {
+        display: 'block',
+        fontSize: 12,
+        color: '#64748b',
+        marginBottom: 6,
+    },
+    input: {
+        width: '100%',
+        fontSize: 13,
+        padding: '8px 10px',
+        border: '1px solid #e2e8f0',
+        borderRadius: 7,
+        backgroundColor: '#f8fafc',
+        color: '#0f172a',
+        outline: 'none',
+        transition: 'border-color 0.15s',
+        boxSizing: 'border-box',
+    },
+    textarea: {
+        width: '100%',
+        fontSize: 13,
+        padding: '8px 10px',
+        border: '1px solid #e2e8f0',
+        borderRadius: 7,
+        backgroundColor: '#f8fafc',
+        color: '#0f172a',
+        outline: 'none',
+        resize: 'none',
+        lineHeight: 1.5,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        transition: 'border-color 0.15s',
+        boxSizing: 'border-box',
+    },
+    btnPrimary: {
+        width: '100%',
+        padding: '9px 16px',
+        backgroundColor: '#0f172a',
+        color: '#ffffff',
+        border: 'none',
+        borderRadius: 7,
+        fontSize: 13,
+        fontWeight: 500,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        transition: 'opacity 0.15s',
+        marginTop: 4,
+    },
+    historyList: {
+        overflowY: 'auto',
+        maxHeight: 460,
+    },
+    recordRow: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 16px',
+        borderBottom: '1px solid #f1f5f9',
+        transition: 'background-color 0.1s',
+    },
+    recordIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 6,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+    },
+    recordMain: {
+        flex: 1,
+        minWidth: 0,
+    },
+    recordName: {
+        fontSize: 13,
+        fontWeight: 500,
+        color: '#0f172a',
+    },
+    recordNote: {
+        fontSize: 12,
+        color: '#94a3b8',
+        marginTop: 2,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+    },
+    recordMeta: {
+        textAlign: 'right',
+        flexShrink: 0,
+    },
+    recordDate: {
+        fontSize: 12,
+        color: '#94a3b8',
+    },
+    badge: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '2px 8px',
+        borderRadius: 4,
+        fontSize: 11,
+        fontWeight: 500,
+        marginTop: 4,
+    },
+    emptyState: {
+        padding: '48px 16px',
+        textAlign: 'center',
+    },
+    emptyText: {
+        fontSize: 13,
+        color: '#94a3b8',
+    },
 };
 
 export default VaccinationManager;

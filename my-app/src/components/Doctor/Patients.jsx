@@ -4,11 +4,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   UserPlus, Search, Phone, MapPin,
   ChevronRight, Loader2,
-  Activity, Trash2
+  Activity, Trash2, ChevronLeft
 } from 'lucide-react';
 import PatientFormModal from './PatientFormModal';
 
 const API_BAS = import.meta.env.VITE_API_URL;
+
+const ITEMS_PER_PAGE = 10;
 
 const PatientManagement = () => {
   const { slug } = useParams();
@@ -21,6 +23,7 @@ const PatientManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGender, setFilterGender] = useState('');
   const [viewPatient, setViewPatient] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const initialFormState = { name: '', mobile: '', age: '', gender: 'Male', address: '', notes: '' };
   const [currentPatient, setCurrentPatient] = useState(initialFormState);
@@ -32,6 +35,7 @@ const PatientManagement = () => {
         params: { search: searchQuery, gender: filterGender }
       });
       setPatients(res.data.data);
+      setCurrentPage(1); // reset to page 1 on new search
     } catch (err) {
       console.error('Error fetching patients', err);
     } finally {
@@ -42,6 +46,13 @@ const PatientManagement = () => {
   useEffect(() => {
     fetchPatients();
   }, [searchQuery, filterGender]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(patients.length / ITEMS_PER_PAGE);
+  const paginatedPatients = patients.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleDelete = async (id) => {
     try {
@@ -98,6 +109,25 @@ const PatientManagement = () => {
     </p>
   );
 
+  /* ── Pagination Button ── */
+  const PageBtn = ({ page, active, onClick }) => (
+    <button
+      onClick={onClick}
+      style={{
+        minWidth: 32, height: 32, borderRadius: 8,
+        border: active ? 'none' : '1px solid #e2e8f0',
+        background: active ? '#18afb1' : '#fff',
+        color: active ? '#fff' : '#64748b',
+        fontWeight: 800, fontSize: 12,
+        cursor: 'pointer', transition: 'all 0.15s',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '0 8px',
+      }}
+    >
+      {page}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 font-sans text-slate-900">
 
@@ -105,18 +135,9 @@ const PatientManagement = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-800 uppercase">
-            <Activity className="text-[#18afb1]" size={28} /> Patient Studio
+            <Activity className="text-[#18afb1]" size={28} /> Patient Details
           </h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[2px] mt-1">
-            Centralized Records & Demographic Data
-          </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center gap-2 shadow-xl active:scale-95 transition-all"
-        >
-          <UserPlus size={16} /> New Registration
-        </button>
       </div>
 
       {/* ── FILTERS ── */}
@@ -148,6 +169,7 @@ const PatientManagement = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">#</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Info</th>
@@ -158,18 +180,21 @@ const PatientManagement = () => {
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="py-20 text-center">
+                  <td colSpan="6" className="py-20 text-center">
                     <Loader2 className="text-[#18afb1] animate-spin mx-auto mb-2" size={32} />
                   </td>
                 </tr>
-              ) : patients.length === 0 ? (
+              ) : paginatedPatients.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-16 text-center text-slate-400 font-bold text-sm">
+                  <td colSpan="6" className="py-16 text-center text-slate-400 font-bold text-sm">
                     No patients found
                   </td>
                 </tr>
-              ) : patients.map((patient) => (
+              ) : paginatedPatients.map((patient, index) => (
                 <tr key={patient._id} className="hover:bg-slate-50/80 transition-colors group">
+                  <td className="px-6 py-4 text-xs font-black text-slate-300">
+                    {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                  </td>
                   <td className="px-6 py-4" onClick={() => setViewPatient(patient)}>
                     <div className="flex items-center gap-3 cursor-pointer">
                       <div className="w-10 h-10 bg-[#18afb1]/10 rounded-xl flex items-center justify-center text-[#18afb1] font-black group-hover:bg-[#18afb1] group-hover:text-white transition-all">
@@ -212,6 +237,71 @@ const PatientManagement = () => {
             </tbody>
           </table>
         </div>
+
+        {/* ── PAGINATION ── */}
+        {!loading && patients.length > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 24px', borderTop: '1px solid #f1f5f9',
+            background: '#fafafa',
+          }}>
+            {/* Left: showing info */}
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', margin: 0 }}>
+              Showing{' '}
+              <span style={{ color: '#0f172a' }}>
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, patients.length)}
+              </span>
+              {' '}of{' '}
+              <span style={{ color: '#0f172a' }}>{patients.length}</span>
+              {' '}patients
+            </p>
+
+            {/* Right: page buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Prev */}
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  minWidth: 32, height: 32, borderRadius: 8,
+                  border: '1px solid #e2e8f0', background: '#fff',
+                  color: currentPage === 1 ? '#cbd5e1' : '#64748b',
+                  fontWeight: 800, fontSize: 12, cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <ChevronLeft size={14} />
+              </button>
+
+              {/* Page number buttons */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <PageBtn
+                  key={page}
+                  page={page}
+                  active={page === currentPage}
+                  onClick={() => setCurrentPage(page)}
+                />
+              ))}
+
+              {/* Next */}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                style={{
+                  minWidth: 32, height: 32, borderRadius: 8,
+                  border: '1px solid #e2e8f0', background: '#fff',
+                  color: currentPage === totalPages ? '#cbd5e1' : '#64748b',
+                  fontWeight: 800, fontSize: 12, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── PATIENT FORM MODAL ── */}
@@ -356,33 +446,33 @@ const PatientManagement = () => {
 
               {/* Consultation fee */}
               {viewPatient.consultationFee && (
-  <>
-    <SectionLabel>Consultation fee</SectionLabel>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-      <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Paid amount</p>
-        <p style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', margin: 0 }}>
-          ₹ {viewPatient.consultationFee?.paidAmount ?? '—'}
-        </p>
-      </div>
-      <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Status</p>
-        <p style={{ fontSize: 14, fontWeight: 800, margin: 0,
-          color: viewPatient.consultationFee?.status === 'Paid' ? '#16a34a' : '#e24b4a' }}>
-          {viewPatient.consultationFee?.status || '—'}
-        </p>
-      </div>
-      <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Valid upto</p>
-        <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-          {viewPatient.consultationFee?.validUpto
-            ? new Date(viewPatient.consultationFee.validUpto).toLocaleDateString('en-GB')
-            : '—'}
-        </p>
-      </div>
-    </div>
-  </>
-)}
+                <>
+                  <SectionLabel>Consultation fee</SectionLabel>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Paid amount</p>
+                      <p style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', margin: 0 }}>
+                        ₹ {viewPatient.consultationFee?.paidAmount ?? '—'}
+                      </p>
+                    </div>
+                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Status</p>
+                      <p style={{ fontSize: 14, fontWeight: 800, margin: 0,
+                        color: viewPatient.consultationFee?.status === 'Paid' ? '#16a34a' : '#e24b4a' }}>
+                        {viewPatient.consultationFee?.status || '—'}
+                      </p>
+                    </div>
+                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Valid upto</p>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                        {viewPatient.consultationFee?.validUpto
+                          ? new Date(viewPatient.consultationFee.validUpto).toLocaleDateString('en-GB')
+                          : '—'}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Records */}
               <SectionLabel>Records</SectionLabel>
@@ -408,8 +498,6 @@ const PatientManagement = () => {
               </div>
 
             </div>
-
-
           </div>
         </div>
       )}
