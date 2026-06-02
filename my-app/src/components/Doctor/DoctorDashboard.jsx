@@ -27,6 +27,7 @@ import SymptomsManager from './SymptomsManager'; // Import karein
 import VaccinationManager from './VaccinationManager'; // Import karein
 import AppointmentTable from './AppoinmentsStatus';
 import NotificationSettings from './Notification/Notification';
+import PrescriptionHistoryAll from './PrescriptionHistoryAll'
 
 const DoctorDashboard = () => {
   return (
@@ -105,6 +106,7 @@ const DoctorDashboard = () => {
                     <Route path="notification" element={<NotificationSettings activeTab="Notifications" />} />
 
 
+                    <Route path="prescription-history" element={<PrescriptionHistoryAll />} />
 
 
 

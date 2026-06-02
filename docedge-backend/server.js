@@ -47,3 +47,9 @@ app.use('/api/whatsapp', require('./routes/whatsappRoutes.js')); // Patient-spec
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 
+/////////////////////////////// this coomand for updating the server  //////////////////////
+
+//------------->           bash /var/www/docedge/update.sh  <------------------//
+
+
+/////////////////////////////////

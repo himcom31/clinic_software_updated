@@ -339,3 +339,81 @@ exports.getRowsByPatient = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+
+
+exports.getPrescriptionHistory = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const page  = Math.max(parseInt(req.query.page)  || 1, 1);
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const skip  = (page - 1) * limit;
+ 
+        // Fetch all appointments that have at least one prescription
+        const appointments = await Appointment.find({
+            clinicSlug: slug,
+            prescriptions: { $exists: true, $not: { $size: 0 } }
+        })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate('patientId', 'name mobile email age gender')
+            .populate({
+                path: 'prescriptions',
+                select: '_id createdAt medicines symptoms diagnosis investigations',
+            })
+            .lean();
+ 
+        const total = await Appointment.countDocuments({
+            clinicSlug: slug,
+            prescriptions: { $exists: true, $not: { $size: 0 } }
+        });
+ 
+        // Shape each record so the frontend gets a flat, predictable object
+        const data = appointments.map(appt => {
+            const prescription = appt.prescriptions?.[0] || {};
+            return {
+                // Prescription identifiers
+                _id:            prescription._id,
+                prescriptionId: prescription._id,
+                appointmentId:  appt._id,
+ 
+                // Patient info
+                patientName: appt.patientName || appt.patientId?.name || '—',
+                mobile:      appt.mobile      || appt.patientId?.mobile || '—',
+                patientId:   appt.patientId?._id,
+ 
+                // Visit info
+                visitType:   appt.visitType,
+                fees:        appt.billing?.totalFees ?? appt.fees ?? 0,
+ 
+                // Prescription content
+                diagnosis:      prescription.diagnosis      || '',
+                medicines:      prescription.medicines      || [],
+                symptoms:       prescription.symptoms       || [],
+                investigations: prescription.investigations || [],
+ 
+                // Dates
+                appointmentDate: appt.appointmentDate,
+                createdAt:       prescription.createdAt || appt.createdAt,
+            };
+        });
+ 
+        res.status(200).json({
+            success: true,
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+                hasMore: skip + data.length < total,
+            }
+        });
+ 
+    } catch (err) {
+        console.error('getPrescriptionHistory Error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+ 

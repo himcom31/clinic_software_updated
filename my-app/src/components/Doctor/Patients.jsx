@@ -4,14 +4,91 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   UserPlus, Search, Phone, MapPin,
   ChevronRight, Loader2,
-  Activity, Trash2, ChevronLeft
+  Activity, Trash2, ChevronLeft, Eye,
+  Filter, X, AlertTriangle, TrendingUp,
+  Users, Heart, Shield, MoreVertical
 } from 'lucide-react';
 import PatientFormModal from './PatientFormModal';
 
 const API_BAS = import.meta.env.VITE_API_URL;
-
 const ITEMS_PER_PAGE = 10;
 
+/* ─── Design Tokens ───────────────────────────────────────── */
+const T = {
+  brand:    '#0EA5E9',
+  brandDk:  '#0284C7',
+  brandLt:  '#E0F2FE',
+  surface:  '#FFFFFF',
+  bg:       '#F0F4F8',
+  border:   '#E2E8F0',
+  borderMd: '#CBD5E1',
+  text1:    '#0F172A',
+  text2:    '#475569',
+  text3:    '#94A3B8',
+  danger:   '#EF4444',
+  dangerLt: '#FEF2F2',
+  success:  '#10B981',
+  successLt:'#ECFDF5',
+  warn:     '#F59E0B',
+  warnLt:   '#FFFBEB',
+  male:     '#3B82F6',
+  maleLt:   '#EFF6FF',
+  female:   '#EC4899',
+  femaleLt: '#FDF2F8',
+};
+
+/* ─── Utility Components ──────────────────────────────────── */
+const Badge = ({ children, variant = 'default' }) => {
+  const styles = {
+    default:  { bg: T.bg,         color: T.text2,   border: T.border   },
+    male:     { bg: T.maleLt,     color: T.male,    border: '#BFDBFE'  },
+    female:   { bg: T.femaleLt,   color: T.female,  border: '#FBCFE8'  },
+    success:  { bg: T.successLt,  color: T.success, border: '#A7F3D0'  },
+    danger:   { bg: T.dangerLt,   color: T.danger,  border: '#FECACA'  },
+    warn:     { bg: T.warnLt,     color: T.warn,    border: '#FDE68A'  },
+    brand:    { bg: T.brandLt,    color: T.brandDk, border: '#BAE6FD'  },
+  };
+  const s = styles[variant] || styles.default;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '2px 8px', borderRadius: 6,
+      fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
+      fontFamily: '"DM Mono", monospace',
+    }}>
+      {children}
+    </span>
+  );
+};
+
+const Divider = ({ vertical }) => vertical
+  ? <div style={{ width: 1, alignSelf: 'stretch', background: T.border }} />
+  : <div style={{ height: 1, background: T.border }} />;
+
+const StatCard = ({ icon: Icon, label, value, sub, color = T.brand }) => (
+  <div style={{
+    background: T.surface, border: `1px solid ${T.border}`,
+    borderRadius: 12, padding: '16px 20px',
+    display: 'flex', alignItems: 'center', gap: 14, minWidth: 0,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  }}>
+    <div style={{
+      width: 40, height: 40, borderRadius: 10,
+      background: color + '18',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    }}>
+      <Icon size={18} color={color} strokeWidth={2.2} />
+    </div>
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 20, fontWeight: 800, color: T.text1, lineHeight: 1.1, fontFamily: '"DM Mono", monospace' }}>{value}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: T.text3, marginTop: 2, letterSpacing: '0.03em' }}>{label}</div>
+      {sub && <div style={{ fontSize: 10, color: T.text3, marginTop: 1 }}>{sub}</div>}
+    </div>
+  </div>
+);
+
+/* ─── Main Component ──────────────────────────────────────── */
 const PatientManagement = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -24,6 +101,7 @@ const PatientManagement = () => {
   const [filterGender, setFilterGender] = useState('');
   const [viewPatient, setViewPatient] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [hoveredRow, setHoveredRow] = useState(null);
 
   const initialFormState = { name: '', mobile: '', age: '', gender: 'Male', address: '', notes: '' };
   const [currentPatient, setCurrentPatient] = useState(initialFormState);
@@ -35,7 +113,7 @@ const PatientManagement = () => {
         params: { search: searchQuery, gender: filterGender }
       });
       setPatients(res.data.data);
-      setCurrentPage(1); // reset to page 1 on new search
+      setCurrentPage(1);
     } catch (err) {
       console.error('Error fetching patients', err);
     } finally {
@@ -43,23 +121,24 @@ const PatientManagement = () => {
     }
   };
 
-  useEffect(() => {
-    fetchPatients();
-  }, [searchQuery, filterGender]);
+  useEffect(() => { fetchPatients(); }, [searchQuery, filterGender]);
 
-  // Pagination logic
   const totalPages = Math.ceil(patients.length / ITEMS_PER_PAGE);
   const paginatedPatients = patients.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
+  const maleCount = patients.filter(p => p.gender === 'Male').length;
+  const femaleCount = patients.filter(p => p.gender === 'Female').length;
+
   const handleDelete = async (id) => {
+    if (!window.confirm('Delete this patient record? This action cannot be undone.')) return;
     try {
       await axios.delete(`${API_BAS}/api/patients/${slug}/delete/${id}`);
       fetchPatients();
-    } catch (err) {
-      alert('Delete karne mein error aaya!');
+    } catch {
+      alert('Failed to delete record.');
     }
   };
 
@@ -75,236 +154,410 @@ const PatientManagement = () => {
     setShowModal(true);
   };
 
-  /* ── Stat row item ── */
-  const StatCell = ({ label, value, color }) => (
-    <div style={{ background: '#fff', padding: '10px', textAlign: 'center' }}>
-      <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>{label}</p>
-      <p style={{ fontSize: 14, fontWeight: 700, color: color || '#0f172a', margin: 0 }}>{value}</p>
-    </div>
-  );
-
-  /* ── Info row item ── */
-  const InfoRow = ({ icon, label, value }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#f8fafc', borderRadius: 10 }}>
-      <span style={{ fontSize: 16 }}>{icon}</span>
-      <div>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{label}</p>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>{value || '—'}</p>
-      </div>
-    </div>
-  );
-
-  /* ── Vital card ── */
-  const VitalCard = ({ label, value, color }) => (
-    <div style={{ padding: '10px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
-      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>{label}</p>
-      <p style={{ fontSize: 14, fontWeight: 700, color: color || '#0f172a', margin: 0 }}>{value}</p>
-    </div>
-  );
-
-  /* ── Section label ── */
-  const SectionLabel = ({ children, mt = 12 }) => (
-    <p style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, margin: `${mt}px 0 4px` }}>
-      {children}
-    </p>
-  );
-
-  /* ── Pagination Button ── */
-  const PageBtn = ({ page, active, onClick }) => (
-    <button
-      onClick={onClick}
-      style={{
-        minWidth: 32, height: 32, borderRadius: 8,
-        border: active ? 'none' : '1px solid #e2e8f0',
-        background: active ? '#18afb1' : '#fff',
-        color: active ? '#fff' : '#64748b',
-        fontWeight: 800, fontSize: 12,
-        cursor: 'pointer', transition: 'all 0.15s',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '0 8px',
-      }}
-    >
-      {page}
-    </button>
-  );
+  /* ── Pagination range builder ── */
+  const getPageRange = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (currentPage <= 4) return [1, 2, 3, 4, 5, '…', totalPages];
+    if (currentPage >= totalPages - 3) return [1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    return [1, '…', currentPage - 1, currentPage, currentPage + 1, '…', totalPages];
+  };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 font-sans text-slate-900">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500;600&display=swap');
 
-      {/* ── HEADER ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-800 uppercase">
-            <Activity className="text-[#18afb1]" size={28} /> Patient Details
-          </h1>
-        </div>
-      </div>
+        .pm-root { font-family: 'DM Sans', sans-serif; }
 
-      {/* ── FILTERS ── */}
-      <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-center gap-3 mb-6">
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-          <input
-            type="text"
-            placeholder="Search name, mobile or address..."
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-[#18afb1]/20 transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <select
-          className="bg-slate-50 border-none rounded-xl px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer"
-          value={filterGender}
-          onChange={(e) => setFilterGender(e.target.value)}
-        >
-          <option value="">GENDER: ALL</option>
-          <option value="Male">MALE</option>
-          <option value="Female">FEMALE</option>
-        </select>
-      </div>
+        .pm-table-row { transition: background 0.1s ease; cursor: default; }
+        .pm-table-row:hover { background: #F8FBFF !important; }
+        .pm-table-row:hover .pm-row-actions { opacity: 1 !important; }
 
-      {/* ── TABLE ── */}
-      <div className="bg-white rounded-[24px] shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">#</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Info</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="py-20 text-center">
-                    <Loader2 className="text-[#18afb1] animate-spin mx-auto mb-2" size={32} />
-                  </td>
-                </tr>
-              ) : paginatedPatients.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="py-16 text-center text-slate-400 font-bold text-sm">
-                    No patients found
-                  </td>
-                </tr>
-              ) : paginatedPatients.map((patient, index) => (
-                <tr key={patient._id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-6 py-4 text-xs font-black text-slate-300">
-                    {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
-                  </td>
-                  <td className="px-6 py-4" onClick={() => setViewPatient(patient)}>
-                    <div className="flex items-center gap-3 cursor-pointer">
-                      <div className="w-10 h-10 bg-[#18afb1]/10 rounded-xl flex items-center justify-center text-[#18afb1] font-black group-hover:bg-[#18afb1] group-hover:text-white transition-all">
-                        {patient.name.charAt(0).toUpperCase()}
-                      </div>
-                      <p className="text-sm font-black text-slate-700 uppercase leading-none">{patient.name}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-600">
-                    <Phone size={12} className="inline mr-2 text-slate-300" /> {patient.mobile}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${patient.gender === 'Male' ? 'bg-blue-50 text-blue-600' : 'bg-pink-50 text-pink-600'}`}>
-                      {patient.age}Y • {patient.gender.charAt(0)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-xs text-slate-500 truncate max-w-[150px]">
-                    <MapPin size={12} className="inline mr-1 text-slate-300" /> {patient.address}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setViewPatient(patient)}
-                        className="p-2 hover:text-blue-600 transition-colors text-slate-300"
-                        title="View details"
-                      >
-                        <ChevronRight size={18} />
-                      </button>
-                      <button
-                        onClick={() => window.confirm('Delete record?') && handleDelete(patient._id)}
-                        className="p-2 hover:text-red-500 transition-colors text-slate-300"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        .pm-btn-ghost {
+          display: flex; align-items: center; justify-content: center;
+          width: 30px; height: 30px; border-radius: 7px; border: none;
+          background: transparent; cursor: pointer; color: ${T.text3};
+          transition: all 0.12s ease;
+        }
+        .pm-btn-ghost:hover { background: ${T.bg}; color: ${T.text1}; }
+        .pm-btn-ghost.danger:hover { background: ${T.dangerLt}; color: ${T.danger}; }
+        .pm-btn-ghost.brand:hover  { background: ${T.brandLt};  color: ${T.brandDk}; }
 
-        {/* ── PAGINATION ── */}
-        {!loading && patients.length > 0 && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 24px', borderTop: '1px solid #f1f5f9',
-            background: '#fafafa',
-          }}>
-            {/* Left: showing info */}
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', margin: 0 }}>
-              Showing{' '}
-              <span style={{ color: '#0f172a' }}>
-                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, patients.length)}
-              </span>
-              {' '}of{' '}
-              <span style={{ color: '#0f172a' }}>{patients.length}</span>
-              {' '}patients
-            </p>
+        .pm-input {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px; font-weight: 500; color: ${T.text1};
+          background: ${T.bg}; border: 1px solid ${T.border};
+          border-radius: 8px; padding: 8px 12px; outline: none;
+          transition: all 0.15s ease; width: 100%;
+        }
+        .pm-input:focus { border-color: ${T.brand}; background: #fff; box-shadow: 0 0 0 3px ${T.brand}22; }
 
-            {/* Right: page buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {/* Prev */}
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                style={{
-                  minWidth: 32, height: 32, borderRadius: 8,
-                  border: '1px solid #e2e8f0', background: '#fff',
-                  color: currentPage === 1 ? '#cbd5e1' : '#64748b',
-                  fontWeight: 800, fontSize: 12, cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <ChevronLeft size={14} />
-              </button>
+        .pm-primary-btn {
+          display: flex; align-items: center; gap: 7px;
+          padding: 9px 16px; border-radius: 9px; border: none;
+          background: ${T.text1}; color: #fff;
+          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+          cursor: pointer; transition: all 0.15s ease; white-space: nowrap;
+          letter-spacing: 0.01em;
+        }
+        .pm-primary-btn:hover { background: #1E293B; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .pm-primary-btn:active { transform: translateY(0); }
 
-              {/* Page number buttons */}
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <PageBtn
-                  key={page}
-                  page={page}
-                  active={page === currentPage}
-                  onClick={() => setCurrentPage(page)}
-                />
-              ))}
+        .pm-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .pm-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .pm-scrollbar::-webkit-scrollbar-thumb { background: ${T.borderMd}; border-radius: 99px; }
+        .pm-scrollbar::-webkit-scrollbar-thumb:hover { background: ${T.text3}; }
 
-              {/* Next */}
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                style={{
-                  minWidth: 32, height: 32, borderRadius: 8,
-                  border: '1px solid #e2e8f0', background: '#fff',
-                  color: currentPage === totalPages ? '#cbd5e1' : '#64748b',
-                  fontWeight: 800, fontSize: 12, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <ChevronRight size={14} />
-              </button>
+        .pm-tag {
+          display: inline-flex; align-items: center; gap: 3px;
+          font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 600;
+          text-transform: uppercase; letter-spacing: 0.06em;
+          padding: 2px 7px; border-radius: 5px;
+        }
+
+        .pm-slide-in {
+          animation: slideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(6px) scale(0.99); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .pm-info-row {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 16px; font-size: 12px;
+        }
+        .pm-info-row + .pm-info-row { border-top: 1px solid ${T.border}; }
+
+        .pm-section-header {
+          padding: 10px 16px; font-size: 10px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.08em;
+          color: ${T.text3}; background: #F8FAFC;
+          border-bottom: 1px solid ${T.border};
+        }
+
+        .pm-vital-card {
+          background: ${T.surface}; border: 1px solid ${T.border};
+          border-radius: 10px; padding: 12px 14px; text-align: center;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .pm-detail-panel {
+          background: ${T.surface}; border: 1px solid ${T.border};
+          border-radius: 12px; overflow: hidden;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+      `}</style>
+
+      <div className="pm-root" style={{ minHeight: '100vh', background: T.bg, padding: '24px 28px' }}>
+
+        {/* ── Page Header ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 9,
+                background: T.text1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Activity size={16} color="#fff" strokeWidth={2.5} />
+              </div>
+              <h1 style={{ fontSize: 20, fontWeight: 800, color: T.text1, margin: 0, letterSpacing: '-0.02em' }}>
+                Patient Registry
+              </h1>
             </div>
+            <p style={{ margin: 0, fontSize: 12, color: T.text3, fontWeight: 500, paddingLeft: 44 }}>
+              Clinic · <span style={{ fontFamily: '"DM Mono", monospace', color: T.text2 }}>{String(slug || '').toUpperCase()}</span>
+            </p>
           </div>
-        )}
+        </div>
+
+        {/* ── Stat Cards ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
+          <StatCard icon={Users}      label="Total Patients"  value={patients.length}  color={T.brand}   />
+          <StatCard icon={Shield}     label="Male Patients"   value={maleCount}         color={T.male}    />
+          <StatCard icon={Heart}      label="Female Patients" value={femaleCount}       color={T.female}  />
+          <StatCard icon={TrendingUp} label="This Page"       value={paginatedPatients.length} color={T.success} />
+        </div>
+
+        {/* ── Toolbar ── */}
+        <div style={{
+          background: T.surface, borderRadius: 12,
+          border: `1px solid ${T.border}`, padding: '10px 14px',
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)', flexWrap: 'wrap',
+        }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+            <Search size={14} color={T.text3} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              className="pm-input"
+              style={{ paddingLeft: 34 }}
+              placeholder="Search by name, mobile, or address…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Filter size={13} color={T.text3} />
+            <select
+              className="pm-input"
+              style={{ width: 'auto', paddingLeft: 10, paddingRight: 28, fontSize: 12, cursor: 'pointer' }}
+              value={filterGender}
+              onChange={e => setFilterGender(e.target.value)}
+            >
+              <option value="">All Genders</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          {(searchQuery || filterGender) && (
+            <button
+              onClick={() => { setSearchQuery(''); setFilterGender(''); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '7px 11px', borderRadius: 7, border: `1px solid ${T.border}`,
+                background: T.bg, color: T.text2, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              <X size={12} /> Clear
+            </button>
+          )}
+
+          <div style={{ marginLeft: 'auto', fontSize: 12, color: T.text3, fontWeight: 600, whiteSpace: 'nowrap' }}>
+            {patients.length} record{patients.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+
+        {/* ── Table ── */}
+        <div style={{
+          background: T.surface, borderRadius: 14,
+          border: `1px solid ${T.border}`,
+          overflow: 'hidden',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        }}>
+          <div style={{ overflowX: 'auto' }} className="pm-scrollbar">
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '5%'  }} />
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '24%' }} />
+                <col style={{ width: '12%' }} />
+              </colgroup>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${T.border}`, background: '#FAFBFC' }}>
+                  {['#', 'Patient', 'Contact', 'Biometrics', 'Address', 'Actions'].map((h, i) => (
+                    <th key={h} style={{
+                      padding: '10px 16px',
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.07em',
+                      textTransform: 'uppercase', color: T.text3,
+                      textAlign: i === 3 ? 'center' : i === 5 ? 'right' : 'left',
+                      fontFamily: '"DM Sans", sans-serif',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '72px 0', textAlign: 'center' }}>
+                      <Loader2 size={24} color={T.brand} style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 10px' }} />
+                      <span style={{ fontSize: 12, color: T.text3, fontWeight: 600 }}>Loading patient records…</span>
+                    </td>
+                  </tr>
+                ) : paginatedPatients.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '72px 0', textAlign: 'center' }}>
+                      <Users size={28} color={T.text3} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.4 }} />
+                      <span style={{ fontSize: 13, color: T.text3, fontWeight: 600 }}>No patients found</span>
+                      <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>Try adjusting your search or filters</div>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedPatients.map((patient, index) => {
+                    const rowNum = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                    const isMale = patient.gender === 'Male';
+                    return (
+                      <tr
+                        key={patient._id}
+                        className="pm-table-row"
+                        style={{ borderBottom: `1px solid ${T.border}`, background: T.surface }}
+                      >
+                        {/* # */}
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: T.text3, fontFamily: '"DM Mono", monospace' }}>
+                            {String(rowNum).padStart(2, '0')}
+                          </span>
+                        </td>
+
+                        {/* Patient */}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                            onClick={() => setViewPatient(patient)}
+                          >
+                            <div style={{
+                              width: 34, height: 34, borderRadius: 9,
+                              background: isMale ? T.maleLt : T.femaleLt,
+                              border: `1px solid ${isMale ? '#BFDBFE' : '#FBCFE8'}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 12, fontWeight: 800, flexShrink: 0,
+                              color: isMale ? T.male : T.female,
+                              transition: 'all 0.12s',
+                            }}>
+                              {patient.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: T.text1, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {patient.name}
+                              </div>
+                              <div style={{ fontSize: 10, color: T.text3, fontFamily: '"DM Mono", monospace', marginTop: 1 }}>
+                                #{String(patient._id).slice(-6).toUpperCase()}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Contact */}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Phone size={11} color={T.text3} strokeWidth={2} />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: T.text2, fontFamily: '"DM Mono", monospace' }}>
+                              {patient.mobile || '—'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Biometrics */}
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <span className="pm-tag" style={{
+                            background: isMale ? T.maleLt : T.femaleLt,
+                            color: isMale ? T.male : T.female,
+                            border: `1px solid ${isMale ? '#BFDBFE' : '#FBCFE8'}`,
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
+                            {patient.age || '?'}y · {patient.gender?.charAt(0) || '?'}
+                          </span>
+                        </td>
+
+                        {/* Address */}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, maxWidth: '100%' }}>
+                            <MapPin size={11} color={T.text3} strokeWidth={2} style={{ flexShrink: 0 }} />
+                            <span style={{
+                              fontSize: 12, fontWeight: 500, color: T.text2,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                            }} title={patient.address}>
+                              {patient.address || <span style={{ color: T.text3, fontStyle: 'italic' }}>Not provided</span>}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div className="pm-row-actions" style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2,
+                            opacity: 0.3, transition: 'opacity 0.1s',
+                          }}>
+                            <button
+                              className="pm-btn-ghost brand"
+                              title="View full profile"
+                              onClick={() => setViewPatient(patient)}
+                            >
+                              <Eye size={14} strokeWidth={2.2} />
+                            </button>
+                            <button
+                              className="pm-btn-ghost danger"
+                              title="Delete record"
+                              onClick={() => handleDelete(patient._id)}
+                            >
+                              <Trash2 size={14} strokeWidth={2.2} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── Pagination ── */}
+          {!loading && patients.length > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 20px', borderTop: `1px solid ${T.border}`,
+              background: '#FAFBFC', flexWrap: 'wrap', gap: 10,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.text3 }}>
+                Showing <b style={{ color: T.text1 }}>{(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, patients.length)}</b> of <b style={{ color: T.text1 }}>{patients.length}</b>
+              </span>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {/* Prev */}
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 30, height: 30, borderRadius: 7,
+                    border: `1px solid ${T.border}`, background: T.surface,
+                    color: currentPage === 1 ? T.text3 : T.text2,
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                    opacity: currentPage === 1 ? 0.4 : 1,
+                  }}
+                >
+                  <ChevronLeft size={14} />
+                </button>
+
+                {getPageRange().map((page, i) => (
+                  <button
+                    key={i}
+                    onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      minWidth: 30, height: 30, padding: '0 6px', borderRadius: 7,
+                      border: page === currentPage ? 'none' : `1px solid ${T.border}`,
+                      background: page === currentPage ? T.text1 : T.surface,
+                      color: page === currentPage ? '#fff' : page === '…' ? T.text3 : T.text2,
+                      fontSize: 12, fontWeight: page === currentPage ? 800 : 600,
+                      cursor: typeof page === 'number' ? 'pointer' : 'default',
+                      fontFamily: '"DM Mono", monospace',
+                    }}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                {/* Next */}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 30, height: 30, borderRadius: 7,
+                    border: `1px solid ${T.border}`, background: T.surface,
+                    color: currentPage === totalPages ? T.text3 : T.text2,
+                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                    opacity: currentPage === totalPages ? 0.4 : 1,
+                  }}
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
 
-      {/* ── PATIENT FORM MODAL ── */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* ── Patient Form Modal ── */}
       <PatientFormModal
         show={showModal}
         onClose={() => setShowModal(false)}
@@ -315,203 +568,209 @@ const PatientManagement = () => {
         isEditing={isEditing}
       />
 
-      {/* ── PATIENT DETAIL MODAL ── */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* ── Patient Detail Panel (Slide-over style) ── */}
       {viewPatient && (
         <div
-          onClick={() => setViewPatient(null)}
           style={{
             position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.65)',
+            background: 'rgba(15,23,42,0.5)',
+            backdropFilter: 'blur(3px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '16px',
-            backdropFilter: 'blur(4px)',
+            padding: 16,
           }}
+          onClick={() => setViewPatient(null)}
         >
           <div
-            onClick={(e) => e.stopPropagation()}
+            className="pm-slide-in pm-scrollbar"
             style={{
-              background: '#fff',
-              borderRadius: 20,
-              width: '100%',
-              maxWidth: 580,
-              maxHeight: '92vh',
-              overflowY: 'auto',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
+              background: T.bg,
+              width: '100%', maxWidth: 980,
+              height: '90vh', maxHeight: 720,
+              borderRadius: 16, overflow: 'hidden',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
+              display: 'flex', flexDirection: 'column',
+              border: `1px solid ${T.border}`,
             }}
+            onClick={e => e.stopPropagation()}
           >
-            {/* ── Modal Header ── */}
+
+            {/* Header */}
             <div style={{
-              background: '#0f172a',
-              padding: '1.25rem 1.5rem',
+              background: T.surface, padding: '14px 20px',
+              borderBottom: `1px solid ${T.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              borderRadius: '20px 20px 0 0',
-              position: 'sticky', top: 0, zIndex: 10,
+              flexShrink: 0,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
-                  width: 50, height: 50, borderRadius: '50%',
-                  background: '#18afb1',
+                  width: 38, height: 38, borderRadius: 10,
+                  background: viewPatient.gender === 'Male' ? T.maleLt : T.femaleLt,
+                  border: `1px solid ${viewPatient.gender === 'Male' ? '#BFDBFE' : '#FBCFE8'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, fontWeight: 700, color: '#fff',
+                  fontSize: 14, fontWeight: 800,
+                  color: viewPatient.gender === 'Male' ? T.male : T.female,
                 }}>
-                  {viewPatient.name.charAt(0).toUpperCase()}
+                  {viewPatient.name?.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p style={{ fontSize: 17, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: 0.5 }}>
-                    {viewPatient.name.toUpperCase()}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: '3px 0 0' }}>
-                    ID: {(viewPatient.clinicSlug || slug).slice(0, 4).toUpperCase()}{String(viewPatient._id).slice(-6).toUpperCase()}
-                    &nbsp;·&nbsp;
-                    Registered {new Date(viewPatient.createdAt).toLocaleDateString('en-GB')}
-                  </p>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: T.text1, letterSpacing: '-0.02em' }}>
+                    {viewPatient.name}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                    <span style={{ fontSize: 10, color: T.text3, fontFamily: '"DM Mono", monospace' }}>
+                      ID: {String(viewPatient.clinicSlug || slug || 'CL').slice(0, 4).toUpperCase()}{String(viewPatient._id).slice(-6).toUpperCase()}
+                    </span>
+                    <Badge variant={viewPatient.gender === 'Male' ? 'male' : 'female'}>
+                      {viewPatient.gender}
+                    </Badge>
+                    {viewPatient.age && (
+                      <Badge variant="default">{viewPatient.age} yrs</Badge>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
-                onClick={() => setViewPatient(null)}
                 style={{
-                  background: 'rgba(255,255,255,0.1)', border: 'none',
-                  borderRadius: '50%', width: 34, height: 34,
-                  cursor: 'pointer', color: '#fff', fontSize: 18,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'background 0.15s',
+                  width: 32, height: 32, borderRadius: 8, border: `1px solid ${T.border}`,
+                  background: T.bg, cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', color: T.text3,
+                  transition: 'all 0.12s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                onClick={() => setViewPatient(null)}
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
-            {/* ── Top Stats Strip ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, background: '#e2e8f0' }}>
-              <StatCell label="Age / Gender" value={`${viewPatient.age}Y / ${viewPatient.gender}`} />
-              <StatCell label="Blood group" value={viewPatient.bloodGroup || '—'} color="#e24b4a" />
-              <StatCell
-                label="Last visit"
-                value={viewPatient.lastVisit ? new Date(viewPatient.lastVisit).toLocaleDateString('en-GB') : '—'}
-              />
+            {/* Body */}
+            <div className="pm-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+                {/* ── Left Column ── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                  {/* Quick Biometrics */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                    {[
+                      { label: 'Age / Sex', value: `${viewPatient.age || '—'}y / ${viewPatient.gender?.charAt(0) || '—'}` },
+                      { label: 'Blood Group', value: viewPatient.bloodGroup || '—', highlight: true },
+                      { label: 'Last Visit', value: viewPatient.lastVisit ? new Date(viewPatient.lastVisit).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—' },
+                    ].map(c => (
+                      <div key={c.label} className="pm-vital-card">
+                        <div style={{ fontSize: 9, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{c.label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: c.highlight ? T.danger : T.text1, fontFamily: '"DM Mono", monospace' }}>{c.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="pm-detail-panel">
+                    <div className="pm-section-header">Contact Information</div>
+                    {[
+                      { label: 'Primary Mobile',     value: viewPatient.mobile    },
+                      { label: 'Emergency Contact',   value: viewPatient.emMobile  },
+                      { label: 'Email Address',       value: viewPatient.email     },
+                    ].map(row => (
+                      <div key={row.label} className="pm-info-row">
+                        <span style={{ fontSize: 12, fontWeight: 500, color: T.text3 }}>{row.label}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: T.text1, fontFamily: '"DM Mono", monospace', userSelect: 'all' }}>
+                          {row.value || <span style={{ color: T.text3, fontWeight: 400 }}>—</span>}
+                        </span>
+                      </div>
+                    ))}
+                    <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.border}` }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>Residential Address</div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: T.text2, lineHeight: 1.6 }}>
+                        {viewPatient.address || <span style={{ color: T.text3, fontStyle: 'italic' }}>No address on file</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* ── Right Column ── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                  {/* Vitals */}
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Biometric Vitals</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                      {[
+                        { label: 'Weight', value: viewPatient.weight ? `${viewPatient.weight} kg` : '—' },
+                        { label: 'Height', value: viewPatient.height ? `${viewPatient.height} cm` : '—' },
+                        { label: 'BMI', value: viewPatient.bmi ? Number(viewPatient.bmi).toFixed(1) : '—', warn: viewPatient.bmi > 30 },
+                      ].map(c => (
+                        <div key={c.label} className="pm-vital-card">
+                          <div style={{ fontSize: 9, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{c.label}</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: c.warn ? T.danger : T.text1, fontFamily: '"DM Mono", monospace' }}>{c.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Allergies Alert */}
+                  {viewPatient.allergies && (
+                    <div style={{
+                      background: T.warnLt, border: `1px solid #FDE68A`,
+                      borderRadius: 10, padding: '12px 14px',
+                      display: 'flex', gap: 10, alignItems: 'flex-start',
+                    }}>
+                      <AlertTriangle size={14} color={T.warn} strokeWidth={2.5} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>Allergies & Contraindications</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#78350F', lineHeight: 1.5 }}>{viewPatient.allergies}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Financial Ledger */}
+                  <div className="pm-detail-panel">
+                    <div className="pm-section-header">Consultation Ledger</div>
+                    <div className="pm-info-row">
+                      <span style={{ fontSize: 12, fontWeight: 500, color: T.text3 }}>Referral Channel</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.text1 }}>{viewPatient.referenceType || 'Direct Walk-In'}</span>
+                    </div>
+                    <div className="pm-info-row">
+                      <span style={{ fontSize: 12, fontWeight: 500, color: T.text3 }}>Assigned Practitioner</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.text1 }}>{viewPatient.referenceName || '—'}</span>
+                    </div>
+
+                    {viewPatient.consultationFee && (
+                      <>
+                        <Divider />
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, borderTop: `1px solid ${T.border}` }}>
+                          {[
+                            { label: 'Amount Paid', value: `₹${viewPatient.consultationFee?.paidAmount ?? 0}` },
+                            { label: 'Status', value: null, badge: viewPatient.consultationFee?.status },
+                            { label: 'Valid Until', value: viewPatient.consultationFee?.validUpto ? new Date(viewPatient.consultationFee.validUpto).toLocaleDateString('en-IN') : '—' },
+                          ].map((col, i) => (
+                            <div key={col.label} style={{
+                              padding: '12px 14px', textAlign: 'center',
+                              borderRight: i < 2 ? `1px solid ${T.border}` : 'none',
+                            }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{col.label}</div>
+                              {col.badge
+                                ? <Badge variant={col.badge === 'Paid' ? 'success' : 'danger'}>{col.badge}</Badge>
+                                : <div style={{ fontSize: 13, fontWeight: 800, color: T.text1, fontFamily: '"DM Mono", monospace' }}>{col.value}</div>
+                              }
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                </div>
+              </div>
             </div>
 
-            {/* ── Body ── */}
-            <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-              {/* Contact */}
-              <SectionLabel mt={0}>Contact</SectionLabel>
-              <InfoRow icon="📞" label="Mobile" value={viewPatient.mobile} />
-              <InfoRow icon="🚨" label="Emergency contact" value={viewPatient.emMobile} />
-              <InfoRow icon="✉️" label="Email" value={viewPatient.email} />
-              <InfoRow icon="📍" label="Address" value={viewPatient.address} />
-
-              {/* Vitals */}
-              <SectionLabel>Vitals</SectionLabel>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                <VitalCard label="Weight" value={viewPatient.weight ? `${viewPatient.weight} kg` : '—'} />
-                <VitalCard label="Height" value={viewPatient.height ? `${viewPatient.height} cm` : '—'} />
-                <VitalCard
-                  label="BMI"
-                  value={viewPatient.bmi ? Number(viewPatient.bmi).toFixed(1) : '—'}
-                  color={viewPatient.bmi > 30 ? '#e24b4a' : '#0f172a'}
-                />
-              </div>
-
-              {/* Allergies */}
-              {viewPatient.allergies && (
-                <>
-                  <SectionLabel>Allergies</SectionLabel>
-                  <div style={{ padding: '10px 14px', background: '#fff8e1', borderRadius: 10, border: '1px solid #fbbf24' }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#92400e', margin: 0 }}>
-                      {viewPatient.allergies || 'None reported'}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* Reference */}
-              <SectionLabel>Reference</SectionLabel>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {[
-                  { label: 'Type', value: viewPatient.referenceType || 'Self' },
-                  { label: 'Ref name', value: viewPatient.referenceName || '—' },
-                ].map(r => (
-                  <div key={r.label} style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: 10 }}>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{r.label}</p>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: 0 }}>{r.value}</p>
-                  </div>
-                ))}
-              </div>
-              {viewPatient.referenceMobile && (
-                <InfoRow icon="📞" label="Reference mobile" value={viewPatient.referenceMobile} />
-              )}
-
-              {/* Consultation fee */}
-              {viewPatient.consultationFee && (
-                <>
-                  <SectionLabel>Consultation fee</SectionLabel>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Paid amount</p>
-                      <p style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', margin: 0 }}>
-                        ₹ {viewPatient.consultationFee?.paidAmount ?? '—'}
-                      </p>
-                    </div>
-                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Status</p>
-                      <p style={{ fontSize: 14, fontWeight: 800, margin: 0,
-                        color: viewPatient.consultationFee?.status === 'Paid' ? '#16a34a' : '#e24b4a' }}>
-                        {viewPatient.consultationFee?.status || '—'}
-                      </p>
-                    </div>
-                    <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>Valid upto</p>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                        {viewPatient.consultationFee?.validUpto
-                          ? new Date(viewPatient.consultationFee.validUpto).toLocaleDateString('en-GB')
-                          : '—'}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Records */}
-              <SectionLabel>Records</SectionLabel>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>📋</span>
-                  <div>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Prescriptions</p>
-                    <p style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      {viewPatient.prescriptions?.length || 0}
-                    </p>
-                  </div>
-                </div>
-                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>🧾</span>
-                  <div>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Billing records</p>
-                    <p style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      {viewPatient.billingRecords?.length || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
           </div>
         </div>
       )}
 
-      <style>{`
-        .professional-input {
-          width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px;
-          padding: 12px 16px; font-size: 13px; font-weight: 700; color: #1e293b; outline: none; transition: 0.2s;
-        }
-        .professional-input:focus {
-          border-color: #18afb1; background: #fff; box-shadow: 0 0 0 4px rgba(24,175,177,0.08);
-        }
-      `}</style>
-    </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </>
   );
 };
 

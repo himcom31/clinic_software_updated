@@ -6,7 +6,7 @@ import {
   Wallet, CalendarDays, SlidersHorizontal, ChevronLeft,
   ChevronRight, Loader2, Activity, FileText, IndianRupee,
   User, Phone, MapPin, Droplets, AlertCircle, History, ArrowLeft,
-  AlertTriangle, CheckCircle2, Clock, Mail, Weight, Ruler, HeartPulse,
+  AlertTriangle, CheckCircle2, Clock, Mail, Weight, Ruler, HeartPulse,Save,
   UserCheck
 } from 'lucide-react';
 
@@ -118,6 +118,7 @@ const PatField = ({ label, k, type = 'text', opts, span2 = false, readOnly = fal
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── VIEW MODAL ───────────────────────────────────────────────────────────────
+// ─── VIEW MODAL (FULL POPUP VIEW - NO INTERNAL SCROLL) ───────────────────────────
 function ViewModal({ appt, onClose }) {
   const { slug } = useParams();
 
@@ -166,26 +167,26 @@ function ViewModal({ appt, onClose }) {
   const InfoRow = ({ icon, label, value }) => {
     if (value === null || value === undefined || value === '') return null;
     return (
-      <div className="flex items-start gap-3 py-3 border-b border-slate-50 last:border-0">
-        <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="flex items-start gap-2.5 py-2 border-b border-slate-100 last:border-0">
+        <div className="w-6 h-6 rounded bg-slate-50 flex items-center justify-center flex-shrink-0 mt-0.5 border border-slate-200/60">
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-          <p className="text-sm font-bold text-slate-800 break-words">{value}</p>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+          <p className="text-xs font-semibold text-slate-800 break-words">{value}</p>
         </div>
       </div>
     );
   };
 
   const SectionLabel = ({ children }) => (
-    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pt-2 pb-1 border-b border-slate-100 mb-1">
+    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-200 mb-2">
       {children}
     </p>
   );
 
   const fullName   = p.name        || appt.patientName || '';
-  const mobile     = appt.mobile   || p.mobile         || '';
+  const mobile      = appt.mobile   || p.mobile         || '';
   const emMobile   = p.emMobile    || '';
   const email      = p.email       || '';
   const age        = p.age         ?? null;
@@ -207,114 +208,153 @@ function ViewModal({ appt, onClose }) {
     : null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-      <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
-
-        <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-          <div>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider mb-2 ${sc.bar}`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-              {appt.status}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden antialiased">
+        
+        {/* ── HEADER BLOCK ── */}
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-lg font-black text-slate-900 tracking-tight">{fullName}</h2>
+                <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${sc.bar.replace('bg-', 'border-')}`}>
+                  <div className={`w-1 h-1 rounded-full ${sc.dot}`} />
+                  {appt.status}
+                </div>
+              </div>
+              <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                Token <span className="font-bold text-slate-700">#{appt.tokenNumber}</span> • {appt.visitType} • Booking Date: <span className="font-bold text-slate-700">{bookingDate || '—'}</span>
+              </p>
             </div>
-            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">{fullName}</h2>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5">Token #{appt.tokenNumber} • {appt.visitType}</p>
           </div>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full text-slate-300 transition-colors">
-            <X size={20} />
+          
+          <button 
+            onClick={onClose} 
+            className="w-8 h-8 flex items-center justify-center border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X size={16} />
           </button>
         </div>
 
-        <div className="p-8 max-h-[65vh] overflow-y-auto space-y-1">
+        {/* ── CORE GRID CONTAINER (NO INTERNAL SCROLLING) ── */}
+        <div className="p-6 bg-white">
+          
+          {/* Status Fallbacks */}
+          {!patientLoading && patientError && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+              <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
+              <p className="text-[11px] font-medium text-amber-800">
+                System warning: Unable to sync with archive storage files. Displaying active profile fallback data.
+              </p>
+            </div>
+          )}
 
-          {patientLoading && (
-            <div className="space-y-3 animate-pulse py-2">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 py-2">
-                  <div className="w-7 h-7 bg-slate-100 rounded-lg flex-shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-2 bg-slate-100 rounded w-16" />
-                    <div className="h-3.5 bg-slate-100 rounded w-40" />
-                  </div>
+          {patientLoading ? (
+            <div className="grid grid-cols-4 gap-6 animate-pulse py-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="h-3 bg-slate-100 rounded w-16" />
+                  <div className="h-8 bg-slate-100 rounded w-full" />
+                  <div className="h-8 bg-slate-100 rounded w-full" />
                 </div>
               ))}
             </div>
-          )}
-
-          {!patientLoading && patientError && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-2">
-              <AlertTriangle size={12} className="text-amber-500 flex-shrink-0" />
-              <p className="text-[10px] font-black text-amber-600">
-                Could not load full patient record — check your API endpoint.
-              </p>
-            </div>
-          )}
-
-          {!patientLoading && (
-            <>
-              <SectionLabel>Contact</SectionLabel>
-              <InfoRow icon={<Phone size={13} className="text-slate-500" />} label="Mobile / WhatsApp" value={mobile} />
-              <InfoRow icon={<Phone size={13} className="text-amber-500" />} label="Emergency Mobile" value={emMobile} />
-              <InfoRow icon={<Mail size={13} className="text-slate-500" />} label="Email Address" value={email} />
-
-              <SectionLabel>Personal Details</SectionLabel>
-              <InfoRow icon={<User size={13} className="text-slate-500" />} label="Full Name" value={fullName} />
-              <InfoRow icon={<User size={13} className="text-slate-500" />} label="Age / Gender" value={ageGender} />
-              <InfoRow icon={<Droplets size={13} className="text-red-400" />} label="Blood Group" value={bloodGroup} />
-              <InfoRow icon={<UserCheck size={13} className="text-slate-500" />} label="Reference By" value={referenceBy} />
-
-              <SectionLabel>Vitals</SectionLabel>
-              <InfoRow icon={<Activity size={13} className="text-slate-500" />} label="Weight (kg)" value={weight != null ? `${weight} kg` : null} />
-              <InfoRow icon={<Activity size={13} className="text-slate-500" />} label="Height (cm)" value={height != null ? `${height} cm` : null} />
-              <InfoRow icon={<Activity size={13} className="text-slate-500" />} label="BMI Index" value={bmi != null ? `${bmi}` : null} />
-
-              <SectionLabel>Other</SectionLabel>
-              <InfoRow icon={<MapPin size={13} className="text-slate-500" />} label="Address" value={address} />
-              <InfoRow icon={<AlertCircle size={13} className="text-red-400" />} label="Allergies" value={allergies} />
-              <InfoRow icon={<CalendarDays size={13} className="text-slate-500" />} label="Booking Date" value={bookingDate} />
-            </>
-          )}
-
-          <div className="mt-4 p-5 rounded-[20px] bg-slate-50 border border-slate-100">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Billing</p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold">Paid / Total</p>
-                <p className="text-lg font-black text-slate-800">
-                  ₹{appt.billing?.paidAmount || 0}
-                  <span className="text-slate-400 font-bold text-sm"> / ₹{appt.billing?.totalFees || 0}</span>
-                </p>
+          ) : (
+            
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+              
+              {/* SECTION 1: CONTACT ARCHITECTURE */}
+              <div className="space-y-1">
+                <SectionLabel>Contact Details</SectionLabel>
+                <InfoRow icon={<Phone size={12} className="text-slate-500" />} label="Primary Mobile / WhatsApp" value={mobile} />
+                <InfoRow icon={<Phone size={12} className="text-amber-600" />} label="Emergency Backup Contact" value={emMobile} />
+                <InfoRow icon={<Mail size={12} className="text-slate-500" />} label="Secure Email Address" value={email} />
               </div>
-              <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${pc}`}>
-                {appt.billing?.paymentStatus || 'Unpaid'}
-              </span>
-            </div>
-            {appt.billing?.paymentMethod && (
-              <p className="text-[10px] text-slate-400 font-bold mt-2">Via {appt.billing.paymentMethod}</p>
-            )}
-            {(appt.billing?.previousDue > 0) && (appt.billing?.paymentStatus !== 'Paid') && (
-              <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-                <AlertTriangle size={12} className="text-amber-500 flex-shrink-0" />
-                <p className="text-[10px] font-black text-amber-700">
-                  Carried forward due from previous visit: ₹{appt.billing.previousDue}
-                </p>
-              </div>
-            )}
-          </div>
 
-          {appt.prescriptions?.length > 0 && (
-            <div className="pt-4 flex items-center gap-2">
-              <FileText size={13} className="text-emerald-500" />
-              <p className="text-[11px] font-bold text-emerald-600">
-                {appt.prescriptions.length} prescription(s) on record
-              </p>
+              {/* SECTION 2: BIOMETRIC & BIO DETAILS */}
+              <div className="space-y-1">
+                <SectionLabel>Personal Dossier</SectionLabel>
+                <InfoRow icon={<User size={12} className="text-slate-500" />} label="Full Patient Name" value={fullName} />
+                <InfoRow icon={<User size={12} className="text-slate-500" />} label="Demographics (Age/Gender)" value={ageGender} />
+                <InfoRow icon={<Droplets size={12} className="text-red-500" />} label="Blood Group Matrix" value={bloodGroup} />
+                <InfoRow icon={<UserCheck size={12} className="text-slate-500" />} label="Referral Attribution" value={referenceBy} />
+              </div>
+
+              {/* SECTION 3: CLINICAL METRICS */}
+              <div className="space-y-1">
+                <SectionLabel>Vitals Index & Environment</SectionLabel>
+                <InfoRow icon={<Activity size={12} className="text-slate-500" />} label="Recorded Weight" value={weight != null ? `${weight} kg` : null} />
+                <InfoRow icon={<Activity size={12} className="text-slate-500" />} label="Recorded Height" value={height != null ? `${height} cm` : null} />
+                <InfoRow icon={<Activity size={12} className="text-slate-500" />} label="Computed BMI Matrix" value={bmi != null ? `${bmi}` : null} />
+                <InfoRow icon={<AlertCircle size={12} className="text-red-500" />} label="Allergies / Contraindications" value={allergies} />
+              </div>
+
+              {/* SECTION 4: LEDGER & PERIPHERAL ACTIONS */}
+              <div className="space-y-3">
+                <SectionLabel>Financial Status</SectionLabel>
+                
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Collected / Invoice total</p>
+                      <p className="text-base font-black text-slate-900 mt-0.5">
+                        ₹{appt.billing?.paidAmount || 0}
+                        <span className="text-slate-400 font-bold text-xs"> / ₹{appt.billing?.totalFees || 0}</span>
+                      </p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${pc}`}>
+                      {appt.billing?.paymentStatus || 'Unpaid'}
+                    </span>
+                  </div>
+
+                  {appt.billing?.paymentMethod && (
+                    <div className="flex items-center justify-between text-[10px] pt-2 border-t border-slate-200">
+                      <span className="text-slate-400 font-medium">Payment Mode</span>
+                      <span className="font-bold text-slate-700">{appt.billing.paymentMethod}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Arrears Indicator */}
+                {appt.billing?.previousDue > 0 && appt.billing?.paymentStatus !== 'Paid' && (
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-2.5">
+                    <AlertTriangle size={13} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-[10px] font-medium text-amber-800 leading-tight">
+                      Outstanding balance of <span className="font-bold">₹{appt.billing.previousDue}</span> linked to history.
+                    </p>
+                  </div>
+                )}
+
+                {/* Prescription Count Badge */}
+                {appt.prescriptions?.length > 0 && (
+                  <div className="flex items-center gap-2 bg-emerald-50/60 border border-emerald-100 rounded-xl px-3 py-2">
+                    <FileText size={13} className="text-emerald-600" />
+                    <p className="text-[11px] font-bold text-emerald-700">
+                      {appt.prescriptions.length} Prescriptions Logged
+                    </p>
+                  </div>
+                )}
+
+              </div>
+
             </div>
           )}
+
+          {/* Full-width Address Footer row to optimize space cleanly */}
+          {!patientLoading && address && (
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
+              <MapPin size={13} className="text-slate-400 flex-shrink-0" />
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Registered Residence:</p>
+              <p className="text-xs font-medium text-slate-700 truncate">{address}</p>
+            </div>
+          )}
+
         </div>
+
       </div>
     </div>
   );
 }
-
 // ─── PAYMENT MODAL ────────────────────────────────────────────────────────────
 function PaymentModal({ appt, onClose, onSave }) {
   const { slug } = useParams();
@@ -510,42 +550,38 @@ function PaymentModal({ appt, onClose, onSave }) {
   );
 }
 
-// ─── EDIT MODAL ───────────────────────────────────────────────────────────────
+// ─── EDIT MODAL ──────────────────────────────────────────────────────────
 function EditModal({ appt, onClose, onSave }) {
   const { slug } = useParams();
 
   const [patientLoading, setPatientLoading] = useState(true);
   const [patientId, setPatientId] = useState(null);
-
-  const [apptForm, setApptForm] = useState({
-    patientName:     appt?.patientName || '',
-    mobile:          appt?.mobile      || '',
-    appointmentDate: appt?.appointmentDate?.slice(0, 10) || '',
-    visitType:       appt?.visitType   || 'New Patient',
-    status:          appt?.status      || 'Waiting',
-  });
-
-  const [patientForm, setPatientForm] = useState({
-    name:          '',
-    mobile:        '',
-    emMobile:      '',
-    email:         '',
-    age:           '',
-    gender:        '',
-    bloodGroup:    '',
-    weight:        '',
-    height:        '',
-    bmi:           '',
-    referenceType: 'Self',
-    referenceName: '',
-    address:       '',
-    allergies:     '',
-  });
-
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // ── Stable handlers using useCallback so PatField/ApptField never get stale refs
+  const [apptForm, setApptForm] = useState({
+    appointmentDate: appt?.appointmentDate?.slice(0, 10) || '',
+    visitType: appt?.visitType || 'New Patient',
+    status: appt?.status || 'Waiting',
+  });
+
+  const [patientForm, setPatientForm] = useState({
+    mobile: '',
+    emMobile: '',
+    name: '',
+    email: '',
+    age: '',
+    gender: 'Male',
+    bloodGroup: '',
+    weight: '',
+    height: '',
+    bmi: '',
+    referenceType: 'Self',
+    referenceName: '',
+    address: '',
+    allergies: '',
+  });
+
   const handleApptChange = useCallback((k, v) => {
     setApptForm(f => ({ ...f, [k]: v }));
   }, []);
@@ -557,7 +593,7 @@ function EditModal({ appt, onClose, onSave }) {
         const w = parseFloat(key === 'weight' ? value : prev.weight);
         const h = parseFloat(key === 'height' ? value : prev.height) / 100;
         if (w > 0 && h > 0) {
-          updated.bmi = (w / (h * h)).toFixed(1);
+          updated.bmi = (w / (h * h)).toFixed(2);
         } else {
           updated.bmi = '';
         }
@@ -571,7 +607,10 @@ function EditModal({ appt, onClose, onSave }) {
       ? appt.patientId._id
       : appt?.patientId;
 
-    if (!pid) { setPatientLoading(false); return; }
+    if (!pid) {
+      setPatientLoading(false);
+      return;
+    }
 
     setPatientId(pid);
     let cancelled = false;
@@ -582,20 +621,20 @@ function EditModal({ appt, onClose, onSave }) {
         const p = res.data?.data || res.data?.patient || res.data;
         if (p) {
           setPatientForm({
-            name:          p.name          || appt?.patientName || '',
-            mobile:        p.mobile        || appt?.mobile      || '',
-            emMobile:      p.emMobile      || '',
-            email:         p.email         || '',
-            age:           p.age           ?? '',
-            gender:        p.gender        || '',
-            bloodGroup:    p.bloodGroup    || '',
-            weight:        p.weight        ?? '',
-            height:        p.height        ?? '',
-            bmi:           p.bmi           ?? '',
+            name: p.name || appt?.patientName || '',
+            mobile: p.mobile || appt?.mobile || '',
+            emMobile: p.emMobile || '',
+            email: p.email || '',
+            age: p.age ?? '',
+            gender: p.gender || 'Male',
+            bloodGroup: p.bloodGroup || '',
+            weight: p.weight ?? '',
+            height: p.height ?? '',
+            bmi: p.bmi ?? '',
             referenceType: p.referenceType || 'Self',
             referenceName: p.referenceName || '',
-            address:       p.address       || '',
-            allergies:     p.allergies     || '',
+            address: p.address || '',
+            allergies: p.allergies || '',
           });
         }
       })
@@ -604,18 +643,18 @@ function EditModal({ appt, onClose, onSave }) {
         const p = typeof appt?.patientId === 'object' ? appt.patientId : {};
         setPatientForm(f => ({
           ...f,
-          name:       p.name       || appt?.patientName || '',
-          mobile:     p.mobile     || appt?.mobile      || '',
-          emMobile:   p.emMobile   || '',
-          email:      p.email      || '',
-          age:        p.age        ?? '',
-          gender:     p.gender     || '',
+          name: p.name || appt?.patientName || '',
+          mobile: p.mobile || appt?.mobile || '',
+          emMobile: p.emMobile || '',
+          email: p.email || '',
+          age: p.age ?? '',
+          gender: p.gender || 'Male',
           bloodGroup: p.bloodGroup || '',
-          weight:     p.weight     ?? '',
-          height:     p.height     ?? '',
-          bmi:        p.bmi        ?? '',
-          address:    p.address    || '',
-          allergies:  p.allergies  || '',
+          weight: p.weight ?? '',
+          height: p.height ?? '',
+          bmi: p.bmi ?? '',
+          address: p.address || '',
+          allergies: p.allergies || '',
         }));
       })
       .finally(() => { if (!cancelled) setPatientLoading(false); });
@@ -623,11 +662,16 @@ function EditModal({ appt, onClose, onSave }) {
     return () => { cancelled = true; };
   }, [appt?.patientId, slug]);
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
     setSaveError('');
     setSaving(true);
     try {
-      const apptPayload = { ...apptForm };
+      const apptPayload = {
+        ...apptForm,
+        patientName: patientForm.name,
+        mobile: patientForm.mobile
+      };
       const patientPayload = { ...patientForm };
 
       const requests = [
@@ -643,7 +687,6 @@ function EditModal({ appt, onClose, onSave }) {
       const [apptRes] = await Promise.all(requests);
 
       if (apptRes.data.success) {
-        clearCache();
         onSave({
           ...apptRes.data.data,
           patientId: { ...patientPayload, _id: patientId },
@@ -656,116 +699,285 @@ function EditModal({ appt, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-      <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
-
-        <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">Edit Appointment</h2>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5">{appt.patientName}</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white w-full max-w-[1250px] shadow-2xl border border-slate-300 flex flex-col h-auto font-sans text-slate-900">
+        
+        {/* Header Segment Matching Layout */}
+        <div className="flex bg-blue-600 text-white items-center px-6 py-4 justify-between">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-xs font-black uppercase tracking-widest text-slate-200">
+              Edit Mode — Security Scope Profile
+            </h2>
+            <div className="text-[10px] font-bold opacity-60 uppercase tracking-wider">
+              Record ID: {appt?._id || 'Master Object'}
+            </div>
           </div>
-          <button onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full text-slate-300 transition-colors">
-            <X size={20} />
-          </button>
+
+          <div className="flex items-center gap-6">
+            <div className="text-[10px] font-bold opacity-70 flex items-center gap-2 tracking-wider">
+              {patientLoading ? <Loader2 size={12} className="animate-spin" /> : '● READY'}
+            </div>
+            <button 
+              onClick={onClose}
+              type="button"
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        <div className="p-8 max-h-[68vh] overflow-y-auto">
+        {/* Form Body - Exactly Mirroring 4 Column Form Matrix Grid */}
+        <form onSubmit={handleSave} className="p-6 grid grid-cols-4 gap-x-6 gap-y-5">
+          {patientLoading ? (
+            <div className="col-span-4 py-20 flex flex-col items-center justify-center gap-3">
+              <Loader2 size={32} className="animate-spin text-slate-500" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Fetching Remote Profile...</p>
+            </div>
+          ) : (
+            <>
+              {/* ROW 1: Identifiers */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">1. Mobile Number / WhatsApp</label>
+                <input
+                  required
+                  type="text"
+                  maxLength={10}
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors"
+                  value={patientForm.mobile}
+                  onChange={(e) => handlePatientChange('mobile', e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
 
-          {patientLoading && (
-            <div className="grid grid-cols-2 gap-4 animate-pulse">
-              {[...Array(12)].map((_, i) => (
-                <div key={i} className={`space-y-2 ${i >= 10 ? 'col-span-2' : ''}`}>
-                  <div className="h-2.5 bg-slate-100 rounded w-20" />
-                  <div className="h-11 bg-slate-100 rounded-2xl" />
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">2. Emergency Mobile</label>
+                <input 
+                  type="text"
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={patientForm.emMobile} 
+                  onChange={(e) => handlePatientChange('emMobile', e.target.value)} 
+                />
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">3. Full Name</label>
+                <input
+                  required
+                  type="text"
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase focus:outline-none focus:border-slate-900 text-slate-800 transition-colors"
+                  value={patientForm.name}
+                  onChange={(e) => handlePatientChange('name', e.target.value)}
+                />
+              </div>
+
+              {/* ROW 2: Comms & Demographics */}
+              <div className="col-span-2 space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">4. Email Address</label>
+                <input 
+                  type="email" 
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={patientForm.email} 
+                  onChange={(e) => handlePatientChange('email', e.target.value)} 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">5. Age</label>
+                  <input 
+                    required 
+                    type="number" 
+                    className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                    value={patientForm.age} 
+                    onChange={(e) => handlePatientChange('age', e.target.value)} 
+                  />
                 </div>
-              ))}
-            </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">6. Gender</label>
+                  <select 
+                    className="w-full bg-slate-50 border border-slate-300 px-2 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                    value={patientForm.gender} 
+                    onChange={(e) => handlePatientChange('gender', e.target.value)}
+                  >
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">7. Blood Group</label>
+                <select
+                  className="w-full bg-slate-50 border border-slate-300 px-2 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors"
+                  value={patientForm.bloodGroup}
+                  onChange={(e) => handlePatientChange('bloodGroup', e.target.value)}
+                >
+                  <option value="">— Select —</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+
+              {/* ROW 3: Scheduling Rules & Metadata */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">8. Booking Date</label>
+                <input 
+                  type="date" 
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={apptForm.appointmentDate} 
+                  onChange={(e) => handleApptChange('appointmentDate', e.target.value)} 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">9. Visit Metric Type</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-300 px-2 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={apptForm.visitType} 
+                  onChange={(e) => handleApptChange('visitType', e.target.value)}
+                >
+                  <option>New Patient</option>
+                  <option>Revisit Patient</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">10. Lifecycle Status</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-300 px-2 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={apptForm.status} 
+                  onChange={(e) => handleApptChange('status', e.target.value)}
+                >
+                  <option>Waiting</option>
+                  <option>In-Consultation</option>
+                  <option>Completed</option>
+                  <option>Cancelled</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">11. Ref Type</label>
+                  <select 
+                    className="w-full bg-slate-50 border border-slate-300 px-1 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                    value={patientForm.referenceType} 
+                    onChange={(e) => handlePatientChange('referenceType', e.target.value)}
+                  >
+                    <option>Self</option>
+                    <option>Doctor</option>
+                    <option>Friend</option>
+                    <option>Family</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">12. Name</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-slate-50 border border-slate-300 px-2 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                    value={patientForm.referenceName} 
+                    onChange={(e) => handlePatientChange('referenceName', e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              {/* ROW 4: Diagnostics Metrics */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">13. Weight (kg)</label>
+                <input 
+                  type="number" 
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={patientForm.weight} 
+                  onChange={(e) => handlePatientChange('weight', e.target.value)} 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">14. Height (cm)</label>
+                <input 
+                  type="number" 
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={patientForm.height} 
+                  onChange={(e) => handlePatientChange('height', e.target.value)} 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">15. Calculated BMI</label>
+                <input 
+                  readOnly 
+                  type="text" 
+                  className="w-full bg-slate-100 border border-slate-300 px-3 py-1.5 text-xs font-black text-slate-600 focus:outline-none" 
+                  value={patientForm.bmi} 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">16. Safety Alerts/Allergies</label>
+                <input 
+                  type="text" 
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold text-red-700 focus:outline-none focus:border-slate-900 transition-colors" 
+                  value={patientForm.allergies} 
+                  onChange={(e) => handlePatientChange('allergies', e.target.value)} 
+                />
+              </div>
+
+              {/* ROW 5: Full-Width Location Sub-field */}
+              <div className="col-span-4 space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">17. Business / Physical Mailing Address</label>
+                <input 
+                  type="text" 
+                  className="w-full bg-slate-50 border border-slate-300 px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-slate-900 text-slate-800 transition-colors" 
+                  value={patientForm.address} 
+                  onChange={(e) => handlePatientChange('address', e.target.value)} 
+                />
+              </div>
+            </>
           )}
 
-          {!patientLoading && (
-            <div className="grid grid-cols-2 gap-4">
-
-              {/* ── APPOINTMENT ─────────────────────────────────────────────── */}
-              <EditSectionLabel>Appointment</EditSectionLabel>
-
-              <ApptField label="Booking Date" k="appointmentDate" type="date"
-                value={apptForm.appointmentDate} onChange={handleApptChange} />
-              <ApptField label="Visit Type" k="visitType"
-                opts={['New Patient', 'Revisit Patient']}
-                value={apptForm.visitType} onChange={handleApptChange} />
-              <ApptField label="Status" k="status"
-                opts={['Waiting', 'In-Consultation', 'Completed', 'Cancelled']}
-                value={apptForm.status} onChange={handleApptChange} />
-
-              {/* ── CONTACT ─────────────────────────────────────────────────── */}
-              <EditSectionLabel>Contact</EditSectionLabel>
-
-              <PatField label="Mobile / WhatsApp" k="mobile"
-                value={patientForm.mobile} onChange={handlePatientChange} />
-              <PatField label="Emergency Mobile" k="emMobile"
-                value={patientForm.emMobile} onChange={handlePatientChange} />
-              <PatField label="Email Address" k="email" type="email" span2
-                value={patientForm.email} onChange={handlePatientChange} />
-
-              {/* ── PERSONAL ────────────────────────────────────────────────── */}
-              <EditSectionLabel>Personal Details</EditSectionLabel>
-
-              <PatField label="Full Name" k="name" span2
-                value={patientForm.name} onChange={handlePatientChange} />
-              <PatField label="Age" k="age" type="number"
-                value={patientForm.age} onChange={handlePatientChange} />
-              <PatField label="Gender" k="gender"
-                opts={['Male', 'Female', 'Other']}
-                value={patientForm.gender} onChange={handlePatientChange} />
-              <PatField label="Blood Group" k="bloodGroup"
-                opts={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']}
-                value={patientForm.bloodGroup} onChange={handlePatientChange} />
-              <PatField label="Reference Type" k="referenceType"
-                opts={['Self', 'Doctor', 'Friend', 'Family', 'Other']}
-                value={patientForm.referenceType} onChange={handlePatientChange} />
-              <PatField label="Reference Name" k="referenceName"
-                value={patientForm.referenceName} onChange={handlePatientChange} />
-
-              {/* ── VITALS ──────────────────────────────────────────────────── */}
-              <EditSectionLabel>Vitals</EditSectionLabel>
-
-              <PatField label="Weight (kg)" k="weight" type="number"
-                value={patientForm.weight} onChange={handlePatientChange} />
-              <PatField label="Height (cm)" k="height" type="number"
-                value={patientForm.height} onChange={handlePatientChange} />
-              <PatField label="BMI Index (auto)" k="bmi" type="number" readOnly
-                value={patientForm.bmi} onChange={handlePatientChange} />
-
-              {/* ── OTHER ───────────────────────────────────────────────────── */}
-              <EditSectionLabel>Other</EditSectionLabel>
-
-              <PatField label="Address" k="address" span2
-                value={patientForm.address} onChange={handlePatientChange} />
-              <PatField label="Allergies" k="allergies" span2
-                value={patientForm.allergies} onChange={handlePatientChange} />
-
-            </div>
-          )}
-
+          {/* Inline Action Blocks Footer */}
           {saveError && (
-            <div className="mt-4 flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-              <AlertTriangle size={13} className="text-red-500 flex-shrink-0" />
-              <p className="text-[11px] font-bold text-red-600">{saveError}</p>
+            <div className="col-span-4 flex items-center gap-2 bg-red-50 border border-red-200 px-4 py-2 text-red-800">
+              <AlertTriangle size={14} className="text-red-600 flex-shrink-0" />
+              <p className="text-[11px] font-bold uppercase tracking-wider">{saveError}</p>
             </div>
           )}
-        </div>
 
-        <div className="px-8 pb-8 flex gap-3 border-t border-slate-50 pt-5">
-          <button onClick={onClose}
-            className="flex-1 py-4 rounded-[20px] border-2 border-slate-200 font-black text-[11px] uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">
-            Cancel
-          </button>
-          <button onClick={handleSave} disabled={saving || patientLoading}
-            className="flex-[2] bg-slate-900 text-white py-4 px-8 rounded-[20px] font-black text-[11px] uppercase tracking-[3px] active:scale-95 transition-all disabled:opacity-60">
-            {saving ? 'Saving…' : patientLoading ? 'Loading…' : 'Save Changes'}
-          </button>
-        </div>
+          <div className="col-span-4 flex justify-end gap-3 pt-2 border-t border-slate-200 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 border border-slate-300 text-slate-600 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || patientLoading}
+              className="bg-slate-900 text-white px-7 py-2 font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Save size={12} />
+                  Commit Changes
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
       </div>
     </div>
   );
@@ -958,7 +1170,7 @@ const AppointmentTable = () => {
   const q = searchText.trim().toLowerCase();
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-[#f8fafc]  font-sans text-slate-900">
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
@@ -1127,154 +1339,181 @@ const AppointmentTable = () => {
       </div>
 
       {/* ── TABLE ──────────────────────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-[24px] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
-                {['S.No', 'Patient Details', 'Mobile', 'Address', 'Booking Date', 'Status', 'Payment', 'Actions'].map(h => (
-                  <th key={h} className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {loading && appointments.length === 0 && (
-                [...Array(6)].map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="p-5"><div className="w-9 h-9 bg-slate-100 rounded-xl" /></td>
-                    <td className="p-5"><div className="h-3.5 bg-slate-100 rounded w-28 mb-2" /><div className="h-2.5 bg-slate-50 rounded w-16" /></td>
-                    <td className="p-4"><div className="h-3 bg-slate-100 rounded w-24" /></td>
-                    <td className="p-4"><div className="h-3 bg-slate-100 rounded w-20" /></td>
-                    <td className="p-4"><div className="h-3 bg-slate-100 rounded w-16" /></td>
-                    <td className="p-4"><div className="h-6 bg-slate-100 rounded-full w-24" /></td>
-                    <td className="p-4"><div className="h-6 bg-slate-100 rounded-full w-16" /></td>
-                    <td className="p-4"><div className="h-8 bg-slate-100 rounded-xl w-32" /></td>
-                  </tr>
-                ))
-              )}
-
-              {!loading && filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-20 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
-                        <Search size={20} className="text-slate-300" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
-                        {appointments.length > 0 ? 'No Records Match Filters' : 'No Appointments Found'}
-                      </p>
-                      {appointments.length > 0 && (
-                        <button onClick={resetFilters} className="text-[10px] font-black text-[#18afb1] uppercase tracking-widest hover:underline">
-                          Clear Filters
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )}
-
-              {filtered.map((appt, i) => {
-                const sc = statusConfig[appt.status] || statusConfig['Waiting'];
-                const pc = paymentConfig[appt.billing?.paymentStatus] || paymentConfig['Unpaid'];
-                const hasPrevDue = (appt.billing?.previousDue > 0) &&
-                  (appt.billing?.paymentStatus !== 'Paid');
-
-                return (
-                  <tr key={appt._id} className="group hover:bg-slate-50/50 transition-colors">
-                    <td className="p-5">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center font-black text-xs text-slate-500">
-                        {(page - 1) * LIMIT + i + 1}
-                      </div>
-                    </td>
-                    <td className="p-5">
-                      <p className="font-bold text-slate-800 text-sm uppercase tracking-tight">
-                        {q ? hl(appt.patientName, q) : appt.patientName}
-                      </p>
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded
-                        ${appt.visitType === 'Revisit Patient' ? 'text-blue-500 bg-blue-50' : 'text-emerald-500 bg-emerald-50'}`}>
-                        {appt.visitType}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-[12px] font-bold text-slate-600">
-                        {q ? hl(appt.mobile, q) : appt.mobile}
-                      </span>
-                    </td>
-                    <td className="p-4 max-w-[130px]">
-                      <span className="text-[11px] text-slate-500 font-medium truncate block" title={appt.patientId?.address}>
-                        {appt.patientId?.address || '—'}
-                      </span>
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <span className="text-[11px] font-bold text-slate-600">
-                        {appt.appointmentDate
-                          ? new Date(appt.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                          : '—'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${sc.bar}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${sc.dot} ${sc.pulse ? 'animate-pulse' : ''}`} />
-                        {appt.status}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-col gap-1">
-                        <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap ${pc}`}>
-                          {appt.billing?.paymentStatus || 'Unpaid'}
-                        </span>
-                        {hasPrevDue && (
-                          <span className="inline-flex items-center gap-1 text-[8px] font-black text-amber-500 uppercase tracking-wider">
-                            <AlertTriangle size={9} />
-                            Due ₹{appt.billing.previousDue}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5">
-                        <button onClick={() => setModal({ type: 'view', appt })} title="View Details"
-                          className="icon-action-btn text-slate-500 bg-slate-100 border-slate-200 hover:bg-slate-900 hover:text-black hover:border-slate-900">
-                          <Eye size={14} />
-                        </button>
-                        <button onClick={() => setModal({ type: 'edit', appt })} title="Edit"
-                          className="icon-action-btn text-blue-500 bg-blue-50 border-blue-100 hover:bg-blue-600 hover:text-black hover:border-blue-600">
-                          <Edit3 size={14} />
-                        </button>
-                        <button onClick={() => setModal({ type: 'payment', appt })} title="Update Payment"
-                          className="icon-action-btn text-emerald-600 bg-emerald-50 border-emerald-100 hover:bg-emerald-600 hover:text-black hover:border-emerald-600">
-                          <IndianRupee size={14} />
-                        </button>
-                        <button onClick={() => setModal({ type: 'delete', appt })} title="Delete"
-                          className="icon-action-btn text-red-400 bg-red-50 border-red-100 hover:bg-red-500 hover:text-black hover:border-red-500">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {!loading && filtered.length > 0 && (
-          <div className="px-6 py-4 border-t border-slate-50 flex items-center justify-between">
-            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-              Showing {filtered.length} of {appointments.length} on this page • {total} total
-            </span>
-            {filtered.length !== appointments.length && (
-              <button onClick={resetFilters} className="text-[10px] font-black text-[#18afb1] uppercase tracking-widest hover:underline">Show All</button>
-            )}
-          </div>
+{/* Controlled container with no forced minimum width restrictions */}
+<div className="w-full max-w-[1300px] mx-auto bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm">
+  <div className="w-full overflow-x-hidden"> {/* Hard stop on horizontal scroll leakage */}
+    
+    {/* table-auto dynamically matches column widths to data without stretching or clipping */}
+    <table className="w-full text-left border-collapse table-auto">
+      <thead>
+        <tr className="bg-slate-50 border-b border-slate-200/60">
+          {['S.No', 'Patient Details', 'Booking Date', 'Status', 'Payment Status', 'Actions'].map((h) => (
+            <th 
+              key={h} 
+              className="px-4 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap"
+            >
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      
+      <tbody className="divide-y divide-slate-100">
+        {/* Loading Skeleton Matrix */}
+        {loading && appointments.length === 0 && (
+          [...Array(5)].map((_, i) => (
+            <tr key={i} className="animate-pulse bg-white">
+              <td className="px-4 py-2.5"><div className="w-5 h-5 bg-slate-100 rounded" /></td>
+              <td className="px-4 py-2.5">
+                <div className="h-3.5 bg-slate-100 rounded w-32 mb-1" />
+                <div className="h-2.5 bg-slate-50 rounded w-16" />
+              </td>
+              <td className="px-4 py-2.5"><div className="h-3 bg-slate-100 rounded w-20" /></td>
+              <td className="px-4 py-2.5"><div className="h-4 bg-slate-100 rounded-full w-20" /></td>
+              <td className="px-4 py-2.5"><div className="h-4 bg-slate-100 rounded-full w-20" /></td>
+              <td className="px-4 py-2.5"><div className="h-6 bg-slate-100 rounded w-24" /></td>
+            </tr>
+          ))
         )}
 
-        {loading && appointments.length > 0 && (
-          <div className="h-0.5 bg-slate-100 overflow-hidden">
-            <div className="h-full bg-[#18afb1] animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '40%' }} />
-          </div>
+        {/* Empty State Vector UI */}
+        {!loading && filtered.length === 0 && (
+          <tr>
+            <td colSpan={6} className="py-12 text-center">
+              <div className="flex flex-col items-center justify-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
+                  <Search size={18} className="text-slate-400" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold text-slate-700">
+                    {appointments.length > 0 ? 'No records match filters' : 'No appointments found'}
+                  </p>
+                </div>
+                {appointments.length > 0 && (
+                  <button 
+                    onClick={resetFilters} 
+                    className="mt-1 px-3 py-1 text-[11px] font-medium text-cyan-600 bg-cyan-50 border border-cyan-200/50 rounded-md"
+                  >
+                    Clear Active Filters
+                  </button>
+                )}
+              </div>
+            </td>
+          </tr>
         )}
-      </div>
+
+        {/* Live Active Rows */}
+        {!loading && filtered.map((appt, i) => {
+          const sc = statusConfig[appt.status] || statusConfig['Waiting'];
+          const pc = paymentConfig[appt.billing?.paymentStatus] || paymentConfig['Unpaid'];
+          const hasPrevDue = (appt.billing?.previousDue > 0) && (appt.billing?.paymentStatus !== 'Paid');
+
+          return (
+            <tr key={appt._id} className="group hover:bg-slate-50/40 transition-colors">
+              {/* S.No Column */}
+              <td className="px-4 py-2 text-xs font-medium text-slate-400 w-12">
+                {((page - 1) * LIMIT) + i + 1}
+              </td>
+
+              {/* Patient Profile Summary */}
+              <td className="px-4 py-2">
+                <div className="flex flex-col gap-0.5">
+                  <p className="font-semibold text-slate-800 text-[13px] tracking-tight group-hover:text-slate-900 leading-tight">
+                    {q ? hl(appt.patientName, q) : appt.patientName}
+                  </p>
+                  <div>
+                    <span className={`inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded border whitespace-nowrap
+                      ${appt.visitType === 'Revisit Patient' 
+                        ? 'text-blue-600 bg-blue-50/50 border-blue-100' 
+                        : 'text-emerald-600 bg-emerald-50/50 border-emerald-100'}`}>
+                      {appt.visitType}
+                    </span>
+                  </div>
+                </div>
+              </td>
+
+              {/* Secure Date Node */}
+              <td className="px-4 py-2 whitespace-nowrap text-[12px] font-medium text-slate-600">
+                {appt.appointmentDate
+                  ? new Date(appt.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                  : '—'}
+              </td>
+
+              {/* Dynamic Status Badge */}
+              <td className="px-4 py-2 whitespace-nowrap">
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${sc.bar || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${sc.dot || 'bg-slate-400'} ${sc.pulse ? 'animate-pulse' : ''}`} />
+                  {appt.status}
+                </span>
+              </td>
+
+              {/* Ledger / Billing Data Matrix */}
+              <td className="px-4 py-2 whitespace-nowrap">
+                <div className="flex flex-col gap-0.5 items-start">
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pc || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                    {appt.billing?.paymentStatus || 'Unpaid'}
+                  </span>
+                  {hasPrevDue && (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-1 py-0.5 rounded">
+                      Due ₹{appt.billing.previousDue}
+                    </span>
+                  )}
+                </div>
+              </td>
+
+              {/* Action Toolbar Grid */}
+              <td className="px-4 py-2 whitespace-nowrap w-36">
+                <div className="flex items-center gap-0.5">
+                  <button 
+                    onClick={() => setModal({ type: 'view', appt })} 
+                    className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition-all"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button 
+                    onClick={() => setModal({ type: 'edit', appt })} 
+                    className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-all"
+                  >
+                    <Edit3 size={14} />
+                  </button>
+                  <button 
+                    onClick={() => setModal({ type: 'payment', appt })} 
+                    className="p-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-all"
+                  >
+                    <IndianRupee size={14} />
+                  </button>
+                  <button 
+                    onClick={() => setModal({ type: 'delete', appt })} 
+                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  {/* Table Footer Frame */}
+  {!loading && filtered.length > 0 && (
+    <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <span className="text-[11px] font-medium text-slate-500">
+        Showing <span className="font-semibold text-slate-700">{filtered.length}</span> of <span className="font-semibold text-slate-700">{appointments.length}</span> entries
+      </span>
+      {filtered.length !== appointments.length && (
+        <button 
+          onClick={resetFilters} 
+          className="text-[11px] font-semibold text-cyan-600 hover:text-cyan-700 hover:underline"
+        >
+          Reset View
+        </button>
+      )}
+    </div>
+  )}
+</div>
 
       {/* ── PAGINATION ─────────────────────────────────────────────────────── */}
       {totalPages > 1 && (

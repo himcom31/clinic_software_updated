@@ -2,8 +2,14 @@ const express = require('express');
 const router = express.Router();
 
 const { getInitialData,saveFinalPrescription,downloadPrescription,searchTableRows,
-    saveTableRow,
+    saveTableRow,    getPrescriptionHistory,
     getRowsByPatient, } = require('../controllers/prescriptionController');
+
+
+
+//////////////////////////
+router.get('/:slug/history', getPrescriptionHistory);
+
 
 // Routes
 router.get('/initial-data', getInitialData);

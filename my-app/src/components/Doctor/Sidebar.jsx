@@ -75,10 +75,27 @@ export default function Sidebar() {
     {
       group: "Patient Care",
       items: [
-        { label: "Create Appointment", icon: <PlusCircle size={18} />, path: `/${slug}/dashboard/appointment/new` },
+
+{
+  label: "Appointments",
+  icon: <PlusCircle size={18} />,
+  subItems: [
+    { label: "Create Appointment",  path: `/${slug}/dashboard/appointment/new` },
+    { label: "Appointment History", path: `/${slug}/dashboard/appTable` },
+  ]
+},
+{
+  label: "Prescriptions",
+  icon: <Calendar size={18} />,
+  subItems: [
+    { label: "Create Prescription",  path: `/${slug}/dashboard/appointment` },
+    { label: "Prescription History", path: `/${slug}/dashboard/prescription-history` },
+  ]
+},
+
         { label: "Patients", icon: <Users size={18} />, path: `/${slug}/dashboard/patients` },
-        { label: "Appointments", icon: <Calendar size={18} />, path: `/${slug}/dashboard/appointment` },
-        { label: "New Prescription", icon: <PlusCircle size={18} />, path: `/${slug}/dashboard/prescription` },
+        // { label: "Appointments", icon: <Calendar size={18} />, path: `/${slug}/dashboard/appointment` },
+        // { label: "New Prescription", icon: <PlusCircle size={18} />, path: `/${slug}/dashboard/prescription` },
       ]
     },
     {
