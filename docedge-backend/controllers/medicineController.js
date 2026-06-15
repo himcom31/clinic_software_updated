@@ -103,7 +103,12 @@ exports.master = async (req, res) => {
     ];
   }
 
-  const data = await Medicine.find(filter).limit(10).sort({ name: 1 });
+  const page = parseInt(req.query.page) || 1;
+const limit = parseInt(req.query.limit) || 50;
+const skip = (page - 1) * limit;
+
+const total = await Medicine.countDocuments(filter);
+const data = await Medicine.find(filter).sort({ name: 1 }).skip(skip).limit(limit);
   res.json({ success: true, data });
 };
 
