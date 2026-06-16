@@ -869,7 +869,7 @@ const PatientManagement = () => {
                 </div>
 
                 {/* Upload Zone */}
-                <div style={{ padding: 14 }}>
+                {/* <div style={{ padding: 14 }}>
                   <div className="pm-rx-upload-zone">
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <input
@@ -920,7 +920,7 @@ const PatientManagement = () => {
                       )}
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* List of uploaded prescriptions */}
                 <div style={{ borderTop: `1px solid ${T.border}` }}>
