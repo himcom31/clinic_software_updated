@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 //const PatientSchema = require('../models/PatientSchema');
 const Patient = require('../models/PatientSchema');
-
+const cloudinary = require('../config/cloudinary');
+const streamifier = require('streamifier'); // npm install streamifier
 
 // Utility: Dynamic Model Helper
 const getPatientModel = (slug) => {
@@ -203,6 +204,105 @@ exports.getPatientProfile = async (req, res) => {
         if (!patient) return res.status(404).json({ success: false, message: "Profile nahi mili." });
 
         res.status(200).json({ success: true, data: patient });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const uploadBufferToCloudinary = (buffer, slug) => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            {
+                resource_type: 'auto', // PDF ke liye 'auto' ya 'raw' theek hai
+                folder: `prescriptions/${slug}`, // Cloudinary mein folder organize ho jayega
+                format: 'pdf'
+            },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
+    });
+};
+ 
+// ─────────────────────────────────────────────────────────
+// 6. UPLOAD OLD PRESCRIPTION PDF (Cloudinary)
+// ─────────────────────────────────────────────────────────
+exports.uploadPrescriptionPdf = async (req, res) => {
+    try {
+        const { slug, id } = req.params;
+        const { title, date } = req.body;
+ 
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "PDF file bhejna zaroori hai." });
+        }
+ 
+        // Cloudinary par upload
+        const result = await uploadBufferToCloudinary(req.file.buffer, slug);
+ 
+        const updatedPatient = await Patient.findOneAndUpdate(
+            { _id: id, clinicSlug: slug },
+            {
+                $push: {
+                    prescriptionHistory: {
+                        title: title || 'Old Prescription',
+                        date: date ? new Date(date) : new Date(),
+                        pdfUrl: result.secure_url,   // Cloudinary ka public HTTPS URL
+                        publicId: result.public_id,  // delete karne ke liye zaroori
+                        fileName: req.file.originalname,
+                        uploadedAt: new Date()
+                    }
+                }
+            },
+            { new: true, runValidators: true }
+        );
+ 
+        if (!updatedPatient) {
+            return res.status(404).json({ success: false, message: "Patient nahi mila." });
+        }
+ 
+        res.status(200).json({
+            success: true,
+            message: "Prescription PDF upload ho gaya.",
+            data: updatedPatient.prescriptionHistory
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+ 
+// ─────────────────────────────────────────────────────────
+// 7. DELETE A PRESCRIPTION HISTORY ENTRY (Cloudinary se bhi hatao)
+// ─────────────────────────────────────────────────────────
+exports.deletePrescriptionPdf = async (req, res) => {
+    try {
+        const { slug, id, entryId } = req.params;
+ 
+        const patient = await Patient.findOne({ _id: id, clinicSlug: slug });
+        if (!patient) {
+            return res.status(404).json({ success: false, message: "Patient nahi mila." });
+        }
+ 
+        const entry = patient.prescriptionHistory.find(e => e._id.toString() === entryId);
+        if (entry && entry.publicId) {
+            // Cloudinary se bhi delete karo (resource_type: raw kyunki PDF non-image hai)
+            await cloudinary.uploader.destroy(entry.publicId, { resource_type: 'raw' }).catch(() => {
+                // agar 'raw' fail ho to 'image'/'auto' try karna pad sakta hai depending on upload settings
+            });
+        }
+ 
+        const updatedPatient = await Patient.findOneAndUpdate(
+            { _id: id, clinicSlug: slug },
+            { $pull: { prescriptionHistory: { _id: entryId } } },
+            { new: true }
+        );
+ 
+        res.status(200).json({
+            success: true,
+            message: "Prescription PDF hata diya gaya.",
+            data: updatedPatient.prescriptionHistory
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

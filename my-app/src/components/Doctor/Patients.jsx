@@ -6,7 +6,8 @@ import {
   ChevronRight, Loader2,
   Activity, Trash2, ChevronLeft, Eye,
   Filter, X, AlertTriangle, TrendingUp,
-  Users, Heart, Shield, MoreVertical
+  Users, Heart, Shield, MoreVertical,
+  FileText, Upload, Download, Calendar
 } from 'lucide-react';
 import PatientFormModal from './PatientFormModal';
 
@@ -103,6 +104,13 @@ const PatientManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredRow, setHoveredRow] = useState(null);
 
+  // Prescription History (old PDF uploads)
+  const [rxFile, setRxFile] = useState(null);
+  const [rxTitle, setRxTitle] = useState('');
+  const [rxDate, setRxDate] = useState('');
+  const [rxUploading, setRxUploading] = useState(false);
+  const [rxError, setRxError] = useState('');
+
   const initialFormState = { name: '', mobile: '', age: '', gender: 'Male', address: '', notes: '' };
   const [currentPatient, setCurrentPatient] = useState(initialFormState);
 
@@ -154,6 +162,81 @@ const PatientManagement = () => {
     setShowModal(true);
   };
 
+  /* ── Prescription History: upload handler ── */
+  const resetRxForm = () => {
+    setRxFile(null);
+    setRxTitle('');
+    setRxDate('');
+    setRxError('');
+  };
+
+  const handleRxFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      setRxError('Sirf PDF file allowed hai.');
+      setRxFile(null);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setRxError('File 10MB se badi nahi honi chahiye.');
+      setRxFile(null);
+      return;
+    }
+    setRxError('');
+    setRxFile(file);
+  };
+
+  const handleRxUpload = async () => {
+    if (!rxFile || !viewPatient) {
+      setRxError('Pehle ek PDF file select karo.');
+      return;
+    }
+    try {
+      setRxUploading(true);
+      setRxError('');
+      const formData = new FormData();
+      formData.append('pdf', rxFile);
+      formData.append('title', rxTitle || 'Old Prescription');
+      if (rxDate) formData.append('date', rxDate);
+
+      const res = await axios.post(
+        `${API_BAS}/api/patients/${slug}/profile/${viewPatient._id}/prescription-upload`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      // Update local viewPatient + patients list with new history
+      const updatedHistory = res.data.data;
+      setViewPatient(prev => ({ ...prev, prescriptionHistory: updatedHistory }));
+      setPatients(prev => prev.map(p =>
+        p._id === viewPatient._id ? { ...p, prescriptionHistory: updatedHistory } : p
+      ));
+      resetRxForm();
+    } catch (err) {
+      setRxError(err?.response?.data?.message || 'Upload fail ho gaya. Dobara try karo.');
+    } finally {
+      setRxUploading(false);
+    }
+  };
+
+  const handleRxDelete = async (entryId) => {
+    if (!viewPatient) return;
+    if (!window.confirm('Ye prescription PDF delete karna hai?')) return;
+    try {
+      const res = await axios.delete(
+        `${API_BAS}/api/patients/${slug}/profile/${viewPatient._id}/prescription-history/${entryId}`
+      );
+      const updatedHistory = res.data.data;
+      setViewPatient(prev => ({ ...prev, prescriptionHistory: updatedHistory }));
+      setPatients(prev => prev.map(p =>
+        p._id === viewPatient._id ? { ...p, prescriptionHistory: updatedHistory } : p
+      ));
+    } catch {
+      alert('Delete fail ho gaya.');
+    }
+  };
+
   /* ── Pagination range builder ── */
   const getPageRange = () => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -203,6 +286,8 @@ const PatientManagement = () => {
         .pm-primary-btn:hover { background: #1E293B; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .pm-primary-btn:active { transform: translateY(0); }
 
+        .pm-primary-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
         .pm-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .pm-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .pm-scrollbar::-webkit-scrollbar-thumb { background: ${T.borderMd}; border-radius: 99px; }
@@ -247,6 +332,19 @@ const PatientManagement = () => {
           border-radius: 12px; overflow: hidden;
           box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         }
+
+        .pm-rx-upload-zone {
+          border: 1.5px dashed ${T.borderMd}; border-radius: 10px;
+          padding: 14px; background: ${T.bg};
+          display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .pm-rx-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 14px; border-bottom: 1px solid ${T.border};
+        }
+        .pm-rx-item:last-child { border-bottom: none; }
+        .pm-rx-item:hover { background: #F8FBFF; }
       `}</style>
 
       <div className="pm-root" style={{ minHeight: '100vh', background: T.bg, padding: '24px 28px' }}>
@@ -579,7 +677,7 @@ const PatientManagement = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 16,
           }}
-          onClick={() => setViewPatient(null)}
+          onClick={() => { setViewPatient(null); resetRxForm(); }}
         >
           <div
             className="pm-slide-in pm-scrollbar"
@@ -637,7 +735,7 @@ const PatientManagement = () => {
                   alignItems: 'center', justifyContent: 'center', color: T.text3,
                   transition: 'all 0.12s',
                 }}
-                onClick={() => setViewPatient(null)}
+                onClick={() => { setViewPatient(null); resetRxForm(); }}
               >
                 <X size={14} />
               </button>
@@ -763,6 +861,124 @@ const PatientManagement = () => {
 
                 </div>
               </div>
+
+              {/* ── Prescription History Section (full width, below both columns) ── */}
+              <div className="pm-detail-panel" style={{ marginTop: 16 }}>
+                <div className="pm-section-header" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FileText size={12} /> Prescription History (Old Records)
+                </div>
+
+                {/* Upload Zone */}
+                <div style={{ padding: 14 }}>
+                  <div className="pm-rx-upload-zone">
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <input
+                        type="text"
+                        className="pm-input"
+                        style={{ flex: '1 1 180px' }}
+                        placeholder="Title (e.g. Visit - Knee Pain)"
+                        value={rxTitle}
+                        onChange={e => setRxTitle(e.target.value)}
+                      />
+                      <input
+                        type="date"
+                        className="pm-input"
+                        style={{ flex: '0 1 160px' }}
+                        value={rxDate}
+                        onChange={e => setRxDate(e.target.value)}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <label style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 14px', borderRadius: 8, border: `1px solid ${T.borderMd}`,
+                        background: T.surface, fontSize: 12, fontWeight: 600, color: T.text2,
+                        cursor: 'pointer', whiteSpace: 'nowrap',
+                      }}>
+                        <Upload size={13} />
+                        {rxFile ? rxFile.name : 'Choose PDF'}
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          onChange={handleRxFileChange}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+
+                      <button
+                        className="pm-primary-btn"
+                        onClick={handleRxUpload}
+                        disabled={!rxFile || rxUploading}
+                      >
+                        {rxUploading ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={13} />}
+                        {rxUploading ? 'Uploading…' : 'Upload PDF'}
+                      </button>
+
+                      {rxError && (
+                        <span style={{ fontSize: 11, color: T.danger, fontWeight: 600 }}>{rxError}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* List of uploaded prescriptions */}
+                <div style={{ borderTop: `1px solid ${T.border}` }}>
+                  {(!viewPatient.prescriptionHistory || viewPatient.prescriptionHistory.length === 0) ? (
+                    <div style={{ padding: '24px 14px', textAlign: 'center' }}>
+                      <FileText size={20} color={T.text3} style={{ display: 'block', margin: '0 auto 8px', opacity: 0.4 }} />
+                      <span style={{ fontSize: 12, color: T.text3, fontWeight: 600 }}>Koi purana prescription upload nahi hua abhi</span>
+                    </div>
+                  ) : (
+                    viewPatient.prescriptionHistory
+                      .slice()
+                      .sort((a, b) => new Date(b.date || b.uploadedAt) - new Date(a.date || a.uploadedAt))
+                      .map((rx) => (
+                        <div key={rx._id} className="pm-rx-item">
+                          <div style={{
+                            width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                            background: T.brandLt, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <FileText size={14} color={T.brandDk} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: T.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {rx.title || 'Old Prescription'}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                              <Calendar size={10} color={T.text3} />
+                              <span style={{ fontSize: 10, color: T.text3, fontFamily: '"DM Mono", monospace' }}>
+                                {rx.date ? new Date(rx.date).toLocaleDateString('en-IN') : '—'}
+                              </span>
+                              {rx.fileName && (
+                                <span style={{ fontSize: 10, color: T.text3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+                                  · {rx.fileName}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <a
+                            href={rx.pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="pm-btn-ghost brand"
+                            title="View / Download PDF"
+                          >
+                            <Download size={14} strokeWidth={2.2} />
+                          </a>
+                          <button
+                            className="pm-btn-ghost danger"
+                            title="Delete this record"
+                            onClick={() => handleRxDelete(rx._id)}
+                          >
+                            <Trash2 size={14} strokeWidth={2.2} />
+                          </button>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+
             </div>
 
           </div>
