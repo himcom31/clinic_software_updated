@@ -21,7 +21,7 @@ const AppointmentForm = () => {
 
     const [formData, setFormData] = useState({
         mobile: '', emMobile: '', name: '', email: '', age: '', gender: 'Male',
-        bloodGroup: '', weight: '', height: '', bmi: '', reference: 'Self',
+        bloodGroup: '', weight: '', heightFt: '',heightIn: '', bmi: '', reference: 'Self',
         refName: '', refMobile: '', address: '', allergies: '',
         bookingDate: new Date().toISOString().split('T')[0],
         consultFeeStatus: 'Yes',
@@ -37,17 +37,21 @@ const AppointmentForm = () => {
     // BMI Calculation
     // BMI Calculation — guard against 0 / empty to prevent NaN
     useEffect(() => {
-        const w = parseFloat(formData.weight);
-        const h = parseFloat(formData.height);
-        if (w > 0 && h > 0) {
-            const hMtrs = h / 100;
-            const val = (w / (hMtrs * hMtrs)).toFixed(2);
-            setFormData(prev => ({ ...prev, bmi: val }));
-        } else {
-            // Clear BMI so backend never receives NaN
-            setFormData(prev => ({ ...prev, bmi: '' }));
-        }
-    }, [formData.weight, formData.height]);
+    const w = parseFloat(formData.weight);
+    const ft = parseFloat(formData.heightFt) || 0;
+    const inc = parseFloat(formData.heightIn) || 0;
+
+    // Feet + Inches → cm
+    const totalCm = (ft * 30.48) + (inc * 2.54);
+
+    if (w > 0 && totalCm > 0) {
+        const hMtrs = totalCm / 100;
+        const val = (w / (hMtrs * hMtrs)).toFixed(2);
+        setFormData(prev => ({ ...prev, bmi: val }));
+    } else {
+        setFormData(prev => ({ ...prev, bmi: '' }));
+    }
+}, [formData.weight, formData.heightFt, formData.heightIn]);
 
     // Validity Date Calculation
     useEffect(() => {
@@ -111,62 +115,67 @@ const AppointmentForm = () => {
     };
 
     const selectPatient = async (patient) => {
-        setShowSuggestions(false);
-        setPatientSuggestions([]);
+    setShowSuggestions(false);
+    setPatientSuggestions([]);
 
-        // Check their last appointment for revisit/validity
-        const res = await axios.get(
-            `${API_BAS}/api/appointments/${slug}/check-status/${patient.mobile}`
+    // Check their last appointment for revisit/validity
+    const res = await axios.get(
+        `${API_BAS}/api/appointments/${slug}/check-status/${patient.mobile}`
+    );
+
+    const fee = clinicConfig.currentFee || 0;
+    let visitType = 'New Patient';
+    let expirChecker = 'New Patient';
+    let consultFeeStatus = 'Yes';
+    let paidAmount = fee;
+
+    if (res.data.success && res.data.appointment) {
+        const appt = res.data.appointment;
+        const lastDate = new Date(appt.appointmentDate);
+        const diffDays = Math.ceil(
+            Math.abs(new Date() - lastDate) / (1000 * 60 * 60 * 24)
         );
+        const isValid = diffDays <= (parseInt(clinicConfig.currentValidity) || 7);
 
-        const fee = clinicConfig.currentFee || 0;
-        let visitType = 'New Patient';
-        let expirChecker = 'New Patient';
-        let consultFeeStatus = 'Yes';
-        let paidAmount = fee;
+        visitType = isValid ? 'Revisit Patient' : 'New Patient';
+        expirChecker = isValid ? 'Within Validity' : 'Validity Expired';
+        consultFeeStatus = isValid ? 'No' : 'Yes';
+        paidAmount = isValid ? 0 : fee;
+        setIsNewPatient(false);
+    } else {
+        setIsNewPatient(true);
+    }
 
-        if (res.data.success && res.data.appointment) {
-            const appt = res.data.appointment;
-            const lastDate = new Date(appt.appointmentDate);
-            const diffDays = Math.ceil(
-                Math.abs(new Date() - lastDate) / (1000 * 60 * 60 * 24)
-            );
-            const isValid = diffDays <= (parseInt(clinicConfig.currentValidity) || 7);
+    // ── Height parse: "5.9" → ft=5, in=9 ──
+    const rawH = patient?.height || '';
+    const parts = String(rawH).split('.');
 
-            visitType = isValid ? 'Revisit Patient' : 'New Patient';
-            expirChecker = isValid ? 'Within Validity' : 'Validity Expired';
-            consultFeeStatus = isValid ? 'No' : 'Yes';
-            paidAmount = isValid ? 0 : fee;
-            setIsNewPatient(false);
-        } else {
-            setIsNewPatient(true);
-        }
-
-        setFormData(prev => ({
-            ...prev,
-            mobile: patient.mobile || '',
-            name: patient.name || '',
-            emMobile: patient.emMobile || '',
-            email: patient.email || '',
-            age: patient.age || '',
-            gender: patient.gender || 'Male',
-            bloodGroup: patient.bloodGroup || '',
-            weight: patient.weight || '',
-            height: patient.height || '',
-            bmi: patient.bmi || '',
-            address: patient.address || '',
-            allergies: patient.allergies || '',
-            reference: patient.referenceType || 'Self',
-            refName: patient.referenceName || '',
-            refMobile: patient.referenceMobile || '',
-            visitType,
-            expirChecker,
-            consultFeeStatus,
-            consultationFee: fee,
-            paidAmount,
-            validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
-        }));
-    };
+    setFormData(prev => ({
+        ...prev,
+        mobile:     patient.mobile      || '',
+        name:       patient.name        || '',
+        emMobile:   patient.emMobile    || '',
+        email:      patient.email       || '',
+        age:        patient.age         || '',
+        gender:     patient.gender      || 'Male',
+        bloodGroup: patient.bloodGroup  || '',
+        weight:     patient.weight      || '',
+        heightFt:   parts[0]            || '',   // ← ft
+        heightIn:   parts[1]            || '',   // ← inch
+        bmi:        patient.bmi         || '',
+        address:    patient.address     || '',
+        allergies:  patient.allergies   || '',
+        reference:  patient.referenceType  || 'Self',
+        refName:    patient.referenceName  || '',
+        refMobile:  patient.referenceMobile || '',
+        visitType,
+        expirChecker,
+        consultFeeStatus,
+        consultationFee: fee,
+        paidAmount,
+        validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
+    }));
+};
 
     // Helper: Expiry Date Calculate
     const calculateExpiry = (startDate, days) => {
@@ -176,84 +185,99 @@ const AppointmentForm = () => {
     };
 
     const handleMobileSearch = async (val) => {
-        const cleanVal = val.replace(/\D/g, '').slice(0, 10);
-        setFormData(prev => ({ ...prev, mobile: cleanVal }));
+    const cleanVal = val.replace(/\D/g, '').slice(0, 10);
+    setFormData(prev => ({ ...prev, mobile: cleanVal }));
 
-        if (cleanVal.length === 10) {
-            setLoading(true);
-            try {
-                const res = await axios.get(`${API_BAS}/api/appointments/${slug}/check-status/${cleanVal}`);
+    if (cleanVal.length === 10) {
+        setLoading(true);
+        try {
+            const res = await axios.get(
+                `${API_BAS}/api/appointments/${slug}/check-status/${cleanVal}`
+            );
 
-                if (res.data.success && res.data.appointment) {
-                    const appt = res.data.appointment;
-                    const patient = res.data.patient;
+            if (res.data.success && res.data.appointment) {
+                const appt    = res.data.appointment;
+                const patient = res.data.patient;
 
-                    // Revisit validity check
-                    const lastDate = new Date(appt.appointmentDate);
-                    const today = new Date();
-                    const diffDays = Math.ceil(Math.abs(today - lastDate) / (1000 * 60 * 60 * 24));
-                    const isValid = diffDays <= (parseInt(clinicConfig.currentValidity) || 7);
+                // Revisit validity check
+                const lastDate = new Date(appt.appointmentDate);
+                const today    = new Date();
+                const diffDays = Math.ceil(
+                    Math.abs(today - lastDate) / (1000 * 60 * 60 * 24)
+                );
+                const isValid = diffDays <= (parseInt(clinicConfig.currentValidity) || 7);
 
-                    const fee = clinicConfig.currentFee || 0;
+                const fee = clinicConfig.currentFee || 0;
 
-                    setIsNewPatient(false);
-                    setFormData(prev => ({
-                        ...prev,
-                        name: appt.patientName || '',
-                        emMobile: patient?.emMobile || '',
-                        email: patient?.email || '',
-                        age: patient?.age || '',
-                        gender: patient?.gender || 'Male',
-                        bloodGroup: patient?.bloodGroup || '',
-                        weight: patient?.weight || '',
-                        height: patient?.height || '',
-                        bmi: patient?.bmi || '',
-                        address: patient?.address || '',
-                        allergies: patient?.allergies || '',
-                        reference: patient?.referenceType || 'Self',
-                        refName: patient?.referenceName || '',
-                        refMobile: patient?.referenceMobile || '',
+                // ── Height parse: "5.9" → ft=5, in=9 ──
+                const rawH  = patient?.height || '';
+                const parts = String(rawH).split('.');
 
-                        visitType: isValid ? 'Revisit Patient' : 'New Patient',
-                        expirChecker: isValid ? 'Within Validity' : 'Validity Expired',
-                        consultFeeStatus: isValid ? 'No' : 'Yes',
+                setIsNewPatient(false);
+                setFormData(prev => ({
+                    ...prev,
+                    name:       appt.patientName      || '',
+                    emMobile:   patient?.emMobile     || '',
+                    email:      patient?.email        || '',
+                    age:        patient?.age          || '',
+                    gender:     patient?.gender       || 'Male',
+                    bloodGroup: patient?.bloodGroup   || '',
+                    weight:     patient?.weight       || '',
+                    heightFt:   parts[0]              || '',   // ← ft
+                    heightIn:   parts[1]              || '',   // ← inch
+                    bmi:        patient?.bmi          || '',
+                    address:    patient?.address      || '',
+                    allergies:  patient?.allergies    || '',
+                    reference:  patient?.referenceType   || 'Self',
+                    refName:    patient?.referenceName   || '',
+                    refMobile:  patient?.referenceMobile || '',
 
-                        // 🔥 FIX: consultationFee always = clinic's full fee (goes to totalFees)
-                        //         paidAmount = 0 if within validity (free revisit), else full fee
-                        consultationFee: fee,
-                        paidAmount: isValid ? 0 : fee,
-                        validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
-                    }));
+                    visitType:        isValid ? 'Revisit Patient'   : 'New Patient',
+                    expirChecker:     isValid ? 'Within Validity'   : 'Validity Expired',
+                    consultFeeStatus: isValid ? 'No'                : 'Yes',
+                    consultationFee:  fee,
+                    paidAmount:       isValid ? 0 : fee,
+                    validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
+                }));
 
-                } else {
-                    // New Patient
-                    setIsNewPatient(true);
-                    const fee = clinicConfig.currentFee || 0;
+            } else {
+                // ── New Patient — height fields clear karo ──
+                setIsNewPatient(true);
+                const fee = clinicConfig.currentFee || 0;
 
-                    setFormData(prev => ({
-                        ...prev,
-                        name: '', emMobile: '', age: '', gender: 'Male', bloodGroup: '',
-                        weight: '', height: '', bmi: '', address: '', allergies: '',
-                        reference: 'Self', refName: '', refMobile: '',
+                setFormData(prev => ({
+                    ...prev,
+                    name:       '',
+                    emMobile:   '',
+                    age:        '',
+                    gender:     'Male',
+                    bloodGroup: '',
+                    weight:     '',
+                    heightFt:   '',   // ← ft clear
+                    heightIn:   '',   // ← inch clear
+                    bmi:        '',
+                    address:    '',
+                    allergies:  '',
+                    reference:  'Self',
+                    refName:    '',
+                    refMobile:  '',
 
-                        visitType: 'New Patient',
-                        expirChecker: 'New Patient',
-                        consultFeeStatus: 'Yes',
-
-                        // 🔥 FIX: Both set from clinicConfig for new patients
-                        consultationFee: fee,
-                        paidAmount: fee,
-                        validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
-                    }));
-                }
-
-            } catch (err) {
-                console.error("Search failed", err);
-            } finally {
-                setLoading(false);
+                    visitType:        'New Patient',
+                    expirChecker:     'New Patient',
+                    consultFeeStatus: 'Yes',
+                    consultationFee:  fee,
+                    paidAmount:       fee,
+                    validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
+                }));
             }
+
+        } catch (err) {
+            console.error("Search failed", err);
+        } finally {
+            setLoading(false);
         }
-    };
+    }
+};
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -435,10 +459,31 @@ const AppointmentForm = () => {
                         <label className="label-style text-blue-600">8. Weight (kg)</label>
                         <input className="input-style border-blue-200 bg-blue-50/30" value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} />
                     </div>
-                    <div className="space-y-1">
-                        <label className="label-style text-blue-600">9. Height (cm)</label>
-                        <input className="input-style border-blue-200 bg-blue-50/30" value={formData.height} onChange={(e) => setFormData({ ...formData, height: e.target.value })} />
-                    </div>
+                    {/* Pehle tha: single height input */}
+{/* Ab karo: 2 inputs side by side */}
+<div className="space-y-1">
+    <label className="label-style text-blue-600">9. Height</label>
+    <div className="flex gap-1">
+        <div className="relative flex-1">
+            <input
+                className="input-style border-blue-200 bg-blue-50/30 pr-8"
+                placeholder="0"
+                value={formData.heightFt}
+                onChange={e => setFormData({ ...formData, heightFt: e.target.value })}
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-blue-400">ft</span>
+        </div>
+        <div className="relative flex-1">
+            <input
+                className="input-style border-blue-200 bg-blue-50/30 pr-8"
+                placeholder="0"
+                value={formData.heightIn}
+                onChange={e => setFormData({ ...formData, heightIn: e.target.value })}
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-blue-400">in</span>
+        </div>
+    </div>
+</div>
                     <div className="space-y-1">
                         <label className="label-style text-blue-600">10. BMI Index</label>
                         <div className="h-[38px] bg-blue-600 text-white rounded flex items-center justify-center font-black text-sm uppercase">
