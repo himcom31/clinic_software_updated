@@ -428,6 +428,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
     const editorRef = useRef(null);
     const isComposingRef = useRef(false);
     const lastHtmlRef = useRef('');
+    const savedRangeRef = useRef(null);
     const [pathItems, setPathItems] = useState(['body']);
 
     useImperativeHandle(ref, () => ({
@@ -489,44 +490,74 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
         setPathItems(path.length ? path : ['body']);
     };
 
-const execCmd = (cmd, val = null) => {
-    const el = editorRef.current;
-    if (!el) return;
-    el.focus();
-
-    if (cmd === 'foreColor' || cmd === 'hiliteColor') {
-        document.execCommand('styleWithCSS', false, true);
-        const ok = document.execCommand(cmd, false, val);
-        if (!ok && cmd === 'hiliteColor') {
-            document.execCommand('backColor', false, val);
+    /* ── Save / restore selection so toolbar clicks (mousedown on buttons
+         outside the editable area) don't lose the user's caret/selection ── */
+    const saveSelection = () => {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+                savedRangeRef.current = range.cloneRange();
+            }
         }
-        document.execCommand('styleWithCSS', false, false);
-    } else {
-        document.execCommand(cmd, false, val);
-    }
+    };
 
-    const newHtml = el.innerHTML || '';
-    lastHtmlRef.current = newHtml;
-    if (onChange) onChange(newHtml);
-    setTimeout(updatePathFromSelection, 0);
-};
+    const restoreSelection = () => {
+        const el = editorRef.current;
+        if (!el) return;
+        el.focus();
+        const sel = window.getSelection();
+        if (savedRangeRef.current) {
+            sel.removeAllRanges();
+            sel.addRange(savedRangeRef.current);
+        } else if (sel.rangeCount === 0 || !el.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    };
+
+    const execCmd = (cmd, val = null) => {
+        const el = editorRef.current;
+        if (!el) return;
+        restoreSelection();
+
+        if (cmd === 'foreColor' || cmd === 'hiliteColor') {
+            document.execCommand('styleWithCSS', false, true);
+            const ok = document.execCommand(cmd, false, val);
+            if (!ok && cmd === 'hiliteColor') {
+                document.execCommand('backColor', false, val);
+            }
+            document.execCommand('styleWithCSS', false, false);
+        } else {
+            document.execCommand(cmd, false, val);
+        }
+
+        const newHtml = el.innerHTML || '';
+        lastHtmlRef.current = newHtml;
+        if (onChange) onChange(newHtml);
+        saveSelection();
+        setTimeout(updatePathFromSelection, 0);
+    };
 
     const handleInput = () => {
         if (isComposingRef.current) return;
         const newHtml = editorRef.current?.innerHTML || '';
         lastHtmlRef.current = newHtml;
         if (onChange) onChange(newHtml);
+        saveSelection();
     };
 
-    const handleKeyUp = () => updatePathFromSelection();
-    const handleMouseUp = () => updatePathFromSelection();
+    const handleKeyUp = () => { updatePathFromSelection(); saveSelection(); };
+    const handleMouseUp = () => { updatePathFromSelection(); saveSelection(); };
 
-    /* ── Toolbar button component ── */
     const Btn = ({ title, onClick, children, active = false, style = {} }) => (
         <button
             type="button"
             title={title}
-            onMouseDown={e => { e.preventDefault(); onClick && onClick(); }}
+            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onClick && onClick(); }}
             className={`cke4-btn${active ? ' active' : ''}`}
             style={style}
         >
@@ -536,7 +567,6 @@ const execCmd = (cmd, val = null) => {
 
     const Sep = () => <span className="cke4-sep" />;
 
-    /* ── SVG icon helpers ── */
     const icons = {
         source: <svg width="16" height="14" viewBox="0 0 20 16" fill="currentColor"><path d="M6.5 0L0 8l6.5 8 1.5-1.8L2.2 8 8 1.8 6.5 0zm7 0L12 1.8 17.8 8 12 14.2l1.5 1.8L20 8l-6.5-8z" /></svg>,
         save: <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13 0H2L0 2v12l2 2h12l2-2V3l-3-3zm-1 1l2 2h-2V1zm1 13H3l-1-1V2.4L3 1h1v4h8V1h.5L14 2.5V13l-1 1zM6 1h3v3H6V1zM8 9a2 2 0 100 4 2 2 0 000-4z" /></svg>,
@@ -603,7 +633,6 @@ const execCmd = (cmd, val = null) => {
         redo: <svg width="13" height="12" viewBox="0 0 14 12" fill="currentColor"><path d="M10.3 4H6C3.2 4 1 6.2 1 9s2.2 5 5 5h4v-2H6c-1.7 0-3-1.3-3-3s1.3-3 3-3h4.3L8 8l1.4 1.4L14 5l-4.6-4.6L8 1.8l2.3 2.2z" /></svg>,
     };
 
-    /* ── Color picker palette (CKEditor-style grid) ── */
     const CKE_COLORS = [
         '#000000', '#333333', '#666666', '#999999', '#B3B3B3', '#CCCCCC', '#E6E6E6', '#FFFFFF',
         '#E53935', '#F4511E', '#F9A825', '#FBC02D', '#9CCC65', '#43A047', '#26A69A', '#00838F',
@@ -613,16 +642,28 @@ const execCmd = (cmd, val = null) => {
 
     const ColorPalette = ({ onPick, onClose }) => {
         const ref = useRef(null);
+
         useEffect(() => {
-            const handleOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-            document.addEventListener('mousedown', handleOutside);
-            return () => document.removeEventListener('mousedown', handleOutside);
+            const id = requestAnimationFrame(() => {
+                const handleOutside = (e) => {
+                    if (ref.current && !ref.current.contains(e.target)) onClose();
+                };
+                document.addEventListener('mousedown', handleOutside, true);
+                ref.current && (ref.current.__cleanup = () => {
+                    document.removeEventListener('mousedown', handleOutside, true);
+                });
+            });
+            return () => {
+                cancelAnimationFrame(id);
+                if (ref.current && ref.current.__cleanup) ref.current.__cleanup();
+            };
         }, [onClose]);
+
         return (
             <div
                 ref={ref}
                 style={{
-                    position: 'absolute', top: '100%', left: 0, zIndex: 300, marginTop: 2,
+                    position: 'relative', marginTop: 2,
                     background: '#fff', border: '1px solid #b6b6b6', borderRadius: 3,
                     boxShadow: '0 4px 14px rgba(0,0,0,0.2)', padding: 6,
                     display: 'grid', gridTemplateColumns: 'repeat(8, 18px)', gap: 3,
@@ -633,7 +674,7 @@ const execCmd = (cmd, val = null) => {
                         key={c}
                         type="button"
                         title={c}
-                        onMouseDown={(e) => { e.preventDefault(); onPick(c); }}
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onPick(c); }}
                         style={{
                             width: 18, height: 18, border: '1px solid #ccc', borderRadius: 2,
                             background: c, cursor: 'pointer', padding: 0,
@@ -645,6 +686,7 @@ const execCmd = (cmd, val = null) => {
                     title="More colors..."
                     onMouseDown={(e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         const custom = prompt('Hex color (e.g. #ff0000):');
                         if (custom) onPick(custom);
                     }}
@@ -660,12 +702,12 @@ const execCmd = (cmd, val = null) => {
         );
     };
 
-    /* ── Color button with dropdown arrow (now opens an actual palette) ── */
-
-
-    /* ── Select wrapper ── */
     const SelectBtn = ({ value, options, onChange: onChg, style = {} }) => (
-        <div className="cke4-select-wrap" style={style}>
+        <div
+            className="cke4-select-wrap"
+            style={style}
+            onMouseDown={(e) => { e.stopPropagation(); saveSelection(); }}
+        >
             <select
                 value={value}
                 onChange={e => { onChg(e.target.value); e.target.value = value; }}
@@ -675,8 +717,6 @@ const execCmd = (cmd, val = null) => {
             </select>
         </div>
     );
-
-    /* ── Color button with dropdown arrow ── */
 
     const ColorBtn = ({ title, icon, color, onPick }) => {
         const [open, setOpen] = useState(false);
@@ -705,7 +745,7 @@ const execCmd = (cmd, val = null) => {
                 <button
                     type="button"
                     title={`${title} options`}
-                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); saveSelection(); setOpen((o) => !o); }}
                     className="cke4-color-arrow"
                     style={{ position: 'relative', zIndex: 10 }}
                 >
@@ -714,7 +754,7 @@ const execCmd = (cmd, val = null) => {
                 {open && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 1000 }}>
                         <ColorPalette
-                            onPick={(c) => { onPick(c); setOpen(false); }}
+                            onPick={(c) => { execCmd(title === 'Text Color' ? 'foreColor' : 'hiliteColor', c); setOpen(false); }}
                             onClose={() => setOpen(false)}
                         />
                     </div>
@@ -722,7 +762,6 @@ const execCmd = (cmd, val = null) => {
             </div>
         );
     };
-
     return (
         <div className="cke4-outer">
             {/* ── Row 1: File / Edit / Spell / Form / View ── */}
@@ -792,7 +831,7 @@ const execCmd = (cmd, val = null) => {
                 <Sep />
                 <Btn title="Set Language" onClick={() => { }}>{icons.language}</Btn>
                 <Sep />
-                <Btn title="Link" onClick={() => { const url = prompt('Enter URL:'); if (url) execCmd('createLink', url); }}>{icons.link}</Btn>
+                <Btn title="Link" onClick={() => { saveSelection(); const url = prompt('Enter URL:'); if (url) execCmd('createLink', url); }}>{icons.link}</Btn>
                 <Btn title="Unlink" onClick={() => execCmd('unlink')}>{icons.unlink}</Btn>
                 <Sep />
                 <Btn title="Anchor" onClick={() => { }}>{icons.anchor}</Btn>
@@ -918,7 +957,6 @@ const execCmd = (cmd, val = null) => {
     );
 });
 RichTextEditor.displayName = 'RichTextEditor';
-
 /* ─── Helpers ────────────────────────────────────────────────────────────────── */
 const hexToRgb = (hex) => {
     const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -962,7 +1000,12 @@ const parseHtmlToSegments = (html) => {
         if (tag === 'b' || tag === 'strong') newCtx.bold = true;
         if (tag === 'i' || tag === 'em') newCtx.italic = true;
         if (tag === 'u') newCtx.underline = true;
-        if (tag === 'span' || tag === 'font') { const c = (node.style && node.style.color) ? node.style.color : null; if (c) newCtx.color = c; }
+        if (tag === 'span' || tag === 'font' || tag === 'div' || tag === 'p' || tag === 'b' || tag === 'strong' || tag === 'i' || tag === 'em' || tag === 'u') {
+            let c = null;
+            if (node.style && node.style.color) c = node.style.color;
+            else if (tag === 'font' && node.getAttribute && node.getAttribute('color')) c = node.getAttribute('color');
+            if (c) newCtx.color = c;
+        }
         if (tag === 'ul') { let liIdx = 0; for (const child of node.childNodes) { if (child.nodeName.toLowerCase() === 'li') { walkNode(child, { ...newCtx, bullet: true, ordered: false, listIndex: liIdx }); liIdx++; } else walkNode(child, newCtx); } return; }
         if (tag === 'ol') { let liIdx = 1; for (const child of node.childNodes) { if (child.nodeName.toLowerCase() === 'li') { walkNode(child, { ...newCtx, bullet: true, ordered: true, listIndex: liIdx }); liIdx++; } else walkNode(child, newCtx); } return; }
         if (tag === 'li') { segments.push({ ...newCtx, text: '', isListItem: true }); for (const child of node.childNodes) walkNode(child, newCtx); segments.push({ ...newCtx, text: '\n', isNewline: true }); return; }
