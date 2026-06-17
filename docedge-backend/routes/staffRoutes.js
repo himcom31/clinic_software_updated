@@ -7,6 +7,9 @@ const { verifyStaff, hasPermission } = require('../middleware/staffAuth');
 router.post('/:slug/add-staff', staffController.addStaff);
 router.get('/:slug/activity-logs', staffController.getClinicLogs);
 
+// Doctor edits an existing staff member's permissions
+router.patch('/:slug/:staffId/permissions', staffController.updateStaffPermissions);
+
 // Staff Login
 router.post('/login', staffController.staffLogin);
 

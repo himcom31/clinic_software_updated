@@ -14,6 +14,25 @@ const getLogModel = (slug) => {
     return mongoose.models[collectionName] || mongoose.model(collectionName, logSchema, collectionName);
 };
 
+// Whitelist of permission keys that are allowed to be updated via the
+// permissions-edit endpoint. Keeping this explicit stops a stray/garbage
+// key in req.body from polluting the staff document.
+const ALLOWED_PERMISSION_KEYS = [
+    'canAddPatients',
+    'canManageAppointments',
+    'canCreateAppointment',
+    'canViewAppointmentHistory',
+    'canEditBilling',
+    'canViewReports',
+    'canAddPrescription',
+    'canViewPrescriptionHistory',
+    'canAddMedicine',
+    'canAddTest',
+    'canAddAdvice',
+    'canDeleteData',
+    'canManageInventory',
+];
+
 // 1. DOCTOR ADDS STAFF
 exports.addStaff = async (req, res) => {
     try {
@@ -106,6 +125,61 @@ exports.getStaffList = async (req, res) => {
             success: false, 
             message: "Staff list fetch karne mein problem hui",
             error: err.message 
+        });
+    }
+};
+
+// 4. DOCTOR EDITS STAFF PERMISSIONS (after staff already created)
+exports.updateStaffPermissions = async (req, res) => {
+    try {
+        const { slug, staffId } = req.params;
+        const { permissions } = req.body;
+
+        if (!permissions || typeof permissions !== 'object') {
+            return res.status(400).json({ success: false, message: "permissions object is required" });
+        }
+
+        const Staff = getStaffModel(slug);
+        const Log = getLogModel(slug);
+
+        const staff = await Staff.findById(staffId);
+        if (!staff) {
+            return res.status(404).json({ success: false, message: "Staff not found in this clinic!" });
+        }
+
+        // Only touch whitelisted keys, ignore anything else sent in the body
+        const updatedKeys = [];
+        ALLOWED_PERMISSION_KEYS.forEach((key) => {
+            if (Object.prototype.hasOwnProperty.call(permissions, key)) {
+                staff.permissions[key] = Boolean(permissions[key]);
+                updatedKeys.push(key);
+            }
+        });
+
+        if (updatedKeys.length === 0) {
+            return res.status(400).json({ success: false, message: "No valid permission keys provided" });
+        }
+
+        await staff.save();
+
+        // Log this action
+        await Log.create({
+            staffName: "Doctor (Admin)",
+            staffRole: "Doctor",
+            action: "PERMISSIONS_UPDATED",
+            details: `Updated ${updatedKeys.length} permission(s) for ${staff.name}`
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Permissions updated successfully!",
+            data: { _id: staff._id, permissions: staff.permissions }
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Permissions update karne mein problem hui",
+            error: err.message
         });
     }
 };

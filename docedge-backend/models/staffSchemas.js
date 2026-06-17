@@ -9,15 +9,18 @@ const staffSchema = new mongoose.Schema({
     permissions: {
         canAddPatients: { type: Boolean, default: true },
         canManageAppointments: { type: Boolean, default: true },
+        canCreateAppointment: { type: Boolean, default: true },
+        canViewAppointmentHistory: { type: Boolean, default: true },
         canEditBilling: { type: Boolean, default: false },
         canViewReports: { type: Boolean, default: false },
         canAddPrescription: { type: Boolean, default: false },
+        canViewPrescriptionHistory: { type: Boolean, default: false },
         canAddMedicine: { type: Boolean, default: false },
         canAddTest: { type: Boolean, default: false },
         canAddAdvice: { type: Boolean, default: false },
         canDeleteData: { type: Boolean, default: false },
         // Purani key agar inventory use kar rahe ho toh rehne de sakte ho
-        canManageInventory: { type: Boolean, default: false } 
+        canManageInventory: { type: Boolean, default: false }
     },
     isActive: { type: Boolean, default: true },
     clinicSlug: { type: String, required: true }
@@ -27,7 +30,7 @@ const staffSchema = new mongoose.Schema({
 const logSchema = new mongoose.Schema({
     staffName: String,
     staffRole: String,
-    action: String, 
+    action: String,
     details: String,
     timestamp: { type: Date, default: Date.now }
 });

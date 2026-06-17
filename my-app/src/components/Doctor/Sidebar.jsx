@@ -36,12 +36,25 @@ export default function Sidebar() {
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  // ── Helper: checks a staff permission key with safe fallback ──
+  // If the key doesn't exist on staffInfo.permissions yet (e.g. backend
+  // hasn't been updated to send it), default to allowed (true) so existing
+  // staff access doesn't silently break. Once doctor explicitly sets it to
+  // false from the staff edit screen, it will correctly hide the item.
+  const hasPermission = (permKey) => {
+    if (!permKey || permKey === "doctorOnly") return false;
+    const val = staffInfo?.permissions?.[permKey];
+    return val === true || val === undefined;
+  };
+
+  // Parent-level item permission keys (unchanged from before)
   const permissionMap = {
     "Patients": "canAddPatients",
     "Appointments": "canManageAppointments",
     "Billing": "canEditBilling",
     "Reports": "canViewReports",
     "New Prescription": "canAddPrescription",
+    "Prescriptions": "canAddPrescription",
     "Medicines": "canAddMedicine",
     "Investigations": "canAddTest",
     "Advice Library": "canAddAdvice",
@@ -56,7 +69,19 @@ export default function Sidebar() {
     "Notifications": "doctorOnly",
     "Vaccination": "doctorOnly",
     "Create Appointment": "canCreateAppointment",
+  };
 
+  // NEW: granular permission keys for individual subItems.
+  // Keyed by subItem label. Add backend support for these keys whenever
+  // ready — until then they default to "allowed" via hasPermission().
+  const subItemPermissionMap = {
+    "Create Appointment":     "canCreateAppointment",
+    "Appointment History":    "canViewAppointmentHistory",
+    "Create Prescription":    "canAddPrescription",
+    "Prescription History":   "canViewPrescriptionHistory",
+    "Doctor Profile":         "doctorOnly",
+    "Clinic Profile":         "doctorOnly",
+    "System Settings":        "doctorOnly",
   };
 
   const menuSections = [
@@ -141,19 +166,32 @@ export default function Sidebar() {
     }
   ];
 
-  const filteredSections = menuSections.map(section => ({
-    ...section,
-    items: section.items.filter(item => {
-      if (isDoctor) return true;
-      const permKey = permissionMap[item.label];
-      if (permKey === "doctorOnly") return false;
-      if (permKey) {
-        const val = staffInfo?.permissions?.[permKey];
-        return val === true || val === undefined;
-      }
-      return true;
-    })
-  })).filter(section => section.items.length > 0);
+  // ── Filtering ──
+  // Doctor: always sees everything, no filtering applied (unchanged behavior).
+  // Staff: every parent item AND every individual subItem is checked against
+  // its own permission key. A parent with subItems is kept only if at least
+  // one of its subItems survives the filter; the subItems array itself is
+  // trimmed down to just the allowed ones.
+  const filteredSections = isDoctor
+    ? menuSections
+    : menuSections.map(section => ({
+        ...section,
+        items: section.items
+          .map(item => {
+            if (item.subItems) {
+              const allowedSubItems = item.subItems.filter(sub => {
+                const subPermKey = subItemPermissionMap[sub.label];
+                // If a subItem has no explicit key, fall back to the parent's key.
+                return hasPermission(subPermKey || permissionMap[item.label]);
+              });
+              if (allowedSubItems.length === 0) return null;
+              return { ...item, subItems: allowedSubItems };
+            }
+            const permKey = permissionMap[item.label];
+            return hasPermission(permKey) ? item : null;
+          })
+          .filter(Boolean)
+      })).filter(section => section.items.length > 0);
 
   const handleLogout = () => {
     localStorage.clear();
