@@ -489,14 +489,27 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
         setPathItems(path.length ? path : ['body']);
     };
 
-    const execCmd = (cmd, val = null) => {
-        editorRef.current?.focus();
+const execCmd = (cmd, val = null) => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.focus();
+
+    if (cmd === 'foreColor' || cmd === 'hiliteColor') {
+        document.execCommand('styleWithCSS', false, true);
+        const ok = document.execCommand(cmd, false, val);
+        if (!ok && cmd === 'hiliteColor') {
+            document.execCommand('backColor', false, val);
+        }
+        document.execCommand('styleWithCSS', false, false);
+    } else {
         document.execCommand(cmd, false, val);
-        const newHtml = editorRef.current?.innerHTML || '';
-        lastHtmlRef.current = newHtml;
-        if (onChange) onChange(newHtml);
-        setTimeout(updatePathFromSelection, 0);
-    };
+    }
+
+    const newHtml = el.innerHTML || '';
+    lastHtmlRef.current = newHtml;
+    if (onChange) onChange(newHtml);
+    setTimeout(updatePathFromSelection, 0);
+};
 
     const handleInput = () => {
         if (isComposingRef.current) return;
@@ -590,6 +603,66 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
         redo: <svg width="13" height="12" viewBox="0 0 14 12" fill="currentColor"><path d="M10.3 4H6C3.2 4 1 6.2 1 9s2.2 5 5 5h4v-2H6c-1.7 0-3-1.3-3-3s1.3-3 3-3h4.3L8 8l1.4 1.4L14 5l-4.6-4.6L8 1.8l2.3 2.2z" /></svg>,
     };
 
+    /* ── Color picker palette (CKEditor-style grid) ── */
+    const CKE_COLORS = [
+        '#000000', '#333333', '#666666', '#999999', '#B3B3B3', '#CCCCCC', '#E6E6E6', '#FFFFFF',
+        '#E53935', '#F4511E', '#F9A825', '#FBC02D', '#9CCC65', '#43A047', '#26A69A', '#00838F',
+        '#1976D2', '#3949AB', '#5E35B1', '#8E24AA', '#D81B60', '#6D4C41', '#546E7A', '#212121',
+        '#FFCDD2', '#FFE0B2', '#FFF9C4', '#F0F4C3', '#C8E6C9', '#B2DFDB', '#B3E5FC', '#D1C4E9',
+    ];
+
+    const ColorPalette = ({ onPick, onClose }) => {
+        const ref = useRef(null);
+        useEffect(() => {
+            const handleOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+            document.addEventListener('mousedown', handleOutside);
+            return () => document.removeEventListener('mousedown', handleOutside);
+        }, [onClose]);
+        return (
+            <div
+                ref={ref}
+                style={{
+                    position: 'absolute', top: '100%', left: 0, zIndex: 300, marginTop: 2,
+                    background: '#fff', border: '1px solid #b6b6b6', borderRadius: 3,
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.2)', padding: 6,
+                    display: 'grid', gridTemplateColumns: 'repeat(8, 18px)', gap: 3,
+                }}
+            >
+                {CKE_COLORS.map((c) => (
+                    <button
+                        key={c}
+                        type="button"
+                        title={c}
+                        onMouseDown={(e) => { e.preventDefault(); onPick(c); }}
+                        style={{
+                            width: 18, height: 18, border: '1px solid #ccc', borderRadius: 2,
+                            background: c, cursor: 'pointer', padding: 0,
+                        }}
+                    />
+                ))}
+                <button
+                    type="button"
+                    title="More colors..."
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        const custom = prompt('Hex color (e.g. #ff0000):');
+                        if (custom) onPick(custom);
+                    }}
+                    style={{
+                        gridColumn: 'span 8', marginTop: 4, fontSize: 10, fontWeight: 700,
+                        border: '1px solid #d1d5db', borderRadius: 2, background: '#f8fafc',
+                        color: '#475569', padding: '3px 0', cursor: 'pointer',
+                    }}
+                >
+                    More colors…
+                </button>
+            </div>
+        );
+    };
+
+    /* ── Color button with dropdown arrow (now opens an actual palette) ── */
+
+
     /* ── Select wrapper ── */
     const SelectBtn = ({ value, options, onChange: onChg, style = {} }) => (
         <div className="cke4-select-wrap" style={style}>
@@ -604,15 +677,51 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
     );
 
     /* ── Color button with dropdown arrow ── */
-    const ColorBtn = ({ title, icon, color, onMain }) => (
-        <div className="cke4-color-group">
-            <button type="button" title={title} onMouseDown={e => { e.preventDefault(); onMain(); }} className="cke4-color-btn">
-                {icon}
-                <div className="cke4-color-swatch" style={{ background: color }} />
-            </button>
-            <button type="button" title={`${title} options`} onMouseDown={e => { e.preventDefault(); }} className="cke4-color-arrow">▾</button>
-        </div>
-    );
+
+    const ColorBtn = ({ title, icon, color, onPick }) => {
+        const [open, setOpen] = useState(false);
+        const groupRef = useRef(null);
+
+        useEffect(() => {
+            if (!open) return;
+            const handleOutside = (e) => {
+                if (groupRef.current && !groupRef.current.contains(e.target)) setOpen(false);
+            };
+            document.addEventListener('mousedown', handleOutside, true);
+            return () => document.removeEventListener('mousedown', handleOutside, true);
+        }, [open]);
+
+        return (
+            <div ref={groupRef} className="cke4-color-group" style={{ position: 'relative', zIndex: open ? 500 : 'auto' }}>
+                <button
+                    type="button"
+                    title={title}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onPick(color); }}
+                    className="cke4-color-btn"
+                >
+                    {icon}
+                    <div className="cke4-color-swatch" style={{ background: color }} />
+                </button>
+                <button
+                    type="button"
+                    title={`${title} options`}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
+                    className="cke4-color-arrow"
+                    style={{ position: 'relative', zIndex: 10 }}
+                >
+                    ▾
+                </button>
+                {open && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 1000 }}>
+                        <ColorPalette
+                            onPick={(c) => { onPick(c); setOpen(false); }}
+                            onClose={() => setOpen(false)}
+                        />
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="cke4-outer">
@@ -762,13 +871,13 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder }, ref) => {
                     title="Text Color"
                     icon={icons.fontcolor}
                     color="#000000"
-                    onMain={() => { const c = prompt('Hex color (e.g. #ff0000):'); if (c) execCmd('foreColor', c); }}
+                    onPick={(c) => execCmd('foreColor', c)}
                 />
                 <ColorBtn
                     title="Background Color"
                     icon={icons.bgcolor}
                     color="#ffff00"
-                    onMain={() => { const c = prompt('Hex color (e.g. #ffff00):'); if (c) execCmd('hiliteColor', c); }}
+                    onPick={(c) => execCmd('hiliteColor', c)}
                 />
                 <Sep />
                 <Btn title="Maximize" onClick={() => { }}>{icons.maximize}</Btn>
@@ -1395,7 +1504,7 @@ const GeneratePrescription = () => {
     useEffect(() => {
         const fetchClinicProfile = async () => {
             const res = await axios.get(`${API_BAS}/api/clinic/${slug}/clinicData`);
-            
+
 
             setClinicProfile(res.data.data || res.data);
         };
@@ -1683,55 +1792,55 @@ const GeneratePrescription = () => {
             }
             if (type === 'symptom') { const payload = { name: formData.name || prefill }; await axios.post(`${API_BAS}/api/symptoms/${slug}/add`, payload); if (symptomEditorRef.current?.insertText) symptomEditorRef.current.insertText(payload.name); setSymptomInput(''); setSymptomNoResults(false); }
             if (type === 'report') {
-    const payload = {
-        reportName: formData.reportName || prefill,
-        impression: formData.impression || '',
-        action: formData.action || '',
-        date: formData.date || new Date().toISOString().split('T')[0],
-        patientId: masterData.patient?._id || null,
-        appointmentId: appointmentId || null,
-    };
-    await axios.post(`${API_BAS}/api/p_reports/${slug}/add`, payload);
-    const newR = { ...payload };
-    const emptyIdx = reports.findIndex(r => !r.reportName);
-    if (emptyIdx >= 0) {
-        setReports(prev => prev.map((r, i) => i === emptyIdx ? { ...r, ...newR } : r));
-    } else {
-        setReports(prev => [...prev, { ...EMPTY_REPORT, ...newR }]);
-    }
-    setReportSearchInput(''); setReportNoResults(false);
-}
+                const payload = {
+                    reportName: formData.reportName || prefill,
+                    impression: formData.impression || '',
+                    action: formData.action || '',
+                    date: formData.date || new Date().toISOString().split('T')[0],
+                    patientId: masterData.patient?._id || null,
+                    appointmentId: appointmentId || null,
+                };
+                await axios.post(`${API_BAS}/api/p_reports/${slug}/add`, payload);
+                const newR = { ...payload };
+                const emptyIdx = reports.findIndex(r => !r.reportName);
+                if (emptyIdx >= 0) {
+                    setReports(prev => prev.map((r, i) => i === emptyIdx ? { ...r, ...newR } : r));
+                } else {
+                    setReports(prev => [...prev, { ...EMPTY_REPORT, ...newR }]);
+                }
+                setReportSearchInput(''); setReportNoResults(false);
+            }
 
-// ✅ FIXED — custom_table is now its own top-level block
-if (type === 'custom_table') {
-    const { customField, customRowId, customColumns, customCollectionName } = dbModal;
+            // ✅ FIXED — custom_table is now its own top-level block
+            if (type === 'custom_table') {
+                const { customField, customRowId, customColumns, customCollectionName } = dbModal;
 
-    // Build payload from ALL columns using formData
-    const payload = {};
-    customColumns.forEach(col => {
-        payload[col.name] = formData[col.name] || '';
-    });
+                // Build payload from ALL columns using formData
+                const payload = {};
+                customColumns.forEach(col => {
+                    payload[col.name] = formData[col.name] || '';
+                });
 
-    // Save to DB
-    await axios.post(
-        `${API_BAS}/api/prescriptions/${customCollectionName}/rows`,
-        { ...payload, patientId: masterData.patient?._id, appointmentId, slug }
-    );
+                // Save to DB
+                await axios.post(
+                    `${API_BAS}/api/prescriptions/${customCollectionName}/rows`,
+                    { ...payload, patientId: masterData.patient?._id, appointmentId, slug }
+                );
 
-    // ✅ Fill ALL columns back into the correct row
-    setTableRows(prev => {
-        const fieldId = customField.id;
-        const updated = (prev[fieldId] || []).map(r => {
-            if (r._rowId !== customRowId) return r;
-            const filledRow = { ...r };
-            customColumns.forEach(col => {
-                filledRow[col.name] = payload[col.name];
-            });
-            return filledRow;
-        });
-        return { ...prev, [fieldId]: updated };
-    });
-}
+                // ✅ Fill ALL columns back into the correct row
+                setTableRows(prev => {
+                    const fieldId = customField.id;
+                    const updated = (prev[fieldId] || []).map(r => {
+                        if (r._rowId !== customRowId) return r;
+                        const filledRow = { ...r };
+                        customColumns.forEach(col => {
+                            filledRow[col.name] = payload[col.name];
+                        });
+                        return filledRow;
+                    });
+                    return { ...prev, [fieldId]: updated };
+                });
+            }
             closeAddModal();
         } catch (err) { alert("Error saving: " + (err.response?.data?.message || err.message)); }
         finally { setDbModalSaving(false); }
@@ -1845,7 +1954,8 @@ if (type === 'custom_table') {
                 // Row 4: Height | Patient ID (spans remaining cols for alignment)
                 [
                     { content: 'Height:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
-                    { content: patient.height ? `${patient.height} cm` : '—' },
+                    { content: patient.height ? `${patient.height} ft` : '—' },
+
                     { content: 'Address:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
                     // ✅ Removed colSpan:3 — it was meaningless on the last column
                     // and caused the cell to stay tiny. 'auto' width handles the rest.
@@ -1944,56 +2054,56 @@ if (type === 'custom_table') {
                         doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
                         curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                         let fieldY = curY + 15;
-                        
-                    for (let i = 0; i < filledFields.length; i += 2) {
-    if (fieldY + 25 > FOOTER_TOP_PT) {
-        fieldY = addContinuationPage();
-    }
-    const rowStartY = fieldY;
-    let maxRowHeight = 20;
 
-    // ── Left column ──
-    const label1 = `${filledFields[i].label}:`;
-    doc.setFont("times", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(30, 78, 121);
-    doc.text(label1, MARGIN_L, fieldY);
-    const label1W = doc.getTextWidth(label1);
-    const val1X = MARGIN_L + label1W + 10; // value starts just after label + small gap
+                        for (let i = 0; i < filledFields.length; i += 2) {
+                            if (fieldY + 25 > FOOTER_TOP_PT) {
+                                fieldY = addContinuationPage();
+                            }
+                            const rowStartY = fieldY;
+                            let maxRowHeight = 20;
 
-    const val1 = String(dynamicValues[String(filledFields[i].id)]);
-    if (val1.startsWith('data:image')) {
-        try { doc.addImage(val1, 'PNG', val1X, fieldY + 5, 100, 80); maxRowHeight = 90; }
-        catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val1X, fieldY); }
-    } else {
-        doc.setFont("times", "normal");
-        doc.setTextColor(0, 0, 0);
-        doc.text(val1, val1X, fieldY, { maxWidth: MID - val1X - 5 });
-    }
+                            // ── Left column ──
+                            const label1 = `${filledFields[i].label}:`;
+                            doc.setFont("times", "bold");
+                            doc.setFontSize(9);
+                            doc.setTextColor(30, 78, 121);
+                            doc.text(label1, MARGIN_L, fieldY);
+                            const label1W = doc.getTextWidth(label1);
+                            const val1X = MARGIN_L + label1W + 10; // value starts just after label + small gap
 
-    // ── Right column ──
-    if (filledFields[i + 1]) {
-        const label2 = `${filledFields[i + 1].label}:`;
-        doc.setFont("times", "bold");
-        doc.setFontSize(9);
-        doc.setTextColor(30, 78, 121);
-        doc.text(label2, COL2_X, rowStartY);
-        const label2W = doc.getTextWidth(label2);
-        const val2X = COL2_X + label2W + 10; // value starts just after label + small gap
+                            const val1 = String(dynamicValues[String(filledFields[i].id)]);
+                            if (val1.startsWith('data:image')) {
+                                try { doc.addImage(val1, 'PNG', val1X, fieldY + 5, 100, 80); maxRowHeight = 90; }
+                                catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0, 0, 0); doc.text("[Image Error]", val1X, fieldY); }
+                            } else {
+                                doc.setFont("times", "normal");
+                                doc.setTextColor(0, 0, 0);
+                                doc.text(val1, val1X, fieldY, { maxWidth: MID - val1X - 5 });
+                            }
 
-        const val2 = String(dynamicValues[String(filledFields[i + 1].id)]);
-        if (val2.startsWith('data:image')) {
-            try { doc.addImage(val2, 'PNG', val2X, rowStartY + 5, 100, 80); maxRowHeight = Math.max(maxRowHeight, 90); }
-            catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0,0,0); doc.text("[Image Error]", val2X, rowStartY); }
-        } else {
-            doc.setFont("times", "normal");
-            doc.setTextColor(0, 0, 0);
-            doc.text(val2, val2X, rowStartY, { maxWidth: MARGIN_R - val2X });
-        }
-    }
+                            // ── Right column ──
+                            if (filledFields[i + 1]) {
+                                const label2 = `${filledFields[i + 1].label}:`;
+                                doc.setFont("times", "bold");
+                                doc.setFontSize(9);
+                                doc.setTextColor(30, 78, 121);
+                                doc.text(label2, COL2_X, rowStartY);
+                                const label2W = doc.getTextWidth(label2);
+                                const val2X = COL2_X + label2W + 10; // value starts just after label + small gap
 
-    fieldY += maxRowHeight;
-} 
+                                const val2 = String(dynamicValues[String(filledFields[i + 1].id)]);
+                                if (val2.startsWith('data:image')) {
+                                    try { doc.addImage(val2, 'PNG', val2X, rowStartY + 5, 100, 80); maxRowHeight = Math.max(maxRowHeight, 90); }
+                                    catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0, 0, 0); doc.text("[Image Error]", val2X, rowStartY); }
+                                } else {
+                                    doc.setFont("times", "normal");
+                                    doc.setTextColor(0, 0, 0);
+                                    doc.text(val2, val2X, rowStartY, { maxWidth: MARGIN_R - val2X });
+                                }
+                            }
+
+                            fieldY += maxRowHeight;
+                        }
                         curY = fieldY + 20;
                     }
                 }
