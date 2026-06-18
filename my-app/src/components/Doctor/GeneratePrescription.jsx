@@ -1590,24 +1590,50 @@ const GeneratePrescription = () => {
         return prevValues;
     };
 
-    const autoLoadAppointmentContext = async () => {
-        setSearching(true);
-        try {
-            const res = await axios.get(`${API_BAS}/api/appointments/context/${appointmentId}`);
-            if (res.data.success) {
-                const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
-                setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
-                setIsRevisit(!!revisitFlag);
-                if (revisitFlag && lastPrescription) { applyRevisitData(lastPrescription, formStructure, patient); const prevTableData = lastPrescription.tableData || {}; await initTableRows(formStructure, prevTableData, patient?._id); prefillDefaultFileValues(formStructure); setIsRevisitAutoFilled(true); }
-                else {
-                    await initTableRows(formStructure, {}, patient?._id);
-                    prefillDefaultFileValues(formStructure);
+    // const autoLoadAppointmentContext = async () => {
+    //     setSearching(true);
+    //     try {
+    //         const res = await axios.get(`${API_BAS}/api/appointments/context/${appointmentId}`);
+    //         if (res.data.success) {
+    //             const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
+    //             setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
+    //             setIsRevisit(!!revisitFlag);
+    //             if (revisitFlag && lastPrescription) { applyRevisitData(lastPrescription, formStructure, patient); const prevTableData = lastPrescription.tableData || {}; await initTableRows(formStructure, prevTableData, patient?._id); prefillDefaultFileValues(formStructure); setIsRevisitAutoFilled(true); }
+    //             else {
+    //                 await initTableRows(formStructure, {}, patient?._id);
+    //                 prefillDefaultFileValues(formStructure);
 
-                }
+    //             }
+    //         }
+    //     } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
+    //     finally { setSearching(false); }
+    // };
+
+
+    const autoLoadAppointmentContext = async () => {
+    setSearching(true);
+    try {
+        const res = await axios.get(`${API_BAS}/api/appointments/context/${appointmentId}`);
+        if (res.data.success) {
+            const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
+            setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
+            setIsRevisit(!!revisitFlag);
+
+            // ✅ FIX: lastPrescription ho chahe revisit ho ya na ho — load karo
+            if (lastPrescription) {
+                applyRevisitData(lastPrescription, formStructure, patient);
+                const prevTableData = lastPrescription.tableData || {};
+                await initTableRows(formStructure, prevTableData, patient?._id);
+                prefillDefaultFileValues(formStructure);
+                setIsRevisitAutoFilled(true);
+            } else {
+                await initTableRows(formStructure, {}, patient?._id);
+                prefillDefaultFileValues(formStructure);
             }
-        } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
-        finally { setSearching(false); }
-    };
+        }
+    } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
+    finally { setSearching(false); }
+};
 
     const handleFileChange = (e, fieldId) => {
         const file = e.target.files[0];

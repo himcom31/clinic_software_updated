@@ -69,19 +69,156 @@ exports.getInitialData = async (req, res) => {
 // FIX: If appointmentId is provided and a prescription already exists for that
 //      appointment, UPDATE it in-place instead of creating a new document.
 //      This ensures download always returns the latest data.
+// exports.saveFinalPrescription = async (req, res) => {
+//     try {
+//         const {
+//             pdfBinary,
+//             patientId,
+//             slug,
+//             appointmentId,          // ← REQUIRED from frontend for upsert logic
+//             consultationResponses,
+//             medicines,
+//             symptoms,
+//             investigations,
+//             vaccinations,
+//             repots,
+//             ...rest
+//         } = req.body;
+
+//         if (!pdfBinary) {
+//             return res.status(400).json({ success: false, message: "PDF data is missing" });
+//         }
+
+//         // Strip base64 prefix and convert to Buffer
+//         const base64Data = pdfBinary.split(',')[1];
+//         const buffer = Buffer.from(base64Data, 'base64');
+
+
+//         // ── UPSERT LOGIC ──────────────────────────────────────────────────────
+//         // If appointmentId is given, check whether a prescription already exists
+//         // for that appointment. If yes → UPDATE it. If no → CREATE new.
+//         let savedPrescription;
+//         let isUpdate = false;
+
+//         if (appointmentId) {
+//             // Look up the appointment to find linked prescription(s)
+//             const appt = await Appointment.findById(appointmentId).lean();
+
+//             if (appt && appt.prescriptions && appt.prescriptions.length > 0) {
+//                 // A prescription already exists — UPDATE the first linked one
+//                 const existingPrescriptionId = appt.prescriptions[0];
+
+//                 savedPrescription = await Prescription.findByIdAndUpdate(
+//                     existingPrescriptionId,
+//                     {
+//                         $set: {
+//                             ...rest,
+//                             patientId,
+//                             slug,
+//                             consultationResponses: consultationResponses || [],
+//                             medicines: medicines || [],
+//                             symptoms: symptoms || [],
+//                             investigations: investigations || [],
+//                             vaccinations: vaccinations || [],
+//                             pdfBinary: buffer,
+//                             contentType: "application/pdf",
+//                             updatedAt: new Date(),
+//                         }
+//                     },
+//                     { new: true }
+//                 );
+
+//                 isUpdate = true;
+//             }
+//         }
+
+//         if (!isUpdate) {
+//             // No existing prescription found — create a new one
+//             const newRecord = new Prescription({
+//                 ...rest,
+//                 patientId,
+//                 slug,
+//                 appointmentId: appointmentId || undefined,
+//                 consultationResponses: consultationResponses || [],
+//                 medicines: medicines || [],
+//                 symptoms: symptoms || [],
+//                 investigations: investigations || [],
+//                 vaccinations: vaccinations || [],
+//                 pdfBinary: buffer,
+//                 contentType: "application/pdf",
+//             });
+
+//             savedPrescription = await newRecord.save();
+
+//             // Link prescription to patient
+//             await Patient.findByIdAndUpdate(
+//                 patientId,
+//                 { $push: { prescriptions: savedPrescription._id } },
+//                 { new: true }
+//             );
+
+//             // Link prescription to the appointment (if appointmentId given)
+//             if (appointmentId) {
+//                 await Appointment.findByIdAndUpdate(
+//                     appointmentId,
+//                     {
+//                         $push: { prescriptions: savedPrescription._id },
+//                         $set: { status: 'Completed' }   // auto-complete the appointment
+//                     },
+//                     { new: true }
+//                 );
+//             } else {
+//                 // Fallback: link to most recent appointment for this patient
+//                 await Appointment.findOneAndUpdate(
+//                     { patientId, clinicSlug: slug },
+//                     {
+//                         $push: { prescriptions: savedPrescription._id },
+//                         $set: { status: 'Completed' }
+//                     },
+//                     { sort: { createdAt: -1 }, new: true }
+//                 );
+//             }
+//         } else {
+//             // For updates, also ensure appointment status is Completed
+//             if (appointmentId) {
+//                 await Appointment.findByIdAndUpdate(
+//                     appointmentId,
+//                     { $set: { status: 'Completed' } },
+//                     { new: true }
+//                 );
+//             }
+//         }
+
+
+//         res.json({
+//             success: true,
+//             message: isUpdate ? "Prescription updated successfully!" : "Prescription created successfully!",
+//             prescriptionId: savedPrescription._id,  // ← Return ID so frontend can update state immediately
+//             isUpdate,
+//         });
+
+//     } catch (err) {
+//         console.error("saveFinalPrescription Error:", err.message);
+//         res.status(500).json({ message: err.message });
+//     }
+// };
+
+
 exports.saveFinalPrescription = async (req, res) => {
     try {
         const {
             pdfBinary,
             patientId,
             slug,
-            appointmentId,          // ← REQUIRED from frontend for upsert logic
+            appointmentId,
             consultationResponses,
             medicines,
+            symptomsHtml,        // ← ADD
             symptoms,
             investigations,
             vaccinations,
-            repots,
+            reports,             // ← TYPO FIX (repots → reports)
+            tableData,           // ← ADD
             ...rest
         } = req.body;
 
@@ -89,25 +226,16 @@ exports.saveFinalPrescription = async (req, res) => {
             return res.status(400).json({ success: false, message: "PDF data is missing" });
         }
 
-        // Strip base64 prefix and convert to Buffer
         const base64Data = pdfBinary.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
 
-
-        // ── UPSERT LOGIC ──────────────────────────────────────────────────────
-        // If appointmentId is given, check whether a prescription already exists
-        // for that appointment. If yes → UPDATE it. If no → CREATE new.
         let savedPrescription;
         let isUpdate = false;
 
         if (appointmentId) {
-            // Look up the appointment to find linked prescription(s)
             const appt = await Appointment.findById(appointmentId).lean();
-
             if (appt && appt.prescriptions && appt.prescriptions.length > 0) {
-                // A prescription already exists — UPDATE the first linked one
                 const existingPrescriptionId = appt.prescriptions[0];
-
                 savedPrescription = await Prescription.findByIdAndUpdate(
                     existingPrescriptionId,
                     {
@@ -116,59 +244,60 @@ exports.saveFinalPrescription = async (req, res) => {
                             patientId,
                             slug,
                             consultationResponses: consultationResponses || [],
-                            medicines: medicines || [],
-                            symptoms: symptoms || [],
-                            investigations: investigations || [],
-                            vaccinations: vaccinations || [],
-                            pdfBinary: buffer,
-                            contentType: "application/pdf",
-                            updatedAt: new Date(),
+                            medicines:             medicines             || [],
+                            symptomsHtml:          symptomsHtml          || '',   // ← ADD
+                            symptoms:              symptoms              || [],
+                            investigations:        investigations        || [],
+                            vaccinations:          vaccinations          || [],
+                            reports:               reports               || [],   // ← ADD
+                            tableData:             tableData             || {},   // ← ADD
+                            pdfBinary:             buffer,
+                            contentType:           "application/pdf",
+                            updatedAt:             new Date(),
                         }
                     },
                     { new: true }
                 );
-
                 isUpdate = true;
             }
         }
 
         if (!isUpdate) {
-            // No existing prescription found — create a new one
             const newRecord = new Prescription({
                 ...rest,
                 patientId,
                 slug,
-                appointmentId: appointmentId || undefined,
-                consultationResponses: consultationResponses || [],
-                medicines: medicines || [],
-                symptoms: symptoms || [],
-                investigations: investigations || [],
-                vaccinations: vaccinations || [],
-                pdfBinary: buffer,
-                contentType: "application/pdf",
+                appointmentId:         appointmentId         || undefined,
+                consultationResponses: consultationResponses  || [],
+                medicines:             medicines              || [],
+                symptomsHtml:          symptomsHtml           || '',   // ← ADD
+                symptoms:              symptoms               || [],
+                investigations:        investigations         || [],
+                vaccinations:          vaccinations           || [],
+                reports:               reports                || [],   // ← ADD
+                tableData:             tableData              || {},   // ← ADD
+                pdfBinary:             buffer,
+                contentType:           "application/pdf",
             });
 
             savedPrescription = await newRecord.save();
 
-            // Link prescription to patient
             await Patient.findByIdAndUpdate(
                 patientId,
                 { $push: { prescriptions: savedPrescription._id } },
                 { new: true }
             );
 
-            // Link prescription to the appointment (if appointmentId given)
             if (appointmentId) {
                 await Appointment.findByIdAndUpdate(
                     appointmentId,
                     {
                         $push: { prescriptions: savedPrescription._id },
-                        $set: { status: 'Completed' }   // auto-complete the appointment
+                        $set: { status: 'Completed' }
                     },
                     { new: true }
                 );
             } else {
-                // Fallback: link to most recent appointment for this patient
                 await Appointment.findOneAndUpdate(
                     { patientId, clinicSlug: slug },
                     {
@@ -179,7 +308,6 @@ exports.saveFinalPrescription = async (req, res) => {
                 );
             }
         } else {
-            // For updates, also ensure appointment status is Completed
             if (appointmentId) {
                 await Appointment.findByIdAndUpdate(
                     appointmentId,
@@ -189,11 +317,10 @@ exports.saveFinalPrescription = async (req, res) => {
             }
         }
 
-
         res.json({
             success: true,
             message: isUpdate ? "Prescription updated successfully!" : "Prescription created successfully!",
-            prescriptionId: savedPrescription._id,  // ← Return ID so frontend can update state immediately
+            prescriptionId: savedPrescription._id,
             isUpdate,
         });
 
@@ -202,7 +329,6 @@ exports.saveFinalPrescription = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
-
 
 // ── DOWNLOAD PRESCRIPTION PDF ────────────────────────────────────────────────
 exports.downloadPrescription = async (req, res) => {
