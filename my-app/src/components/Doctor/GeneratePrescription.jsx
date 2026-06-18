@@ -1240,11 +1240,23 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const addRow = () => onChange([...rows, buildEmptyRow(columns)]);
     const updateCell = (rowId, colName, value) => onChange(rows.map(r => r._rowId === rowId ? { ...r, [colName]: value } : r));
     const fillRowFromSuggestion = (rowId, suggestion) => onChange(rows.map(r => {
-        if (r._rowId !== rowId) return r;
-        const updated = { ...r };
-        columns.forEach(col => { if (suggestion[col.name] !== undefined) updated[col.name] = String(suggestion[col.name] ?? ''); });
-        return updated;
-    }));
+    if (r._rowId !== rowId) return r;
+    const updated = { ...r };
+    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+    const suggestionEntries = Object.entries(suggestion).filter(([k]) => !systemFields.includes(k));
+
+    columns.forEach((col, idx) => {
+        if (idx === 0) {
+            // ✅ Pehla column — naam match pe depend nahi, positional fill (jo dropdown mein bold dikhta hai wahi)
+            if (suggestionEntries[0]) {
+                updated[col.name] = String(suggestionEntries[0][1] ?? '');
+            }
+        } else if (suggestion[col.name] !== undefined) {
+            updated[col.name] = String(suggestion[col.name] ?? '');
+        }
+    });
+    return updated;
+}));
     const deleteRow = (rowId) => onChange(rows.filter(r => r._rowId !== rowId));
 
     return (
