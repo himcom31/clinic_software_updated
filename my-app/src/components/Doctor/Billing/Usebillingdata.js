@@ -127,8 +127,9 @@ const useBillingData = (slug) => {
         selectedPatient?.isRevisit === true;
 
     const subTotal = items.reduce((acc, i) => acc + i.price * (i.qty || 1), 0);
-    const grandTotal = subTotal - Number(discount);
-    const due = grandTotal - Number(paidAmount);
+    const discountAmount = (subTotal * Number(discount)) / 100;
+const grandTotal = subTotal - discountAmount;
+const due = grandTotal - Number(paidAmount);
 
     /* ── Active date range ── */
     const activeDateRange = useMemo(() => {

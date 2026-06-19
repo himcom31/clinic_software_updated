@@ -24,8 +24,9 @@ exports.createInvoice = async (req, res) => {
 
         const invoiceNo = `INV-${Math.floor(100_000 + Math.random() * 900_000)}`;
 
-        const { paidAmount, grandTotal, isRevisit, appointmentId } = req.body;
-
+const { paidAmount, subTotal, discount = 0, isRevisit, appointmentId } = req.body;
+const discountAmount = (Number(subTotal) * Number(discount)) / 100;
+const grandTotal = Number(subTotal) - discountAmount;
         // Determine payment status
         let status = 'Paid';
         if (isRevisit) {
@@ -42,7 +43,8 @@ exports.createInvoice = async (req, res) => {
             clinicSlug: slug,
             invoiceNo,
             status,
-            dueAmount: isRevisit ? 0 : req.body.dueAmount
+dueAmount: Math.max(0, grandTotal - Number(paidAmount))
+
         });
 
         await newInvoice.save();
@@ -148,7 +150,8 @@ exports.update = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Invoice not found' });
 
         const grandTotal = inv.subTotal - Number(discount);
-        const dueAmount = inv.isRevisit ? 0 : Math.max(0, grandTotal - Number(paidAmount));
+const dueAmount = Math.max(0, grandTotal - Number(paidAmount));
+
         const status = dueAmount <= 0 ? 'Paid'
             : paidAmount > 0 ? 'Partially Paid'
                 : 'Unpaid';

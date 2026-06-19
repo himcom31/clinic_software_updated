@@ -183,3 +183,61 @@ exports.updateStaffPermissions = async (req, res) => {
         });
     }
 };
+
+// 5. CHANGE STAFF PASSWORD (Doctor resets it)
+exports.changeStaffPassword = async (req, res) => {
+    try {
+        const { slug, staffId } = req.params;
+        const { newPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: "Password kam se kam 6 characters ka hona chahiye!" });
+        }
+
+        const Staff = getStaffModel(slug);
+        const Log = getLogModel(slug);
+
+        const staff = await Staff.findById(staffId);
+        if (!staff) return res.status(404).json({ success: false, message: "Staff not found!" });
+
+        staff.password = await bcrypt.hash(newPassword, 10);
+        await staff.save();
+
+        await Log.create({
+            staffName: "Doctor (Admin)",
+            staffRole: "Doctor",
+            action: "PASSWORD_CHANGED",
+            details: `Password changed for ${staff.name}`
+        });
+
+        res.json({ success: true, message: "Password successfully updated!" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// 6. DELETE STAFF
+exports.deleteStaff = async (req, res) => {
+    try {
+        const { slug, staffId } = req.params;
+        const Staff = getStaffModel(slug);
+        const Log = getLogModel(slug);
+
+        const staff = await Staff.findById(staffId);
+        if (!staff) return res.status(404).json({ success: false, message: "Staff not found!" });
+
+        const { name, role } = staff;
+        await Staff.findByIdAndDelete(staffId);
+
+        await Log.create({
+            staffName: "Doctor (Admin)",
+            staffRole: "Doctor",
+            action: "STAFF_DELETED",
+            details: `Deleted ${role}: ${name}`
+        });
+
+        res.json({ success: true, message: `${name} ko successfully delete kar diya!` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

@@ -262,7 +262,7 @@ const ClinicDetailsForm = () => {
             <h2 className={sectionTitle}><Stethoscope className="text-blue-600" size={18} /> Doctor Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-              <div className="relative md:col-span-1">
+              {/* <div className="relative md:col-span-1">
                 <label className={labelStyle}>Degree</label>
                 <User className="absolute left-4 top-[38px] text-slate-400" size={16} />
                 <input
@@ -272,7 +272,7 @@ const ClinicDetailsForm = () => {
                   value={formData.doctorName}
                   onChange={e => setFormData({ ...formData, doctorName: e.target.value })}
                 />
-              </div>
+              </div> */}
 
               <div className="relative">
                 <label className={labelStyle}>Doctor Name *</label>
@@ -286,7 +286,7 @@ const ClinicDetailsForm = () => {
                 />
               </div>
 
-              <div className="relative">
+              {/* <div className="relative">
                 <label className={labelStyle}>Specialization</label>
                 <Stethoscope className="absolute left-4 top-[38px] text-slate-400" size={16} />
                 <input
@@ -296,7 +296,7 @@ const ClinicDetailsForm = () => {
                   value={formData.specialization}
                   onChange={e => setFormData({ ...formData, specialization: e.target.value })}
                 />
-              </div>
+              </div> */}
 
             </div>
           </div>
@@ -310,7 +310,7 @@ const ClinicDetailsForm = () => {
 
             
             {/* Timing Card */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 relative overflow-hidden">
+            {/* <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <h2 className={sectionTitle}><Clock className="text-blue-600" size={18} /> Service Hours</h2>
                 {(formData.openAt || formData.closeAt) && (
@@ -354,7 +354,7 @@ const ClinicDetailsForm = () => {
                   <option>Friday</option>
                 </select>
               </div>
-            </div>
+            </div> */}
 
           </div>
         </div>

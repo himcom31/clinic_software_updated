@@ -13,6 +13,12 @@ router.patch('/:slug/:staffId/permissions', staffController.updateStaffPermissio
 // Staff Login
 router.post('/login', staffController.staffLogin);
 
+// Doctor changes a staff member's password
+router.patch('/:slug/:staffId/change-password', staffController.changeStaffPassword);
+
+// Doctor deletes a staff member
+router.delete('/:slug/:staffId', staffController.deleteStaff);
+
 // Example Secure Route (Only if permission allowed)
 router.get('/:slug/secret-reports', verifyStaff, hasPermission('canViewReports'), (req, res) => {
     res.json({ message: "You are allowed to see reports!" });

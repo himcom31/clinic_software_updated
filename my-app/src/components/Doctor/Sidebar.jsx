@@ -57,7 +57,7 @@ export default function Sidebar() {
     "Prescriptions": "canAddPrescription",
     "Medicines": "canAddMedicine",
     "Investigations": "canAddTest",
-    "Advice Library": "canAddAdvice",
+    // "Advice Library": "canAddAdvice",
     "Clinic Setup": "doctorOnly",
     "Prescription Designer": "doctorOnly",
     "Staff Management": "doctorOnly",
@@ -80,8 +80,8 @@ export default function Sidebar() {
     "Create Prescription":    "canAddPrescription",
     "Prescription History":   "canViewPrescriptionHistory",
     "Doctor Profile":         "doctorOnly",
-    "Clinic Profile":         "doctorOnly",
-    "System Settings":        "doctorOnly",
+    // "Clinic Profile":         "doctorOnly",
+    // "System Settings":        "doctorOnly",
   };
 
   const menuSections = [
@@ -128,7 +128,7 @@ export default function Sidebar() {
       items: [
         { label: "Medicines", icon: <Search size={18} />, path: `/${slug}/dashboard/medicine` },
         { label: "Investigations", icon: <Microscope size={18} />, path: `/${slug}/dashboard/investigation` },
-        { label: "Advice Library", icon: <Library size={18} />, path: `/${slug}/dashboard/advice` },
+        // { label: "Advice Library", icon: <Library size={18} />, path: `/${slug}/dashboard/advice` },
         { label: "Symptoms", icon: <Thermometer size={18} />, path: `/${slug}/dashboard/symptoms` },
         { label: "Vaccination", icon: <Globe size={18} />, path: `/${slug}/dashboard/vaccination` },
       ]
@@ -157,8 +157,8 @@ export default function Sidebar() {
           icon: <UserCircle size={18} />,
           subItems: [
             { label: "Doctor Profile", icon: <User size={14} />, path: `/${slug}/dashboard/account` },
-            { label: "Clinic Profile", icon: <ShieldCheck size={14} />, path: `/${slug}/dashboard/account/clinic-profile` },
-            { label: "System Settings", icon: <Settings size={14} />, path: `/${slug}/dashboard/account/settings` },
+            // { label: "Clinic Profile", icon: <ShieldCheck size={14} />, path: `/${slug}/dashboard/account/clinic-profile` },
+            // { label: "System Settings", icon: <Settings size={14} />, path: `/${slug}/dashboard/account/settings` },
           ]
         },
         { label: "Support", icon: <HelpCircle size={18} />, path: `/${slug}/dashboard/support` },

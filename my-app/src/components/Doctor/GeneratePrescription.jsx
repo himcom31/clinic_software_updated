@@ -65,10 +65,10 @@ const globalStyles = `
   .rx-table td { border: 1px solid #d1d5db; padding: 6px 8px; vertical-align: middle; color: #374151; }
   .rx-table tr:hover td { background: #f8fafc; }
   .rx-table-input {
-    width: 100%; border: 1px solid #d1d5db; border-radius: 2px; padding: 5px 8px;
-    font-size: 12px; color: #374151; outline: none; background: #fff;
-    box-sizing: border-box; transition: border-color 0.15s; height: 28px;
-  }
+  width: 100%; border: 1px solid #d1d5db; border-radius: 2px; padding: 5px 8px;
+  font-size: 14px; font-weight: 700; color: #0f172a; outline: none; background: #fff;
+  box-sizing: border-box; transition: border-color 0.15s; height: 30px;
+}
   .rx-table-input:focus { border-color: #1976D2; box-shadow: 0 0 0 2px rgba(25,118,210,0.1); }
   .rx-del-btn {
     background: #ef4444; color: #fff; border: none; border-radius: 3px;
@@ -76,16 +76,24 @@ const globalStyles = `
     display: flex; align-items: center; justify-content: center; transition: background 0.15s;
   }
   .rx-del-btn:hover { background: #dc2626; }
+ 
   .rx-suggestion-list {
-    position: absolute; top: 100%; left: 0; z-index: 200; min-width: 240px;
-    width: max-content; max-width: 380px; background: #fff; border: 1px solid #c8cdd4;
-    border-radius: 4px; box-shadow: 0 6px 20px rgba(0,0,0,0.14); overflow: hidden;
-    max-height: 220px; overflow-y: auto; margin-top: 2px;
-  }
-  .rx-suggestion-item {
-    padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;
-    font-size: 13px; font-weight: 600; color: #1e293b; transition: background 0.1s;
-  }
+  position: absolute; top: 100%; left: 0; z-index: 200;
+  width: 100%;
+  max-height: 220px; overflow-y: auto; margin-top: 2px;
+  background: #fff; border: 1px solid #5e98f7;
+  border-radius: 4px; box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+  overflow: hidden;
+}
+
+.rx-suggestion-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; cursor: pointer;
+  border-bottom: 0.5px solid #5e98f7;
+  font-size: 17px; color: #1e293b;
+  transition: background 0.1s;
+}  
+
   .rx-suggestion-item:last-child { border-bottom: none; }
   .rx-suggestion-item:hover { background: #eff6ff; }
   .rx-no-match {
@@ -1212,14 +1220,32 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
                 </div>
                 {open && suggestions.length > 0 && (
                     <div className="rx-suggestion-list" style={{ bottom: '100%', top: 'auto', marginTop: 0, marginBottom: 2 }}>
-
                         {suggestions.map((s, idx) => {
-                            const displayCols = Object.entries(s).filter(([k]) => !['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'].includes(k));
-                            const primary = displayCols[0]; const secondary = displayCols.slice(1, 3);
+                            const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+                            const cols = columns || [];
+                            const primaryCol = cols[0];
+                            const secondaryCols = cols.slice(1);
+
                             return (
-                                <div key={s._id || idx} onPointerDown={(e) => { e.preventDefault(); pointerDownRef.current = true; handleSelect(s); }} className="rx-suggestion-item">
-                                    <div style={{ fontWeight: 700, fontSize: 13 }}>{primary ? String(primary[1]) : '—'}</div>
-                                    {secondary.length > 0 && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{secondary.map(([k, v]) => `${k}: ${v}`).join(' · ')}</div>}
+                                <div
+                                    key={s._id || idx}
+                                    onPointerDown={(e) => { e.preventDefault(); pointerDownRef.current = true; handleSelect(s); }}
+                                    className="rx-suggestion-item"
+                                >
+                                    {/* ✅ Sirf pehla column bold */}
+                                    <div style={{ fontWeight: 700, fontSize: 17 }}>
+                                        {primaryCol ? String(s[primaryCol.name] ?? '') : '—'}
+                                    </div>
+                                    {/* ✅ Baaki secondary */}
+                                    {secondaryCols.length > 0 && (
+                                        <div style={{ fontSize: 17, color: '#94a3b8', marginTop: 2 }}>
+                                            {secondaryCols
+                                                .filter(col => !systemFields.includes(col.name) && s[col.name])
+                                                .map(col => `${col.name}: ${s[col.name]}`)
+                                                .join(' · ')
+                                            }
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -1237,27 +1263,85 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const collectionName = field.collectionName || null;
     const [noMatchInfo, setNoMatchInfo] = useState({ show: false, val: '', rowId: null });
 
+    // ✅ NEW: Top search bar state
+    const [topSearchInput, setTopSearchInput] = useState('');
+    const [topSuggestions, setTopSuggestions] = useState([]);
+    const [topSearching, setTopSearching] = useState(false);
+    const [topNoResults, setTopNoResults] = useState(false);
+    const topSearchDebounce = useRef(null);
+    const topPointerDownRef = useRef(false);
+
     const addRow = () => onChange([...rows, buildEmptyRow(columns)]);
     const updateCell = (rowId, colName, value) => onChange(rows.map(r => r._rowId === rowId ? { ...r, [colName]: value } : r));
-    const fillRowFromSuggestion = (rowId, suggestion) => onChange(rows.map(r => {
-    if (r._rowId !== rowId) return r;
-    const updated = { ...r };
-    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
-    const suggestionEntries = Object.entries(suggestion).filter(([k]) => !systemFields.includes(k));
 
-    columns.forEach((col, idx) => {
-        if (idx === 0) {
-            // ✅ Pehla column — naam match pe depend nahi, positional fill (jo dropdown mein bold dikhta hai wahi)
-            if (suggestionEntries[0]) {
-                updated[col.name] = String(suggestionEntries[0][1] ?? '');
+    const fillRowFromSuggestion = (rowId, suggestion) => onChange(rows.map(r => {
+        if (r._rowId !== rowId) return r;
+        const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+        const updated = { ...r };
+
+        columns.forEach((col) => {
+            const val = suggestion[col.name];
+            if (val !== undefined && val !== null && !systemFields.includes(col.name)) {
+                updated[col.name] = String(val);
             }
-        } else if (suggestion[col.name] !== undefined) {
-            updated[col.name] = String(suggestion[col.name] ?? '');
-        }
-    });
-    return updated;
-}));
+        });
+
+        return updated;
+    }));
+
     const deleteRow = (rowId) => onChange(rows.filter(r => r._rowId !== rowId));
+
+    // ✅ NEW: Top search handler — similar to handleMedTopSearch
+    const handleTopSearch = (query) => {
+        setTopSearchInput(query);
+        setTopNoResults(false);
+        if (!query || query.length < 1) { setTopSuggestions([]); return; }
+        clearTimeout(topSearchDebounce.current);
+        topSearchDebounce.current = setTimeout(async () => {
+            setTopSearching(true);
+            try {
+                const res = await axios.get(`${API_BAS}/api/prescriptions/${collectionName}/search`, {
+                    params: { q: query, slug, limit: 8 }
+                });
+                const results = res.data.data || [];
+                setTopSuggestions(results);
+                setTopNoResults(results.length === 0 && query.length >= 1);
+            } catch (_) { setTopSuggestions([]); }
+            finally { setTopSearching(false); }
+        }, 250);
+    };
+
+    // ✅ NEW: When user selects from top search — create new row and fill it
+    const selectFromTopSearch = (suggestion) => {
+        topPointerDownRef.current = false;
+        setTopSearchInput('');
+        setTopSuggestions([]);
+        setTopNoResults(false);
+
+        const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+        const newRow = buildEmptyRow(columns);
+
+        columns.forEach((col) => {
+            // ✅ Sirf exact match, koi fallback nahi
+            const val = suggestion[col.name];
+            if (val !== undefined && val !== null && !systemFields.includes(col.name)) {
+                newRow[col.name] = String(val);
+            }
+        });
+
+        console.log('Final newRow:', newRow);
+
+        const emptyIdx = rows.findIndex(r =>
+            Object.entries(r).every(([k, v]) => k === '_rowId' || v === '')
+        );
+        if (emptyIdx >= 0) {
+            const updated = [...rows];
+            updated[emptyIdx] = { ...newRow, _rowId: rows[emptyIdx]._rowId };
+            onChange(updated);
+        } else {
+            onChange([...rows, newRow]);
+        }
+    };
 
     return (
         <div className="rx-section">
@@ -1273,7 +1357,104 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
             </div>
 
             <div className="rx-section-body" style={{ paddingBottom: 0 }}>
-                {noMatchInfo.show && (
+                {/* ✅ NEW: Top Search Bar — only show when collectionName exists */}
+                {collectionName && (
+                    <div style={{ position: 'relative', marginBottom: 10 }}>
+                        <div className="rx-search-row">
+                            <div className="rx-search-wrap">
+                                <input
+                                    className="rx-search-input"
+                                    placeholder={`Search ${field.label || 'record'}...`}
+                                    value={topSearchInput}
+                                    onChange={(e) => handleTopSearch(e.target.value)}
+                                    onBlur={() => {
+                                        setTimeout(() => {
+                                            if (!topPointerDownRef.current) {
+                                                setTopSuggestions([]);
+                                                setTopNoResults(false);
+                                            }
+                                        }, 150);
+                                    }}
+                                />
+                                {topSearching && (
+                                    <Loader2 size={12} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', animation: 'spin 1s linear infinite' }} />
+                                )}
+                                {/* ✅ Suggestions dropdown */}
+                                {topSuggestions.length > 0 && (
+                                    <div className="rx-suggestion-list" style={{ width: '100%' }}>
+                                        {topSuggestions.map((s, idx) => {
+                                            const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+                                            const primaryCol = columns[0];
+                                            const secondaryCols = columns.slice(1);
+
+                                            return (
+                                                <div
+                                                    key={s._id || idx}
+                                                    onPointerDown={(e) => {
+                                                        e.preventDefault();
+                                                        topPointerDownRef.current = true;
+                                                        selectFromTopSearch(s);
+                                                    }}
+                                                    className="rx-suggestion-item"
+                                                >
+                                                    {/* ✅ Sirf pehla column bold mein */}
+                                                    <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
+                                                        {primaryCol ? String(s[primaryCol.name] ?? '') : '—'}
+                                                    </div>
+                                                    {/* ✅ Baaki columns secondary mein */}
+                                                    {secondaryCols.length > 0 && (
+                                                        <div style={{ fontSize: 17, color: '#94a3b8', marginTop: 2 }}>
+                                                            {secondaryCols
+                                                                .filter(col => !systemFields.includes(col.name) && s[col.name])
+                                                                .map(col => `${col.name}: ${s[col.name]}`)
+                                                                .join(' · ')
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                            {/* ✅ No Match Banner inline with search */}
+                        </div>
+
+                        {/* ✅ No match — Add to DB option */}
+                        {topNoResults && !topSearching && topSearchInput.length >= 1 && (
+                            <div className="rx-no-match">
+                                <span>No match for "<strong>{topSearchInput}</strong>"</span>
+                                <button
+                                    className="rx-no-match-btn"
+                                    onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setTopNoResults(false);
+                                        if (onOpenAddToDB) onOpenAddToDB(field, null, topSearchInput, columns, collectionName);
+                                    }}
+                                >
+                                    <PlusCircle size={9} /> Add to DB
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Existing row-level no match */}
+                        {noMatchInfo.show && (
+                            <div className="rx-no-match" style={{ marginTop: 6 }}>
+                                <span style={{ fontSize: 11 }}>No match for "<strong>{noMatchInfo.val}</strong>"</span>
+                                <button className="rx-no-match-btn" onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setNoMatchInfo({ show: false, val: '', rowId: null });
+                                    if (onOpenAddToDB) onOpenAddToDB(field, noMatchInfo.rowId, noMatchInfo.val, columns, collectionName);
+                                }}>
+                                    <PlusCircle size={9} /> Add to DB
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Non-searchable table ka purana no-match */}
+                {!collectionName && noMatchInfo.show && (
                     <div className="rx-no-match" style={{ marginBottom: 10 }}>
                         <span style={{ fontSize: 11 }}>No match for "<strong>{noMatchInfo.val}</strong>"</span>
                         <button className="rx-no-match-btn" onPointerDown={(e) => {
@@ -1291,7 +1472,9 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
                 <table className="rx-table">
                     <thead>
                         <tr>
-                            {columns.map((col, i) => (<th key={i}>{col.name} {i === 0 && collectionName && <span style={{ color: '#1976D2', fontSize: 10 }}>🔍</span>}</th>))}
+                            {columns.map((col, i) => (
+                                <th key={i}>{col.name} {i === 0 && collectionName && <span style={{ color: '#1976D2', fontSize: 10 }}>🔍</span>}</th>
+                            ))}
                             <th style={{ width: 44 }}>Del</th>
                         </tr>
                     </thead>
@@ -1348,7 +1531,7 @@ const PrintablePrescription = forwardRef(({ design, patient, symptomsHtml, clini
 PrintablePrescription.displayName = 'PrintablePrescription';
 
 /* ─── PreviewModal ───────────────────────────────────────────────────────────── */
-const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onSaveExit, navigate, slug }) => {
+const PreviewModal = ({ isOpen, onClose, pdfDoc, patient,onPersist, onSaveExit, navigate, slug }) => {
     const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
     const [waSending, setWaSending] = useState(false);
     const [waSaveExiting, setWaSaveExiting] = useState(false);
@@ -1374,37 +1557,42 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onSaveExit, navigate, 
 
     if (!isOpen) return null;
 
-    const handleWhatsApp = async () => {
-        if (!patient?.mobile) { setWaStatus('error'); setWaError('Patient mobile number not found.'); return; }
-        setWaSending(true); setWaStatus('sending'); setWaError('');
-        try {
-            const pdfBase64 = pdfDoc.output('datauristring');
-            const res = await axios.post(`${API_BAS}/api/whatsapp/send-prescription/${slug}`, { pdfBase64, patientName: patient.name, patientMobile: patient.mobile });
-            setWaStatus(res.data.success ? 'success' : 'error');
-            if (!res.data.success) setWaError(res.data.message || 'Send failed');
-        } catch (err) { setWaStatus('error'); setWaError(err.response?.data?.message || err.message || 'WhatsApp send failed'); }
-        finally { setWaSending(false); }
-    };
+    // 3️⃣ PreviewModal ke andar WhatsApp button
+const handleWhatsApp = async () => {
+    if (!patient?.mobile) { setWaStatus('error'); setWaError('Patient mobile number not found.'); return; }
+    setWaSending(true); setWaStatus('sending'); setWaError('');
+    try {
+        if (onPersist) await onPersist(pdfDoc);   // ✅ NEW — pehle DB save
+        const pdfBase64 = pdfDoc.output('datauristring');
+        const res = await axios.post(`${API_BAS}/api/whatsapp/send-prescription/${slug}`, { pdfBase64, patientName: patient.name, patientMobile: patient.mobile });
+        setWaStatus(res.data.success ? 'success' : 'error');
+        if (!res.data.success) setWaError(res.data.message || 'Send failed');
+    } catch (err) { setWaStatus('error'); setWaError(err.response?.data?.message || err.message || 'WhatsApp send failed'); }
+    finally { setWaSending(false); }
+};
 
-    const handleEmail = async () => {
-        if (emailSendingRef.current) return;
-        if (!patient?.email) { setEmailStatus('error'); setEmailError('Patient email address not found.'); return; }
-        emailSendingRef.current = true;
-        setEmailSending(true); setEmailStatus('sending'); setEmailError('');
-        try {
-            const pdfOutput = pdfDoc.output('datauristring');
-            const pdfBase64 = pdfOutput.substring(pdfOutput.indexOf(',') + 1);
-            if (!pdfBase64.startsWith('JVBERi')) { setEmailStatus('error'); setEmailError('PDF generation failed.'); return; }
-            const res = await axios.post(`${API_BAS}/api/notifications/send-email/${slug}`, { pdfBase64, patientName: patient.name, patientEmail: patient.email, patientMobile: patient.mobile }, { timeout: 60000 });
-            setEmailStatus(res.data.success ? 'success' : 'error');
-            if (!res.data.success) setEmailError(res.data.message || 'Email send failed');
-        } catch (err) { setEmailStatus('error'); setEmailError(err.response?.data?.message || err.message || 'Email send failed.'); }
-        finally { emailSendingRef.current = false; setEmailSending(false); }
-    };
+    // 4️⃣ Email button - same pattern
+const handleEmail = async () => {
+    if (emailSendingRef.current) return;
+    if (!patient?.email) { setEmailStatus('error'); setEmailError('Patient email address not found.'); return; }
+    emailSendingRef.current = true;
+    setEmailSending(true); setEmailStatus('sending'); setEmailError('');
+    try {
+        if (onPersist) await onPersist(pdfDoc);   // ✅ NEW
+        const pdfOutput = pdfDoc.output('datauristring');
+        const pdfBase64 = pdfOutput.substring(pdfOutput.indexOf(',') + 1);
+        if (!pdfBase64.startsWith('JVBERi')) { setEmailStatus('error'); setEmailError('PDF generation failed.'); return; }
+        const res = await axios.post(`${API_BAS}/api/notifications/send-email/${slug}`, { pdfBase64, patientName: patient.name, patientEmail: patient.email, patientMobile: patient.mobile }, { timeout: 60000 });
+        setEmailStatus(res.data.success ? 'success' : 'error');
+        if (!res.data.success) setEmailError(res.data.message || 'Email send failed');
+    } catch (err) { setEmailStatus('error'); setEmailError(err.response?.data?.message || err.message || 'Email send failed.'); }
+    finally { emailSendingRef.current = false; setEmailSending(false); }
+};
 
-    const handlePrint = () => {
-        if (pdfBlobUrl) { const win = window.open(pdfBlobUrl, '_blank'); if (win) win.addEventListener('load', () => { win.focus(); win.print(); }); }
-    };
+    const handlePrint = async () => {
+    if (onPersist) await onPersist(pdfDoc);       // ✅ NEW
+    if (pdfBlobUrl) { const win = window.open(pdfBlobUrl, '_blank'); if (win) win.addEventListener('load', () => { win.focus(); win.print(); }); }
+};
 
     const handleSaveExit = async () => {
         setWaSaveExiting(true);
@@ -1598,7 +1786,19 @@ const GeneratePrescription = () => {
         setSymptomsHtml(html);
         if (lastPrescription.investigations?.length) setInvestigations(lastPrescription.investigations);
         if (lastPrescription.vaccinations?.length) setVaccinations(lastPrescription.vaccinations);
-        if (lastPrescription.reports?.length) setReports(lastPrescription.reports);
+        if (lastPrescription.reports?.length) {
+    const normalizedReports = lastPrescription.reports.map(r => {
+        let safeDate = new Date().toISOString().split('T')[0];
+        if (r.date) {
+            const parsed = new Date(r.date);
+            if (!isNaN(parsed.getTime())) {
+                safeDate = parsed.toISOString().split('T')[0];
+            }
+        }
+        return { ...r, date: safeDate };
+    });
+    setReports(normalizedReports);
+}
         return prevValues;
     };
 
@@ -1623,29 +1823,29 @@ const GeneratePrescription = () => {
 
 
     const autoLoadAppointmentContext = async () => {
-    setSearching(true);
-    try {
-        const res = await axios.get(`${API_BAS}/api/appointments/context/${appointmentId}`);
-        if (res.data.success) {
-            const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
-            setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
-            setIsRevisit(!!revisitFlag);
+        setSearching(true);
+        try {
+            const res = await axios.get(`${API_BAS}/api/appointments/context/${appointmentId}`);
+            if (res.data.success) {
+                const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
+                setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
+                setIsRevisit(!!revisitFlag);
 
-            // ✅ FIX: lastPrescription ho chahe revisit ho ya na ho — load karo
-            if (lastPrescription) {
-                applyRevisitData(lastPrescription, formStructure, patient);
-                const prevTableData = lastPrescription.tableData || {};
-                await initTableRows(formStructure, prevTableData, patient?._id);
-                prefillDefaultFileValues(formStructure);
-                setIsRevisitAutoFilled(true);
-            } else {
-                await initTableRows(formStructure, {}, patient?._id);
-                prefillDefaultFileValues(formStructure);
+                // ✅ FIX: lastPrescription ho chahe revisit ho ya na ho — load karo
+                if (lastPrescription) {
+                    applyRevisitData(lastPrescription, formStructure, patient);
+                    const prevTableData = lastPrescription.tableData || {};
+                    await initTableRows(formStructure, prevTableData, patient?._id);
+                    prefillDefaultFileValues(formStructure);
+                    setIsRevisitAutoFilled(true);
+                } else {
+                    await initTableRows(formStructure, {}, patient?._id);
+                    prefillDefaultFileValues(formStructure);
+                }
             }
-        }
-    } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
-    finally { setSearching(false); }
-};
+        } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
+        finally { setSearching(false); }
+    };
 
     const handleFileChange = (e, fieldId) => {
         const file = e.target.files[0];
@@ -1896,30 +2096,51 @@ const GeneratePrescription = () => {
             if (type === 'custom_table') {
                 const { customField, customRowId, customColumns, customCollectionName } = dbModal;
 
-                // Build payload from ALL columns using formData
                 const payload = {};
                 customColumns.forEach(col => {
                     payload[col.name] = formData[col.name] || '';
                 });
 
-                // Save to DB
                 await axios.post(
                     `${API_BAS}/api/prescriptions/${customCollectionName}/rows`,
                     { ...payload, patientId: masterData.patient?._id, appointmentId, slug }
                 );
 
-                // ✅ Fill ALL columns back into the correct row
                 setTableRows(prev => {
                     const fieldId = customField.id;
-                    const updated = (prev[fieldId] || []).map(r => {
-                        if (r._rowId !== customRowId) return r;
-                        const filledRow = { ...r };
-                        customColumns.forEach(col => {
-                            filledRow[col.name] = payload[col.name];
+                    const existingRows = prev[fieldId] || [];
+
+                    if (customRowId) {
+                        // ✅ Row-level search se aaya tha — existing row fill karo
+                        const updated = existingRows.map(r => {
+                            if (r._rowId !== customRowId) return r;
+                            const filledRow = { ...r };
+                            customColumns.forEach(col => {
+                                filledRow[col.name] = payload[col.name];
+                            });
+                            return filledRow;
                         });
-                        return filledRow;
-                    });
-                    return { ...prev, [fieldId]: updated };
+                        return { ...prev, [fieldId]: updated };
+                    } else {
+                        // ✅ Top search se aaya tha — nayi row banao aur fill karo
+                        const newRow = buildEmptyRow(customColumns);
+                        customColumns.forEach(col => {
+                            newRow[col.name] = payload[col.name];
+                        });
+
+                        // Empty row already ho toh replace karo
+                        const emptyIdx = existingRows.findIndex(r =>
+                            Object.entries(r).every(([k, v]) => k === '_rowId' || v === '')
+                        );
+
+                        if (emptyIdx >= 0) {
+                            const updated = [...existingRows];
+                            updated[emptyIdx] = newRow;
+                            return { ...prev, [fieldId]: updated };
+                        } else {
+                            return { ...prev, [fieldId]: [...existingRows, newRow] };
+                        }
+                    }
                 });
             }
             closeAddModal();
@@ -2292,7 +2513,7 @@ const GeneratePrescription = () => {
         const symptomsArray = symptomsPlain ? symptomsPlain.split('\n').filter(s => s.trim()).map(s => ({ name: s.replace(/^•\s*/, '').trim() })) : [];
 
         await axios.post(`${API_BAS}/api/prescriptions/save`, {
-            slug, patientId, pdfBinary: pdfBase64,
+            slug, patientId, appointmentId, pdfBinary: pdfBase64,
             consultationResponses: consultationResponsesArray,
             medicines: filledMeds, symptomsHtml, symptoms: symptomsArray,
             investigations: filledInvs, vaccinations: filledVacs,
@@ -2306,6 +2527,7 @@ const GeneratePrescription = () => {
         setSaving(true);
         try {
             const doc = await buildPdfDoc(design, patient, formStructure, clinicProfile);
+        await persistPrescription(doc);       // ✅ NEW — turant DB save
 
             setPreviewPdfDoc(doc);
             setPreviewOpen(true);
@@ -2430,7 +2652,7 @@ const GeneratePrescription = () => {
                                             {medSuggestions.map(s => (
                                                 <div key={s._id} onPointerDown={(e) => { e.preventDefault(); suggestionPointerDownRef.current = true; selectMedicineFromTop(s); }} className="rx-suggestion-item">
                                                     <div style={{ fontWeight: 700 }}>{s.brandName || s.name}</div>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.name} · {s.strength} · {s.category}</div>
+                                                    <div style={{ fontSize: 17, color: '#94a3b8' }}>{s.name} · {s.strength} · {s.category}</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -2467,7 +2689,7 @@ const GeneratePrescription = () => {
                                                                 setMedSuggestions([]); setActiveMedIndex(null); setMedNoResults(prev => ({ ...prev, [i]: false }));
                                                             }} className="rx-suggestion-item">
                                                                 <div style={{ fontWeight: 700 }}>{s.brandName}</div>
-                                                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.name} · {s.strength}</div>
+                                                                <div style={{ fontSize: 17, color: '#94a3b8' }}>{s.name} · {s.strength}</div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -2564,7 +2786,7 @@ const GeneratePrescription = () => {
                                             {vacSuggestions.map(s => (
                                                 <div key={s._id} onPointerDown={(e) => { e.preventDefault(); vacPointerDownRef.current = true; selectVaccinationFromTop(s); }} className="rx-suggestion-item">
                                                     <span style={{ fontWeight: 700 }}>{s.vaccineName}</span>
-                                                    {s.note && <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.note}</div>}
+                                                    {s.note && <div style={{ fontSize: 17, color: '#94a3b8' }}>{s.note}</div>}
                                                 </div>
                                             ))}
                                         </div>
@@ -2614,7 +2836,7 @@ const GeneratePrescription = () => {
                                             {reportSuggestions.map((s, idx) => (
                                                 <div key={s._id || idx} onPointerDown={(e) => { e.preventDefault(); reportPointerDownRef.current = true; selectReportFromTop(s); }} className="rx-suggestion-item">
                                                     <span style={{ fontWeight: 700 }}>{s.reportName}</span>
-                                                    {s.date && <span style={{ color: '#94a3b8', marginLeft: 6, fontSize: 11 }}>{new Date(s.date).toLocaleDateString()}</span>}
+                                                    {s.date && <span style={{ color: '#94a3b8', marginLeft: 6, fontSize: 17 }}>{new Date(s.date).toLocaleDateString()}</span>}
                                                 </div>
                                             ))}
                                         </div>
@@ -2754,6 +2976,8 @@ const GeneratePrescription = () => {
                                     const { design: d, patient: p, formStructure: fs } = masterData;
                                     if (!p || !d) return alert("Patient/Design data missing!");
                                     const doc = await buildPdfDoc(d, p, fs, clinicProfile);
+                                    await persistPrescription(doc);          // ✅ NEW — turant DB save
+
                                     const url = URL.createObjectURL(doc.output('blob'));
                                     const win = window.open(url, '_blank');
                                     if (win) win.addEventListener('load', () => { win.focus(); win.print(); });
@@ -2800,6 +3024,8 @@ const GeneratePrescription = () => {
                 pdfDoc={previewPdfDoc}
                 patient={patient}
                 onSaveExit={handleSaveExit}
+                    onPersist={persistPrescription}     // ✅ NEW
+
                 navigate={navigate}
                 slug={slug}
             />

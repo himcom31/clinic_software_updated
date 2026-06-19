@@ -9,6 +9,7 @@ router.put('/:slug/reschedule/:id', appointmentController.rescheduleAppointment)
 router.get('/:slug/latest/:mobile', appointmentController.getLatestAppointment);
 router.get('/:slug/full-history', appointmentController.getFullHistory);
 router.get('/search-billing/:slug', appointmentController.searchAppointmentForBilling);
+
 // Route: GET /api/appointments/:slug/find-first-visit
 router.get('/:slug/check-status/:mobile', appointmentController.getPatientStatusAndLatest);
 router.get('/:slug/all',            appointmentController.getAllAppointments);      // GET  /appointments/:slug/all

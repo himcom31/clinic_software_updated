@@ -839,14 +839,17 @@ const FormView = ({ d }) => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ fontSize: 12, color: T.textMuted, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Percent size={11} /> Discount
+                  <Percent size={11} /> Discount (%)
+
                 </span>
                 <input
-                  type="number"
-                  style={{ ...s.input, width: 80, textAlign: 'right', padding: '5px 8px' }}
-                  value={discount}
-                  onChange={e => setDiscount(e.target.value)}
-                />
+    type="number"
+    min="0"
+    max="100"
+    style={{ ...s.input, width: 70, textAlign: 'right', padding: '5px 8px' }}
+    value={discount}
+    onChange={e => setDiscount(Math.min(100, Math.max(0, e.target.value)))}
+  />
               </div>
 
               <div style={s.divider} />

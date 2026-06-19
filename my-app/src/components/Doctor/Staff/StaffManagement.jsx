@@ -6,7 +6,7 @@ import {
     ChevronDown, Users, Clock, Check, X, Mail,
     ClipboardList, CreditCard, BarChart2, FileText,
     Pill, FlaskConical, Lightbulb, CalendarPlus, Search,
-    Pencil, Save
+    Pencil, Save, Key, Trash2, AlertTriangle
 } from 'lucide-react';
 
 const API_BAS = import.meta.env.VITE_API_URL;
@@ -156,9 +156,179 @@ const PermissionsEditModal = ({ s, onClose, onSaved, apiBase, slug }) => {
     );
 };
 
+// ── Change Password Modal ────────────────────────────────────────────────────
+const ChangePasswordModal = ({ s, onClose, apiBase, slug }) => {
+    const [newPassword, setNewPassword] = useState('');
+    const [confirm, setConfirm]         = useState('');
+    const [saving, setSaving]           = useState(false);
+    const [error, setError]             = useState('');
+    const [success, setSuccess]         = useState(false);
+
+    const handleSave = async () => {
+        setError('');
+        if (newPassword.length < 6) return setError('Password kam se kam 6 characters ka hona chahiye!');
+        if (newPassword !== confirm)  return setError('Dono passwords match nahi kar rahe!');
+
+        setSaving(true);
+        try {
+            const res = await axios.patch(
+                `${apiBase}/api/staff/${slug}/${s._id}/change-password`,
+                { newPassword }
+            );
+            if (res.data?.success) {
+                setSuccess(true);
+                setTimeout(onClose, 1200);
+            } else {
+                setError(res.data?.message || 'Update failed');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Something went wrong');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Avatar name={s.name} role={s.role} />
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{s.name}</p>
+                            <p className="text-[11px] text-slate-400">Change Password</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+                    >
+                        <X size={16} className="text-slate-400" />
+                    </button>
+                </div>
+
+                {/* Fields */}
+                <div className="px-5 py-5 space-y-3">
+                    <div>
+                        <label className="text-[11px] font-semibold text-slate-500 mb-1.5 block">
+                            New Password
+                        </label>
+                        <input
+                            type="password"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            placeholder="Min. 6 characters"
+                            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[11px] font-semibold text-slate-500 mb-1.5 block">
+                            Confirm Password
+                        </label>
+                        <input
+                            type="password"
+                            value={confirm}
+                            onChange={e => setConfirm(e.target.value)}
+                            placeholder="Re-enter new password"
+                            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all"
+                        />
+                    </div>
+
+                    {error   && <p className="text-[11px] text-red-500 font-medium">{error}</p>}
+                    {success && <p className="text-[11px] text-green-600 font-medium">✓ Password successfully updated!</p>}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center gap-3 px-5 py-4 border-t border-slate-100 bg-slate-50/70">
+                    <button
+                        onClick={onClose}
+                        disabled={saving}
+                        className="flex-1 text-xs font-semibold text-slate-500 hover:text-slate-700 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving || success}
+                        className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-amber-500 text-white text-xs font-semibold py-2.5 rounded-xl transition-all disabled:opacity-60"
+                    >
+                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Key size={14} />}
+                        {saving ? 'Updating...' : 'Update Password'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ── Delete Confirm Modal ─────────────────────────────────────────────────────
+const DeleteConfirmModal = ({ s, onClose, onDeleted, apiBase, slug }) => {
+    const [deleting, setDeleting] = useState(false);
+    const [error, setError]       = useState('');
+
+    const handleDelete = async () => {
+        setDeleting(true);
+        setError('');
+        try {
+            const res = await axios.delete(`${apiBase}/api/staff/${slug}/${s._id}`);
+            if (res.data?.success) {
+                onDeleted(s._id);
+                onClose();
+            } else {
+                setError(res.data?.message || 'Delete failed');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Something went wrong');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+
+                {/* Body */}
+                <div className="px-5 py-7 text-center">
+                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle size={22} className="text-red-500" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-800 mb-1.5">Delete Staff Member?</p>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                        <span className="font-semibold text-slate-600">{s.name}</span> ko permanently delete kar
+                        doge. Ye action undo nahi ho sakta.
+                    </p>
+                    {error && <p className="text-[11px] text-red-500 font-medium mt-3">{error}</p>}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center gap-3 px-5 py-4 border-t border-slate-100 bg-slate-50/70">
+                    <button
+                        onClick={onClose}
+                        disabled={deleting}
+                        className="flex-1 text-xs font-semibold text-slate-500 hover:text-slate-700 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-2.5 rounded-xl transition-all disabled:opacity-60"
+                    >
+                        {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        {deleting ? 'Deleting...' : 'Yes, Delete'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ── Staff Card ───────────────────────────────────────────────────────────────
-const StaffCard = ({ s, expanded, onToggle, onEditClick }) => {
-    const roleStyle   = getRoleStyle(s.role);
+const StaffCard = ({ s, expanded, onToggle, onEditClick, onPasswordClick, onDeleteClick }) => {
+    const roleStyle    = getRoleStyle(s.role);
     const enabledCount = PERMISSIONS.filter(p => s.permissions?.[p.key]).length;
 
     return (
@@ -195,8 +365,9 @@ const StaffCard = ({ s, expanded, onToggle, onEditClick }) => {
                 </div>
             </div>
 
-            {/* Expand Toggle + Edit Permissions */}
+            {/* Expand Toggle + Action Buttons */}
             <div className="flex items-stretch border-t border-slate-50 bg-slate-50/70">
+                {/* Expand toggle */}
                 <button
                     onClick={onToggle}
                     className="flex-1 flex items-center justify-between px-5 py-3 hover:bg-slate-100 transition-colors text-left"
@@ -210,12 +381,32 @@ const StaffCard = ({ s, expanded, onToggle, onEditClick }) => {
                         className={`text-slate-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
                     />
                 </button>
+
+                {/* Edit Permissions */}
                 <button
                     onClick={onEditClick}
-                    className="flex items-center gap-1.5 px-4 py-3 border-l border-slate-100 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                    title="Edit Permissions"
+                    className="flex items-center justify-center px-3.5 py-3 border-l border-slate-100 text-blue-500 hover:bg-blue-50 transition-colors"
                 >
-                    <Pencil size={12} />
-                    Edit
+                    <Pencil size={13} />
+                </button>
+
+                {/* Change Password */}
+                <button
+                    onClick={onPasswordClick}
+                    title="Change Password"
+                    className="flex items-center justify-center px-3.5 py-3 border-l border-slate-100 text-amber-500 hover:bg-amber-50 transition-colors"
+                >
+                    <Key size={13} />
+                </button>
+
+                {/* Delete Staff */}
+                <button
+                    onClick={onDeleteClick}
+                    title="Delete Staff"
+                    className="flex items-center justify-center px-3.5 py-3 border-l border-slate-100 text-red-400 hover:bg-red-50 transition-colors"
+                >
+                    <Trash2 size={13} />
                 </button>
             </div>
 
@@ -273,13 +464,15 @@ const LogRow = ({ log }) => (
 // ── Main Component ───────────────────────────────────────────────────────────
 const StaffManagement = () => {
     const { slug } = useParams();
-    const [staff, setStaff]               = useState([]);
-    const [logs, setLogs]                 = useState([]);
-    const [loading, setLoading]           = useState(true);
-    const [activeTab, setActiveTab]       = useState('staff');
-    const [expandedId, setExpandedId]     = useState(null);
-    const [search, setSearch]             = useState('');
-    const [editingStaff, setEditingStaff] = useState(null);
+    const [staff, setStaff]                 = useState([]);
+    const [logs, setLogs]                   = useState([]);
+    const [loading, setLoading]             = useState(true);
+    const [activeTab, setActiveTab]         = useState('staff');
+    const [expandedId, setExpandedId]       = useState(null);
+    const [search, setSearch]               = useState('');
+    const [editingStaff, setEditingStaff]   = useState(null);
+    const [passwordStaff, setPasswordStaff] = useState(null);
+    const [deleteStaff, setDeleteStaff]     = useState(null);
 
     useEffect(() => { fetchData(); }, [slug]);
 
@@ -311,6 +504,10 @@ const StaffManagement = () => {
         setStaff(prev => prev.map(member =>
             member._id === staffId ? { ...member, permissions: updatedPermissions } : member
         ));
+    };
+
+    const handleStaffDeleted = (staffId) => {
+        setStaff(prev => prev.filter(m => m._id !== staffId));
     };
 
     if (loading) return (
@@ -404,6 +601,8 @@ const StaffManagement = () => {
                                     expanded={expandedId === s._id}
                                     onToggle={() => setExpandedId(expandedId === s._id ? null : s._id)}
                                     onEditClick={() => setEditingStaff(s)}
+                                    onPasswordClick={() => setPasswordStaff(s)}
+                                    onDeleteClick={() => setDeleteStaff(s)}
                                 />
                             ))}
                         </div>
@@ -436,6 +635,27 @@ const StaffManagement = () => {
                     slug={slug}
                     onClose={() => setEditingStaff(null)}
                     onSaved={handlePermissionsSaved}
+                />
+            )}
+
+            {/* ── Change Password Modal ── */}
+            {passwordStaff && (
+                <ChangePasswordModal
+                    s={passwordStaff}
+                    apiBase={API_BAS}
+                    slug={slug}
+                    onClose={() => setPasswordStaff(null)}
+                />
+            )}
+
+            {/* ── Delete Confirm Modal ── */}
+            {deleteStaff && (
+                <DeleteConfirmModal
+                    s={deleteStaff}
+                    apiBase={API_BAS}
+                    slug={slug}
+                    onClose={() => setDeleteStaff(null)}
+                    onDeleted={handleStaffDeleted}
                 />
             )}
         </div>
