@@ -975,7 +975,7 @@ const calculateValidityUpto = (patientCreatedAt, appointmentValidity) => {
 
 const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 590;
 const USABLE_W = MARGIN_R - MARGIN_L; const HEADER_BOTTOM_PT = 270;
-const FOOTER_TOP_PT = A4_H - 80; const PAGE2_START_Y = 110;
+const FOOTER_TOP_PT = A4_H - 80; const PAGE2_START_Y = 50;
 
 const EMPTY_MED = { name: '', brandName: '', strength: '', unit_per_Dose: '', timing: '', duration: '', action: '', instructions: '', category: '', saltComposition: '' };
 const EMPTY_INV = { testName: '', category: '', action: '' };
