@@ -1219,45 +1219,45 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
                 </div>
                 {open && suggestions.length > 0 && (
                     <div className="rx-suggestion-list" style={{ bottom: '100%', top: 'auto', marginTop: 0, marginBottom: 2 }}>
-                        
-{suggestions.map((s, idx) => {
-    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
-    const cols = columns || [];
-    const primaryCol = cols[0];
-    const secondaryCols = cols.slice(1);
 
-    // ✅ normalizeKey se value dhundo
-    const getVal = (col) => {
-        const matchedKey = Object.keys(s).find(
-            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
-        );
-        return matchedKey ? String(s[matchedKey] ?? '') : '';
-    };
+                        {suggestions.map((s, idx) => {
+                            const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+                            const cols = columns || [];
+                            const primaryCol = cols[0];
+                            const secondaryCols = cols.slice(1);
 
-    const primaryVal = primaryCol ? getVal(primaryCol) : '—';
-    const secondaryText = secondaryCols
-        .map(col => ({ col, val: getVal(col) }))
-        .filter(({ val }) => val)
-        .map(({ col, val }) => `${col.name}: ${val}`)
-        .join(' · ');
+                            // ✅ normalizeKey se value dhundo
+                            const getVal = (col) => {
+                                const matchedKey = Object.keys(s).find(
+                                    k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
+                                );
+                                return matchedKey ? String(s[matchedKey] ?? '') : '';
+                            };
 
-    return (
-        <div
-            key={s._id || idx}
-            onPointerDown={(e) => { e.preventDefault(); pointerDownRef.current = true; handleSelect(s); }}
-            className="rx-suggestion-item"
-        >
-            <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
-                {primaryVal || '—'}
-            </div>
-            {secondaryText && (
-                <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
-                    {secondaryText}
-                </div>
-            )}
-        </div>
-    );
-})}
+                            const primaryVal = primaryCol ? getVal(primaryCol) : '—';
+                            const secondaryText = secondaryCols
+                                .map(col => ({ col, val: getVal(col) }))
+                                .filter(({ val }) => val)
+                                .map(({ col, val }) => `${col.name}: ${val}`)
+                                .join(' · ');
+
+                            return (
+                                <div
+                                    key={s._id || idx}
+                                    onPointerDown={(e) => { e.preventDefault(); pointerDownRef.current = true; handleSelect(s); }}
+                                    className="rx-suggestion-item"
+                                >
+                                    <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
+                                        {primaryVal || '—'}
+                                    </div>
+                                    {secondaryText && (
+                                        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                                            {secondaryText}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -1270,7 +1270,7 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
 const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const columns = field.columns || [];
     const collectionName = field.collectionName || null;
-     const normalizeKey = (str) =>
+    const normalizeKey = (str) =>
         str.toLowerCase().trim().replace(/\./g, '_').replace(/\s+/g, '_');
     const [noMatchInfo, setNoMatchInfo] = useState({ show: false, val: '', rowId: null });
 
@@ -1286,22 +1286,22 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const updateCell = (rowId, colName, value) => onChange(rows.map(r => r._rowId === rowId ? { ...r, [colName]: value } : r));
 
     const fillRowFromSuggestion = (rowId, suggestion) => onChange(rows.map(r => {
-    if (r._rowId !== rowId) return r;
-    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
-    const updated = { ...r };
+        if (r._rowId !== rowId) return r;
+        const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+        const updated = { ...r };
 
-    columns.forEach((col) => {
-        // ✅ PEHLE WALA HATAO, YAHI RAKHO
-        const matchedKey = Object.keys(suggestion).find(
-            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
-        );
-        if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
-            updated[col.name] = String(suggestion[matchedKey]);
-        }
-    });
+        columns.forEach((col) => {
+            // ✅ PEHLE WALA HATAO, YAHI RAKHO
+            const matchedKey = Object.keys(suggestion).find(
+                k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
+            );
+            if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
+                updated[col.name] = String(suggestion[matchedKey]);
+            }
+        });
 
-    return updated;
-}));
+        return updated;
+    }));
 
     const deleteRow = (rowId) => onChange(rows.filter(r => r._rowId !== rowId));
 
@@ -1327,8 +1327,8 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
 
     // ✅ NEW: When user selects from top search — create new row and fill it
     const selectFromTopSearch = (suggestion) => {
-// console.log('Suggestion keys:', Object.keys(suggestion));
-//     console.log('Column names:', columns.map(c => c.name));
+        // console.log('Suggestion keys:', Object.keys(suggestion));
+        //     console.log('Column names:', columns.map(c => c.name));
 
         topPointerDownRef.current = false;
         setTopSearchInput('');
@@ -1338,15 +1338,15 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
         const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
         const newRow = buildEmptyRow(columns);
 
-columns.forEach((col) => {
-        // ✅ PEHLE WALA HATAO, YAHI RAKHO
-        const matchedKey = Object.keys(suggestion).find(
-            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
-        );
-        if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
-            newRow[col.name] = String(suggestion[matchedKey]);
-        }
-    });
+        columns.forEach((col) => {
+            // ✅ PEHLE WALA HATAO, YAHI RAKHO
+            const matchedKey = Object.keys(suggestion).find(
+                k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
+            );
+            if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
+                newRow[col.name] = String(suggestion[matchedKey]);
+            }
+        });
 
         // console.log('Final newRow:', newRow);
 
@@ -1401,48 +1401,48 @@ columns.forEach((col) => {
                                 {/* ✅ Suggestions dropdown */}
                                 {topSuggestions.length > 0 && (
                                     <div className="rx-suggestion-list" style={{ width: '100%' }}>
-                                        
-{topSuggestions.map((s, idx) => {
-    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
-    const primaryCol = columns[0];
-    const secondaryCols = columns.slice(1);
 
-    // ✅ normalizeKey se value dhundo
-    const getVal = (col) => {
-        const matchedKey = Object.keys(s).find(
-            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
-        );
-        return matchedKey ? String(s[matchedKey] ?? '') : '';
-    };
+                                        {topSuggestions.map((s, idx) => {
+                                            const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+                                            const primaryCol = columns[0];
+                                            const secondaryCols = columns.slice(1);
 
-    const primaryVal = primaryCol ? getVal(primaryCol) : '—';
-    const secondaryText = secondaryCols
-        .map(col => ({ col, val: getVal(col) }))
-        .filter(({ val }) => val)
-        .map(({ col, val }) => `${col.name}: ${val}`)
-        .join(' · ');
+                                            // ✅ normalizeKey se value dhundo
+                                            const getVal = (col) => {
+                                                const matchedKey = Object.keys(s).find(
+                                                    k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
+                                                );
+                                                return matchedKey ? String(s[matchedKey] ?? '') : '';
+                                            };
 
-    return (
-        <div
-            key={s._id || idx}
-            onPointerDown={(e) => {
-                e.preventDefault();
-                topPointerDownRef.current = true;
-                selectFromTopSearch(s);
-            }}
-            className="rx-suggestion-item"
-        >
-            <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
-                {primaryVal || '—'}
-            </div>
-            {secondaryText && (
-                <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
-                    {secondaryText}
-                </div>
-            )}
-        </div>
-    );
-})}
+                                            const primaryVal = primaryCol ? getVal(primaryCol) : '—';
+                                            const secondaryText = secondaryCols
+                                                .map(col => ({ col, val: getVal(col) }))
+                                                .filter(({ val }) => val)
+                                                .map(({ col, val }) => `${col.name}: ${val}`)
+                                                .join(' · ');
+
+                                            return (
+                                                <div
+                                                    key={s._id || idx}
+                                                    onPointerDown={(e) => {
+                                                        e.preventDefault();
+                                                        topPointerDownRef.current = true;
+                                                        selectFromTopSearch(s);
+                                                    }}
+                                                    className="rx-suggestion-item"
+                                                >
+                                                    <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
+                                                        {primaryVal || '—'}
+                                                    </div>
+                                                    {secondaryText && (
+                                                        <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                                                            {secondaryText}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -1561,7 +1561,7 @@ const PrintablePrescription = forwardRef(({ design, patient, symptomsHtml, clini
 PrintablePrescription.displayName = 'PrintablePrescription';
 
 /* ─── PreviewModal ───────────────────────────────────────────────────────────── */
-const PreviewModal = ({ isOpen, onClose, pdfDoc, patient,onPersist, onSaveExit, navigate, slug }) => {
+const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onPersist, onSaveExit, navigate, slug }) => {
     const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
     const [waSending, setWaSending] = useState(false);
     const [waSaveExiting, setWaSaveExiting] = useState(false);
@@ -1571,6 +1571,8 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient,onPersist, onSaveExit, 
     const [emailStatus, setEmailStatus] = useState(null);
     const [emailError, setEmailError] = useState('');
     const emailSendingRef = useRef(false);
+    const [printing, setPrinting] = useState(false);
+
 
     useEffect(() => {
         if (isOpen && pdfDoc) {
@@ -1588,41 +1590,53 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient,onPersist, onSaveExit, 
     if (!isOpen) return null;
 
     // 3️⃣ PreviewModal ke andar WhatsApp button
-const handleWhatsApp = async () => {
-    if (!patient?.mobile) { setWaStatus('error'); setWaError('Patient mobile number not found.'); return; }
-    setWaSending(true); setWaStatus('sending'); setWaError('');
-    try {
-        if (onPersist) await onPersist(pdfDoc);   // ✅ NEW — pehle DB save
-        const pdfBase64 = pdfDoc.output('datauristring');
-        const res = await axios.post(`${API_BAS}/api/whatsapp/send-prescription/${slug}`, { pdfBase64, patientName: patient.name, patientMobile: patient.mobile });
-        setWaStatus(res.data.success ? 'success' : 'error');
-        if (!res.data.success) setWaError(res.data.message || 'Send failed');
-    } catch (err) { setWaStatus('error'); setWaError(err.response?.data?.message || err.message || 'WhatsApp send failed'); }
-    finally { setWaSending(false); }
-};
+    const handleWhatsApp = async () => {
+        if (!patient?.mobile) { setWaStatus('error'); setWaError('Patient mobile number not found.'); return; }
+        setWaSending(true); setWaStatus('sending'); setWaError('');
+        try {
+            // if (onPersist) await onPersist(pdfDoc);   // ✅ NEW — pehle DB save
+            const pdfBase64 = pdfDoc.output('datauristring');
+            const res = await axios.post(`${API_BAS}/api/whatsapp/send-prescription/${slug}`, { pdfBase64, patientName: patient.name, patientMobile: patient.mobile });
+            setWaStatus(res.data.success ? 'success' : 'error');
+            if (!res.data.success) setWaError(res.data.message || 'Send failed');
+        } catch (err) { setWaStatus('error'); setWaError(err.response?.data?.message || err.message || 'WhatsApp send failed'); }
+        finally { setWaSending(false); }
+    };
 
     // 4️⃣ Email button - same pattern
-const handleEmail = async () => {
-    if (emailSendingRef.current) return;
-    if (!patient?.email) { setEmailStatus('error'); setEmailError('Patient email address not found.'); return; }
-    emailSendingRef.current = true;
-    setEmailSending(true); setEmailStatus('sending'); setEmailError('');
-    try {
-        if (onPersist) await onPersist(pdfDoc);   // ✅ NEW
-        const pdfOutput = pdfDoc.output('datauristring');
-        const pdfBase64 = pdfOutput.substring(pdfOutput.indexOf(',') + 1);
-        if (!pdfBase64.startsWith('JVBERi')) { setEmailStatus('error'); setEmailError('PDF generation failed.'); return; }
-        const res = await axios.post(`${API_BAS}/api/notifications/send-email/${slug}`, { pdfBase64, patientName: patient.name, patientEmail: patient.email, patientMobile: patient.mobile }, { timeout: 60000 });
-        setEmailStatus(res.data.success ? 'success' : 'error');
-        if (!res.data.success) setEmailError(res.data.message || 'Email send failed');
-    } catch (err) { setEmailStatus('error'); setEmailError(err.response?.data?.message || err.message || 'Email send failed.'); }
-    finally { emailSendingRef.current = false; setEmailSending(false); }
-};
+    const handleEmail = async () => {
+        if (emailSendingRef.current) return;
+        if (!patient?.email) { setEmailStatus('error'); setEmailError('Patient email address not found.'); return; }
+        emailSendingRef.current = true;
+        setEmailSending(true); setEmailStatus('sending'); setEmailError('');
+        try {
+            // if (onPersist) await onPersist(pdfDoc);   // ✅ NEW
+            const pdfOutput = pdfDoc.output('datauristring');
+            const pdfBase64 = pdfOutput.substring(pdfOutput.indexOf(',') + 1);
+            if (!pdfBase64.startsWith('JVBERi')) { setEmailStatus('error'); setEmailError('PDF generation failed.'); return; }
+            const res = await axios.post(`${API_BAS}/api/notifications/send-email/${slug}`, { pdfBase64, patientName: patient.name, patientEmail: patient.email, patientMobile: patient.mobile }, { timeout: 60000 });
+            setEmailStatus(res.data.success ? 'success' : 'error');
+            if (!res.data.success) setEmailError(res.data.message || 'Email send failed');
+        } catch (err) { setEmailStatus('error'); setEmailError(err.response?.data?.message || err.message || 'Email send failed.'); }
+        finally { emailSendingRef.current = false; setEmailSending(false); }
+    };
 
-    const handlePrint = async () => {
-    if (onPersist) await onPersist(pdfDoc);       // ✅ NEW
-    if (pdfBlobUrl) { const win = window.open(pdfBlobUrl, '_blank'); if (win) win.addEventListener('load', () => { win.focus(); win.print(); }); }
-};
+    const handlePrint = () => {
+        if (!pdfBlobUrl) return;
+        setPrinting(true);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfBlobUrl;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                setPrinting(false);
+            }, 2000);
+        };
+    };
 
     const handleSaveExit = async () => {
         setWaSaveExiting(true);
@@ -1679,8 +1693,12 @@ const handleEmail = async () => {
                     {emailStatus === 'success' && <div className="wa-status-badge success"><CheckCircle size={12} />Email Sent!</div>}
                     {emailStatus === 'error' && <div className="wa-status-badge error"><X size={12} />{emailError}</div>}
 
-                    <button className="preview-btn preview-btn-print" onClick={handlePrint} disabled={!pdfBlobUrl}>
-                        <Printer size={20} /><span>Print Prescription</span>
+                    <button className="preview-btn preview-btn-print" onClick={handlePrint} disabled={!pdfBlobUrl || printing}>
+                        {printing
+                            ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                            : <Printer size={20} />
+                        }
+                        <span>{printing ? 'Preparing...' : 'Print Prescription'}</span>
                     </button>
 
                     <div style={{ flex: 1 }} />
@@ -1761,6 +1779,8 @@ const GeneratePrescription = () => {
     const [clinicProfile, setClinicProfile] = useState(null);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewPdfDoc, setPreviewPdfDoc] = useState(null);
+    const [printingOnly, setPrintingOnly] = useState(false);
+
 
     useEffect(() => {
         return () => {
@@ -1817,18 +1837,18 @@ const GeneratePrescription = () => {
         if (lastPrescription.investigations?.length) setInvestigations(lastPrescription.investigations);
         if (lastPrescription.vaccinations?.length) setVaccinations(lastPrescription.vaccinations);
         if (lastPrescription.reports?.length) {
-    const normalizedReports = lastPrescription.reports.map(r => {
-        let safeDate = new Date().toISOString().split('T')[0];
-        if (r.date) {
-            const parsed = new Date(r.date);
-            if (!isNaN(parsed.getTime())) {
-                safeDate = parsed.toISOString().split('T')[0];
-            }
+            const normalizedReports = lastPrescription.reports.map(r => {
+                let safeDate = new Date().toISOString().split('T')[0];
+                if (r.date) {
+                    const parsed = new Date(r.date);
+                    if (!isNaN(parsed.getTime())) {
+                        safeDate = parsed.toISOString().split('T')[0];
+                    }
+                }
+                return { ...r, date: safeDate };
+            });
+            setReports(normalizedReports);
         }
-        return { ...r, date: safeDate };
-    });
-    setReports(normalizedReports);
-}
         return prevValues;
     };
 
@@ -2557,7 +2577,7 @@ const GeneratePrescription = () => {
         setSaving(true);
         try {
             const doc = await buildPdfDoc(design, patient, formStructure, clinicProfile);
-        await persistPrescription(doc);       // ✅ NEW — turant DB save
+            // await persistPrescription(doc);       // ✅ NEW — turant DB save
 
             setPreviewPdfDoc(doc);
             setPreviewOpen(true);
@@ -3005,14 +3025,40 @@ const GeneratePrescription = () => {
                                 <button className="rx-btn-print" onClick={async () => {
                                     const { design: d, patient: p, formStructure: fs } = masterData;
                                     if (!p || !d) return alert("Patient/Design data missing!");
-                                    const doc = await buildPdfDoc(d, p, fs, clinicProfile);
-                                    await persistPrescription(doc);          // ✅ NEW — turant DB save
 
-                                    const url = URL.createObjectURL(doc.output('blob'));
-                                    const win = window.open(url, '_blank');
-                                    if (win) win.addEventListener('load', () => { win.focus(); win.print(); });
-                                }}>
-                                    <Printer size={15} /> Print Only
+                                    setPrintingOnly(true);
+                                    try {
+                                        const doc = previewPdfDoc || await buildPdfDoc(d, p, fs, clinicProfile);
+                                        if (!previewPdfDoc) {
+                                            await persistPrescription(doc);
+                                            setPreviewPdfDoc(doc);
+                                        }
+                                        const blob = doc.output('blob');
+                                        const url = URL.createObjectURL(blob);
+                                        const iframe = document.createElement('iframe');
+                                        iframe.style.display = 'none';
+                                        iframe.src = url;
+                                        document.body.appendChild(iframe);
+                                        iframe.onload = () => {
+                                            iframe.contentWindow.focus();
+                                            iframe.contentWindow.print();
+                                            setTimeout(() => {
+                                                document.body.removeChild(iframe);
+                                                URL.revokeObjectURL(url);
+                                                setPrintingOnly(false);
+                                            }, 2000);
+                                        };
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert("Print error: " + err.message);
+                                        setPrintingOnly(false);
+                                    }
+                                }} disabled={printingOnly}>
+                                    {printingOnly
+                                        ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                                        : <Printer size={15} />
+                                    }
+                                    {printingOnly ? 'Preparing...' : 'Print Only'}
                                 </button>
                                 <button className="rx-btn-save" onClick={handleSave} disabled={saving}>
                                     {saving ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Eye size={15} />}
@@ -3054,7 +3100,7 @@ const GeneratePrescription = () => {
                 pdfDoc={previewPdfDoc}
                 patient={patient}
                 onSaveExit={handleSaveExit}
-                    onPersist={persistPrescription}     // ✅ NEW
+                onPersist={persistPrescription}     // ✅ NEW
 
                 navigate={navigate}
                 slug={slug}
