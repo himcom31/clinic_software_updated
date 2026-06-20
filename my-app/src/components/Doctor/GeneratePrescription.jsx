@@ -1260,6 +1260,8 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
 const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const columns = field.columns || [];
     const collectionName = field.collectionName || null;
+     const normalizeKey = (str) =>
+        str.toLowerCase().trim().replace(/\./g, '_').replace(/\s+/g, '_');
     const [noMatchInfo, setNoMatchInfo] = useState({ show: false, val: '', rowId: null });
 
     // ✅ NEW: Top search bar state
@@ -1279,9 +1281,9 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const updated = { ...r };
 
     columns.forEach((col) => {
-        // ✅ Case-insensitive + trim match
+        // ✅ PEHLE WALA HATAO, YAHI RAKHO
         const matchedKey = Object.keys(suggestion).find(
-            k => k.toLowerCase().trim() === col.name.toLowerCase().trim() && !systemFields.includes(k)
+            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
         );
         if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
             updated[col.name] = String(suggestion[matchedKey]);
@@ -1326,15 +1328,15 @@ console.log('Suggestion keys:', Object.keys(suggestion));
         const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
         const newRow = buildEmptyRow(columns);
 
-        columns.forEach((col) => {
-    // ✅ Case-insensitive + trim match
-    const matchedKey = Object.keys(suggestion).find(
-        k => k.toLowerCase().trim() === col.name.toLowerCase().trim() && !systemFields.includes(k)
-    );
-    if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
-        newRow[col.name] = String(suggestion[matchedKey]);
-    }
-});
+columns.forEach((col) => {
+        // ✅ PEHLE WALA HATAO, YAHI RAKHO
+        const matchedKey = Object.keys(suggestion).find(
+            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
+        );
+        if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
+            newRow[col.name] = String(suggestion[matchedKey]);
+        }
+    });
 
         console.log('Final newRow:', newRow);
 
