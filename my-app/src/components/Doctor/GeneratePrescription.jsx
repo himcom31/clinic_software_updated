@@ -1157,8 +1157,7 @@ const AddToDBModal = ({ isOpen, onClose, onSave, title, fields, saving }) => {
 };
 
 /* ─── TableCellInput ─────────────────────────────────────────────────────────── */
-
-const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, onSelectSuggestion, onNoMatch, onNoMatchClear }) => {
+const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, onSelectSuggestion, onNoMatch, onNoMatchClear, columns }) => {
     const [suggestions, setSuggestions] = useState([]);
     const [searching, setSearching] = useState(false);
     const [open, setOpen] = useState(false);
@@ -1275,19 +1274,22 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const updateCell = (rowId, colName, value) => onChange(rows.map(r => r._rowId === rowId ? { ...r, [colName]: value } : r));
 
     const fillRowFromSuggestion = (rowId, suggestion) => onChange(rows.map(r => {
-        if (r._rowId !== rowId) return r;
-        const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
-        const updated = { ...r };
+    if (r._rowId !== rowId) return r;
+    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+    const updated = { ...r };
 
-        columns.forEach((col) => {
-            const val = suggestion[col.name];
-            if (val !== undefined && val !== null && !systemFields.includes(col.name)) {
-                updated[col.name] = String(val);
-            }
-        });
+    columns.forEach((col) => {
+        // ✅ Case-insensitive + trim match
+        const matchedKey = Object.keys(suggestion).find(
+            k => k.toLowerCase().trim() === col.name.toLowerCase().trim() && !systemFields.includes(k)
+        );
+        if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
+            updated[col.name] = String(suggestion[matchedKey]);
+        }
+    });
 
-        return updated;
-    }));
+    return updated;
+}));
 
     const deleteRow = (rowId) => onChange(rows.filter(r => r._rowId !== rowId));
 
@@ -1322,12 +1324,14 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
         const newRow = buildEmptyRow(columns);
 
         columns.forEach((col) => {
-            // ✅ Sirf exact match, koi fallback nahi
-            const val = suggestion[col.name];
-            if (val !== undefined && val !== null && !systemFields.includes(col.name)) {
-                newRow[col.name] = String(val);
-            }
-        });
+    // ✅ Case-insensitive + trim match
+    const matchedKey = Object.keys(suggestion).find(
+        k => k.toLowerCase().trim() === col.name.toLowerCase().trim() && !systemFields.includes(k)
+    );
+    if (matchedKey !== undefined && suggestion[matchedKey] !== null) {
+        newRow[col.name] = String(suggestion[matchedKey]);
+    }
+});
 
         console.log('Final newRow:', newRow);
 
@@ -1487,6 +1491,7 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
                                     <td key={cIdx}>
                                         <TableCellInput
                                             col={col} colIndex={cIdx} row={row} slug={slug} collectionName={collectionName}
+                                            columns={columns}
                                             onUpdate={(colName, value) => updateCell(row._rowId, colName, value)}
                                             onSelectSuggestion={(suggestion) => fillRowFromSuggestion(row._rowId, suggestion)}
                                             onNoMatch={collectionName && cIdx === 0
