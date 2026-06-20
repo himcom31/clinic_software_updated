@@ -1219,7 +1219,7 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
                 </div>
                 {open && suggestions.length > 0 && (
                     <div className="rx-suggestion-list" style={{ bottom: '100%', top: 'auto', marginTop: 0, marginBottom: 2 }}>
-                        // AFTER
+                        
 {suggestions.map((s, idx) => {
     const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
     const cols = columns || [];
@@ -1327,8 +1327,8 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
 
     // ✅ NEW: When user selects from top search — create new row and fill it
     const selectFromTopSearch = (suggestion) => {
-console.log('Suggestion keys:', Object.keys(suggestion));
-    console.log('Column names:', columns.map(c => c.name));
+// console.log('Suggestion keys:', Object.keys(suggestion));
+//     console.log('Column names:', columns.map(c => c.name));
 
         topPointerDownRef.current = false;
         setTopSearchInput('');
@@ -1348,7 +1348,7 @@ columns.forEach((col) => {
         }
     });
 
-        console.log('Final newRow:', newRow);
+        // console.log('Final newRow:', newRow);
 
         const emptyIdx = rows.findIndex(r =>
             Object.entries(r).every(([k, v]) => k === '_rowId' || v === '')
@@ -1401,7 +1401,7 @@ columns.forEach((col) => {
                                 {/* ✅ Suggestions dropdown */}
                                 {topSuggestions.length > 0 && (
                                     <div className="rx-suggestion-list" style={{ width: '100%' }}>
-                                        // AFTER — yeh lagao
+                                        
 {topSuggestions.map((s, idx) => {
     const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
     const primaryCol = columns[0];
