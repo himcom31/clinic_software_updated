@@ -1219,35 +1219,45 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
                 </div>
                 {open && suggestions.length > 0 && (
                     <div className="rx-suggestion-list" style={{ bottom: '100%', top: 'auto', marginTop: 0, marginBottom: 2 }}>
-                        {suggestions.map((s, idx) => {
-                            const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
-                            const cols = columns || [];
-                            const primaryCol = cols[0];
-                            const secondaryCols = cols.slice(1);
+                        // AFTER
+{suggestions.map((s, idx) => {
+    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+    const cols = columns || [];
+    const primaryCol = cols[0];
+    const secondaryCols = cols.slice(1);
 
-                            return (
-                                <div
-                                    key={s._id || idx}
-                                    onPointerDown={(e) => { e.preventDefault(); pointerDownRef.current = true; handleSelect(s); }}
-                                    className="rx-suggestion-item"
-                                >
-                                    {/* ✅ Sirf pehla column bold */}
-                                    <div style={{ fontWeight: 700, fontSize: 17 }}>
-                                        {primaryCol ? String(s[primaryCol.name] ?? '') : '—'}
-                                    </div>
-                                    {/* ✅ Baaki secondary */}
-                                    {secondaryCols.length > 0 && (
-                                        <div style={{ fontSize: 17, color: '#94a3b8', marginTop: 2 }}>
-                                            {secondaryCols
-                                                .filter(col => !systemFields.includes(col.name) && s[col.name])
-                                                .map(col => `${col.name}: ${s[col.name]}`)
-                                                .join(' · ')
-                                            }
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+    // ✅ normalizeKey se value dhundo
+    const getVal = (col) => {
+        const matchedKey = Object.keys(s).find(
+            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
+        );
+        return matchedKey ? String(s[matchedKey] ?? '') : '';
+    };
+
+    const primaryVal = primaryCol ? getVal(primaryCol) : '—';
+    const secondaryText = secondaryCols
+        .map(col => ({ col, val: getVal(col) }))
+        .filter(({ val }) => val)
+        .map(({ col, val }) => `${col.name}: ${val}`)
+        .join(' · ');
+
+    return (
+        <div
+            key={s._id || idx}
+            onPointerDown={(e) => { e.preventDefault(); pointerDownRef.current = true; handleSelect(s); }}
+            className="rx-suggestion-item"
+        >
+            <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
+                {primaryVal || '—'}
+            </div>
+            {secondaryText && (
+                <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                    {secondaryText}
+                </div>
+            )}
+        </div>
+    );
+})}
                     </div>
                 )}
             </div>
@@ -1391,38 +1401,48 @@ columns.forEach((col) => {
                                 {/* ✅ Suggestions dropdown */}
                                 {topSuggestions.length > 0 && (
                                     <div className="rx-suggestion-list" style={{ width: '100%' }}>
-                                        {topSuggestions.map((s, idx) => {
-                                            const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
-                                            const primaryCol = columns[0];
-                                            const secondaryCols = columns.slice(1);
+                                        // AFTER — yeh lagao
+{topSuggestions.map((s, idx) => {
+    const systemFields = ['_id', '__v', 'patientId', 'appointmentId', 'slug', 'createdAt', 'updatedAt'];
+    const primaryCol = columns[0];
+    const secondaryCols = columns.slice(1);
 
-                                            return (
-                                                <div
-                                                    key={s._id || idx}
-                                                    onPointerDown={(e) => {
-                                                        e.preventDefault();
-                                                        topPointerDownRef.current = true;
-                                                        selectFromTopSearch(s);
-                                                    }}
-                                                    className="rx-suggestion-item"
-                                                >
-                                                    {/* ✅ Sirf pehla column bold mein */}
-                                                    <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
-                                                        {primaryCol ? String(s[primaryCol.name] ?? '') : '—'}
-                                                    </div>
-                                                    {/* ✅ Baaki columns secondary mein */}
-                                                    {secondaryCols.length > 0 && (
-                                                        <div style={{ fontSize: 17, color: '#94a3b8', marginTop: 2 }}>
-                                                            {secondaryCols
-                                                                .filter(col => !systemFields.includes(col.name) && s[col.name])
-                                                                .map(col => `${col.name}: ${s[col.name]}`)
-                                                                .join(' · ')
-                                                            }
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+    // ✅ normalizeKey se value dhundo
+    const getVal = (col) => {
+        const matchedKey = Object.keys(s).find(
+            k => normalizeKey(k) === normalizeKey(col.name) && !systemFields.includes(k)
+        );
+        return matchedKey ? String(s[matchedKey] ?? '') : '';
+    };
+
+    const primaryVal = primaryCol ? getVal(primaryCol) : '—';
+    const secondaryText = secondaryCols
+        .map(col => ({ col, val: getVal(col) }))
+        .filter(({ val }) => val)
+        .map(({ col, val }) => `${col.name}: ${val}`)
+        .join(' · ');
+
+    return (
+        <div
+            key={s._id || idx}
+            onPointerDown={(e) => {
+                e.preventDefault();
+                topPointerDownRef.current = true;
+                selectFromTopSearch(s);
+            }}
+            className="rx-suggestion-item"
+        >
+            <div style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>
+                {primaryVal || '—'}
+            </div>
+            {secondaryText && (
+                <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                    {secondaryText}
+                </div>
+            )}
+        </div>
+    );
+})}
                                     </div>
                                 )}
                             </div>
