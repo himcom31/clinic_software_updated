@@ -1315,6 +1315,9 @@ const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
 
     // ✅ NEW: When user selects from top search — create new row and fill it
     const selectFromTopSearch = (suggestion) => {
+console.log('Suggestion keys:', Object.keys(suggestion));
+    console.log('Column names:', columns.map(c => c.name));
+
         topPointerDownRef.current = false;
         setTopSearchInput('');
         setTopSuggestions([]);
