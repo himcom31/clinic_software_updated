@@ -2249,7 +2249,7 @@ const GeneratePrescription = () => {
     const buildPdfDoc = async (design, patient, formStructure, clinicProfileData = clinicProfile) => {
 
         const doc = new jsPDF('p', 'pt', 'a4');
-                const tableWidth = MARGIN_R - MARGIN_L; // = 590 - 17 = 573pt
+        const tableWidth = MARGIN_R - MARGIN_L; // = 590 - 17 = 573pt
 
         const [cr, cg, cb] = hexToRgb(design.color || "#ec4899");
         const S = A4_W / 794;
@@ -2369,12 +2369,14 @@ const GeneratePrescription = () => {
                             curY = checkPageBreak(curY, 50);
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: { 
-    0: { cellWidth: 25 }, 
-    1: { cellWidth: tableWidth * 0.40 }, 
-    2: { cellWidth: tableWidth * 0.25 }, 
-    3: { cellWidth: tableWidth * 0.25 } 
-} });
+                            autoTable(doc, {
+                                startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: {
+                                    0: { cellWidth: 25 },
+                                    1: { cellWidth: tableWidth * 0.40 },
+                                    2: { cellWidth: tableWidth * 0.25 },
+                                    3: { cellWidth: tableWidth * 0.25 }
+                                }
+                            });
                             curY = doc.lastAutoTable.finalY + 20;
                         }
                         break;
@@ -2385,12 +2387,14 @@ const GeneratePrescription = () => {
                             curY = checkPageBreak(curY, 50);
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Vaccination Name', 'Note', 'Action']], body: filledVacs.map((vac, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } }, vac.note || '—', vac.action || '—']), columnStyles: { 
-    0: { cellWidth: 25 }, 
-    1: { cellWidth: tableWidth * 0.35 }, 
-    2: { cellWidth: tableWidth * 0.30 }, 
-    3: { cellWidth: tableWidth * 0.25 } 
-} });
+                            autoTable(doc, {
+                                startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Vaccination Name', 'Note', 'Action']], body: filledVacs.map((vac, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } }, vac.note || '—', vac.action || '—']), columnStyles: {
+                                    0: { cellWidth: 25 },
+                                    1: { cellWidth: tableWidth * 0.35 },
+                                    2: { cellWidth: tableWidth * 0.30 },
+                                    3: { cellWidth: tableWidth * 0.25 }
+                                }
+                            });
                             curY = doc.lastAutoTable.finalY + 10;
                         }
                         break;
@@ -2404,11 +2408,15 @@ const GeneratePrescription = () => {
                             curY += 3;
                             doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
                             doc.line(MARGIN_L, curY, MARGIN_R, curY);
+
+                            const tw = doc.internal.pageSize.getWidth() - MARGIN_L * 2; // ✅ 561pt
+
                             autoTable(doc, {
                                 startY: curY + 6,
                                 margin: { left: MARGIN_L, right: MARGIN_L },
                                 theme: 'grid',
                                 rowPageBreak: 'avoid',
+                                tableWidth: tw, // ✅ explicitly set karo
                                 styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
                                 head: [['#', 'Report Name', 'Date', 'Impression', 'Action']],
@@ -2419,13 +2427,13 @@ const GeneratePrescription = () => {
                                     r.impression || '—',
                                     r.action || '—'
                                 ]),
-                                columnStyles: { 
-    0: { cellWidth: 25 }, 
-    1: { cellWidth: tableWidth * 0.30 }, 
-    2: { cellWidth: tableWidth * 0.13 }, 
-    3: { cellWidth: tableWidth * 0.28 }, 
-    4: { cellWidth: tableWidth * 0.20 } 
-}
+                                columnStyles: {
+                                    0: { cellWidth: tw * 0.05 },  // # — 5%
+                                    1: { cellWidth: tw * 0.32 },  // Report Name — 32%
+                                    2: { cellWidth: tw * 0.13 },  // Date — 13%
+                                    3: { cellWidth: tw * 0.28 },  // Impression — 28%
+                                    4: { cellWidth: tw * 0.22 },  // Action — 22%
+                                }
                             });
                             curY = doc.lastAutoTable.finalY + 10;
                         }
@@ -2541,7 +2549,7 @@ const GeneratePrescription = () => {
             curY = addContinuationPage();
         }
 
-        
+
         const sigCenterX = MARGIN_R - 80;
 
         doc.setFont('times', 'bold');
