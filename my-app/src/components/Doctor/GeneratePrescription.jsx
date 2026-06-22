@@ -2545,8 +2545,9 @@ const GeneratePrescription = () => {
                     // If no fields are filled, skip the entire section
                     if (filledFields.length > 0) {
                         const rowCount = Math.ceil(filledFields.length / 2);
-                        // Only break if literally not enough space for title + 1 row
-                        if (curY + 50 > FOOTER_TOP_PT) {
+                        // Estimate full section height: title(20) + line(5) + each row(25) + gap(20)
+                        const estSectionHeight = 20 + 5 + (rowCount * 25) + 20;
+                        if (curY + estSectionHeight > FOOTER_TOP_PT) {
                             curY = addContinuationPage();
                         }
                         doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
