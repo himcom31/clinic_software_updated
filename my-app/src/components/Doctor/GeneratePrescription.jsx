@@ -2386,9 +2386,28 @@ const GeneratePrescription = () => {
                         const filledReports = reports.filter(r => r.reportName?.trim());
                         if (filledReports.length) {
                             curY = checkPageBreak(curY, 50);
-                            doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Available Reports", MARGIN_L, curY);
-                            curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Report Name', 'Date', 'Impression', 'Action']], body: filledReports.map((r, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: r.reportName || '—', styles: { fontStyle: 'bold' } }, r.date ? new Date(r.date).toLocaleDateString('en-GB') : '—', r.impression || '—', r.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 120 }, 4: { cellWidth: 100 } } });
+                            doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
+                            doc.text("Available Reports", MARGIN_L, curY);
+                            curY += 3;
+                            doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                            doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                            autoTable(doc, {
+                                startY: curY + 6,
+                                margin: { left: MARGIN_L, right: MARGIN_L },
+                                theme: 'grid',
+                                rowPageBreak: 'avoid',
+                                styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
+                                headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
+                                head: [['#', 'Report Name', 'Date', 'Impression', 'Action']],
+                                body: filledReports.map((r, i) => [
+                                    { content: i + 1, styles: { halign: 'center' } },
+                                    { content: r.reportName || '—', styles: { fontStyle: 'bold' } },
+                                    r.date ? new Date(r.date).toLocaleDateString('en-GB') : '—',
+                                    r.impression || '—',
+                                    r.action || '—'
+                                ]),
+                                columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 120 }, 4: { cellWidth: 100 } }
+                            });
                             curY = doc.lastAutoTable.finalY + 10;
                         }
                         break;
@@ -2503,7 +2522,7 @@ const GeneratePrescription = () => {
             curY = addContinuationPage();
         }
 
-        curY += 24;
+        curY = curY + 20
         const sigCenterX = MARGIN_R - 80;
 
         doc.setFont('times', 'bold');
