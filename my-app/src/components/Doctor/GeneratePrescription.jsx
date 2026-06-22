@@ -981,7 +981,7 @@ const calculateValidityUpto = (patientCreatedAt, appointmentValidity) => {
     return validUpto.toLocaleDateString('en-GB');
 };
 
-const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 590;
+const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 578;
 const USABLE_W = MARGIN_R - MARGIN_L; const HEADER_BOTTOM_PT = 270;
 const FOOTER_TOP_PT = A4_H - 62; // 841.89 - 62 = 779.89pt
 const PAGE2_START_Y = 50;
@@ -2490,6 +2490,7 @@ const GeneratePrescription = () => {
                 switch (item.type) {
                     case 'symptoms_block': {
                         if (symptomsHtml && symptomsHtml.trim() && symptomsHtml.trim() !== '<br>') {
+                             curY += 14;
                             curY = checkPageBreak(curY, 40);
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Symptoms", MARGIN_L, curY);
                             curY += 4; doc.setDrawColor(30, 78, 121); doc.setLineWidth(1); doc.line(MARGIN_L, curY, MARGIN_R, curY); curY += 14;
@@ -2506,6 +2507,7 @@ const GeneratePrescription = () => {
                             if (curY + estTableHeight > FOOTER_TOP_PT) {
                                 curY = addContinuationPage();
                             }
+                            curY += 14; // ✅ ADD KARO YAHAN
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
@@ -2546,6 +2548,7 @@ const GeneratePrescription = () => {
                             if (curY + estTableHeight > FOOTER_TOP_PT) {
                                 curY = addContinuationPage();
                             }
+                            curY += 14; // ✅ ADD KARO YAHAN
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
@@ -2587,6 +2590,7 @@ const GeneratePrescription = () => {
                             if (curY + estTableHeight > FOOTER_TOP_PT) {
                                 curY = addContinuationPage();
                             }
+                            curY += 14; // ✅ ADD KARO YAHAN
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
@@ -2628,6 +2632,8 @@ const GeneratePrescription = () => {
                             if (curY + estTableHeight > FOOTER_TOP_PT) {
                                 curY = addContinuationPage();
                             }
+                                curY += 14; // ✅ ADD KARO YAHAN
+
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
                             doc.text("Available Reports", MARGIN_L, curY);
                             curY += 3;
@@ -2690,71 +2696,83 @@ const GeneratePrescription = () => {
                     // If no fields are filled, skip the entire section
                     if (filledFields.length > 0) {
 
-                        if (curY + 45 > FOOTER_TOP_PT) {
+                        const ROW_H = 20;
+                        const HEADER_H = 18;
+                            curY += 14; // ✅ ADD KARO YAHAN — check se pehle
+
+
+                        // ✅ Header + kam se kam 1 row fit nahi hoti toh next page
+                        if (curY + HEADER_H + ROW_H > FOOTER_TOP_PT) {
                             curY = addContinuationPage();
                         }
 
-                        doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
-                        curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-                        let fieldY = curY + 15;
+                        // Section header draw karo
+                        doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
+                        doc.text(section.sectionTitle, MARGIN_L, curY);
+                        curY += 3;
+                        doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                        doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                        curY += 15;
 
                         for (let i = 0; i < filledFields.length; i += 2) {
-                            if (fieldY + 20 > FOOTER_TOP_PT) {
-                                fieldY = addContinuationPage();
-                                // Same section ka header dobara next page pe
+                            // ✅ Image check
+                            const isImg1 = String(dynamicValues[String(filledFields[i].id)] || '').startsWith('data:image');
+                            const isImg2 = filledFields[i + 1]
+                                ? String(dynamicValues[String(filledFields[i + 1].id)] || '').startsWith('data:image')
+                                : false;
+                            const rowH = (isImg1 || isImg2) ? 90 : ROW_H;
+
+                            // ✅ Row fit nahi hoti toh next page + contd. header
+                            if (curY + rowH > FOOTER_TOP_PT) {
+                                curY = addContinuationPage();
                                 doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
-                                doc.text(`${section.sectionTitle} (contd.)`, MARGIN_L, fieldY);
-                                fieldY += 3;
+                                doc.text(`${section.sectionTitle} (contd.)`, MARGIN_L, curY);
+                                curY += 3;
                                 doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
-                                doc.line(MARGIN_L, fieldY, MARGIN_R, fieldY);
-                                fieldY += 15;
+                                doc.line(MARGIN_L, curY, MARGIN_R, curY);
+                                curY += 15;
                             }
-                            const rowStartY = fieldY;
-                            let maxRowHeight = 20;
+
+                            const rowStartY = curY;
 
                             // ── Left column ──
                             const label1 = `${filledFields[i].label}:`;
-                            doc.setFont("times", "bold");
-                            doc.setFontSize(9);
-                            doc.setTextColor(30, 78, 121);
-                            doc.text(label1, MARGIN_L, fieldY);
+                            doc.setFont("times", "bold"); doc.setFontSize(9); doc.setTextColor(30, 78, 121);
+                            doc.text(label1, MARGIN_L, rowStartY);
                             const label1W = doc.getTextWidth(label1);
-                            const val1X = MARGIN_L + label1W + 10; // value starts just after label + small gap
-
+                            const val1X = MARGIN_L + label1W + 10;
                             const val1 = String(dynamicValues[String(filledFields[i].id)]);
                             if (val1.startsWith('data:image')) {
-                                try { doc.addImage(val1, 'PNG', val1X, fieldY + 5, 100, 80); maxRowHeight = 90; }
-                                catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0, 0, 0); doc.text("[Image Error]", val1X, fieldY); }
+                                try { doc.addImage(val1, 'PNG', val1X, rowStartY + 5, 100, 80); }
+                                catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0, 0, 0); doc.text("[Image Error]", val1X, rowStartY); }
                             } else {
-                                doc.setFont("times", "normal");
-                                doc.setTextColor(0, 0, 0);
-                                doc.text(val1, val1X, fieldY, { maxWidth: MID - val1X - 5 });
+                                doc.setFont("times", "normal"); doc.setTextColor(0, 0, 0);
+                                doc.text(val1, val1X, rowStartY, { maxWidth: MID - val1X - 5 });
                             }
 
                             // ── Right column ──
                             if (filledFields[i + 1]) {
                                 const label2 = `${filledFields[i + 1].label}:`;
-                                doc.setFont("times", "bold");
-                                doc.setFontSize(9);
-                                doc.setTextColor(30, 78, 121);
+                                doc.setFont("times", "bold"); doc.setFontSize(9); doc.setTextColor(30, 78, 121);
                                 doc.text(label2, COL2_X, rowStartY);
                                 const label2W = doc.getTextWidth(label2);
-                                const val2X = COL2_X + label2W + 10; // value starts just after label + small gap
-
+                                const val2X = COL2_X + label2W + 10;
                                 const val2 = String(dynamicValues[String(filledFields[i + 1].id)]);
                                 if (val2.startsWith('data:image')) {
-                                    try { doc.addImage(val2, 'PNG', val2X, rowStartY + 5, 100, 80); maxRowHeight = Math.max(maxRowHeight, 90); }
+                                    try { doc.addImage(val2, 'PNG', val2X, rowStartY + 5, 100, 80); }
                                     catch (_) { doc.setFont("times", "normal"); doc.setTextColor(0, 0, 0); doc.text("[Image Error]", val2X, rowStartY); }
                                 } else {
-                                    doc.setFont("times", "normal");
-                                    doc.setTextColor(0, 0, 0);
+                                    doc.setFont("times", "normal"); doc.setTextColor(0, 0, 0);
                                     doc.text(val2, val2X, rowStartY, { maxWidth: MARGIN_R - val2X });
                                 }
                             }
 
-                            fieldY += maxRowHeight;
+                            // ✅ Sirf actual row height advance
+                            curY += rowH;
                         }
-                        curY = fieldY + 20;
+
+                        // ✅ Section ke baad sirf 8pt gap
+                        curY += 8;
                     }
                 }
 
@@ -2767,6 +2785,8 @@ const GeneratePrescription = () => {
                     if (curY + estTableHeight > FOOTER_TOP_PT) {
                         curY = addContinuationPage();
                     }
+                        curY += 14; // ✅ ADD KARO YAHAN
+
 
                     doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
                     doc.text(tField.label || tField.tableName || 'Custom Table', MARGIN_L, curY);

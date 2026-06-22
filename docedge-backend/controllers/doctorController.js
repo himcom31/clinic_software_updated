@@ -189,7 +189,7 @@ exports.doctorLogin = async (req, res) => {
     const token = jwt.sign(
       { id: doctor._id, slug: doctor.slug, role: 'doctor' },
       process.env.JWT_SECRET,
-      { expiresIn: '5d' }
+      { expiresIn: '30d' }
     );
 
     res.status(200).json({
