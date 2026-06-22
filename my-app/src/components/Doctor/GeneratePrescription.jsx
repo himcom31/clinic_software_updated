@@ -3195,38 +3195,52 @@ const GeneratePrescription = () => {
 
                             {/* Action Buttons */}
                             <div className="rx-action-grid" style={{ padding: '16px 8px 48px' }}>
-                                <button className="rx-btn-print" onClick={async () => {
-                                    const { design: d, patient: p, formStructure: fs } = masterData;
-                                    if (!p || !d) return alert("Patient/Design data missing!");
+                                <button className="rx-btn-print"
+                                    onClick={async () => {
+                                        const { design: d, patient: p, formStructure: fs } = masterData;
+                                        if (!p || !d) return alert("Patient/Design data missing!");
 
-                                    setPrintingOnly(true);
-                                    try {
-                                        const doc = previewPdfDoc || await buildPdfDoc(d, p, fs, clinicProfile);
-                                        if (!previewPdfDoc) {
-                                            await persistPrescription(doc);
-                                            setPreviewPdfDoc(doc);
-                                        }
-                                        const blob = doc.output('blob');
-                                        const url = URL.createObjectURL(blob);
-                                        const iframe = document.createElement('iframe');
-                                        iframe.style.display = 'none';
-                                        iframe.src = url;
-                                        document.body.appendChild(iframe);
-                                        iframe.onload = () => {
-                                            iframe.contentWindow.focus();
-                                            iframe.contentWindow.print();
-                                            setTimeout(() => {
-                                                document.body.removeChild(iframe);
-                                                URL.revokeObjectURL(url);
+                                        setPrintingOnly(true);
+                                        try {
+                                            const doc = previewPdfDoc || await buildPdfDoc(d, p, fs, clinicProfile);
+                                            if (!previewPdfDoc) {
+                                                setPreviewPdfDoc(doc);
+                                            }
+                                            // ✅ Same logic as Print Prescription button in PreviewModal
+                                            const blob = doc.output('blob');
+                                            const url = URL.createObjectURL(blob);
+                                            const printWindow = window.open(url, '_blank');
+                                            if (printWindow) {
+                                                printWindow.onload = () => {
+                                                    printWindow.focus();
+                                                    printWindow.print();
+                                                    setTimeout(() => {
+                                                        URL.revokeObjectURL(url);
+                                                        setPrintingOnly(false);
+                                                    }, 2000);
+                                                };
+                                                // fallback if onload doesn't fire
+                                                setTimeout(() => {
+                                                    URL.revokeObjectURL(url);
+                                                    setPrintingOnly(false);
+                                                }, 5000);
+                                            } else {
+                                                // popup blocked — download as fallback
+                                                const link = document.createElement('a');
+                                                link.href = url;
+                                                link.download = `Prescription_${p?.name || 'Doc'}.pdf`;
+                                                link.click();
+                                                setTimeout(() => URL.revokeObjectURL(url), 1000);
                                                 setPrintingOnly(false);
-                                            }, 2000);
-                                        };
-                                    } catch (err) {
-                                        console.error(err);
-                                        alert("Print error: " + err.message);
-                                        setPrintingOnly(false);
-                                    }
-                                }} disabled={printingOnly}>
+                                            }
+                                        } catch (err) {
+                                            console.error(err);
+                                            alert("Print error: " + err.message);
+                                            setPrintingOnly(false);
+                                        }
+                                    }}
+
+                                    disabled={printingOnly}>
                                     {printingOnly
                                         ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
                                         : <Printer size={15} />
