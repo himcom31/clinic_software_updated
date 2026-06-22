@@ -1267,12 +1267,13 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
 };
 
 /* ─── DynamicTableField ──────────────────────────────────────────────────────── */
+const normalizeKey = (str) =>
+        str.toLowerCase().trim().replace(/\./g, '_').replace(/\s+/g, '_');
 
 const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const columns = field.columns || [];
     const collectionName = field.collectionName || null;
-    const normalizeKey = (str) =>
-        str.toLowerCase().trim().replace(/\./g, '_').replace(/\s+/g, '_');
+    
     const [noMatchInfo, setNoMatchInfo] = useState({ show: false, val: '', rowId: null });
 
     // ✅ NEW: Top search bar state
@@ -2382,7 +2383,7 @@ const GeneratePrescription = () => {
                                     m.instructions || '—',
                                     m.duration || '—'
                                 ]),
-                                columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } },
+                                columnStyles: { 0: { cellWidth: 35 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } },
                                 didDrawPage: (hookData) => {
                                     if (hookData.pageNumber > 1) {
                                         doc.setFillColor(cr, cg, cb);
@@ -2411,7 +2412,7 @@ const GeneratePrescription = () => {
                                 showHead: 'everyPage',
                                 styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
-                                head: [['#', 'Test Name', 'Category', 'Action']],
+                                head: [['S.No', 'Test Name', 'Category', 'Action']],
                                 body: filledInvs.map((inv, i) => [
                                     { content: i + 1, styles: { halign: 'center' } },
                                     { content: inv.testName || '—', styles: { fontStyle: 'bold' } },
@@ -2419,8 +2420,8 @@ const GeneratePrescription = () => {
                                     inv.action || '—'
                                 ]),
                                 columnStyles: {
-                                    0: { cellWidth: 25 },
-                                    1: { cellWidth: tableWidth * 0.40 },
+                                    0: { cellWidth: 35 },
+                                    1: { cellWidth: tableWidth * 0.42 },
                                     2: { cellWidth: tableWidth * 0.25 },
                                     3: { cellWidth: tableWidth * 0.25 }
                                 },
@@ -2452,7 +2453,7 @@ const GeneratePrescription = () => {
                                 showHead: 'everyPage',
                                 styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
-                                head: [['#', 'Vaccination Name', 'Note', 'Action']],
+                                head: [['S.No', 'Vaccination Name', 'Note', 'Action']],
                                 body: filledVacs.map((vac, i) => [
                                     { content: i + 1, styles: { halign: 'center' } },
                                     { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } },
@@ -2460,8 +2461,8 @@ const GeneratePrescription = () => {
                                     vac.action || '—'
                                 ]),
                                 columnStyles: {
-                                    0: { cellWidth: 25 },
-                                    1: { cellWidth: tableWidth * 0.35 },
+                                    0: { cellWidth: 35 },
+                                    1: { cellWidth: tableWidth * 0.37 },
                                     2: { cellWidth: tableWidth * 0.30 },
                                     3: { cellWidth: tableWidth * 0.25 }
                                 },
@@ -2500,7 +2501,7 @@ const GeneratePrescription = () => {
                                 tableWidth: tw,
                                 styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
-                                head: [['#', 'Report Name', 'Date', 'Impression', 'Action']],
+                                head: [['S.No', 'Report Name', 'Date', 'Impression', 'Action']],
                                 body: filledReports.map((r, i) => [
                                     { content: i + 1, styles: { halign: 'center' } },
                                     { content: r.reportName || '—', styles: { fontStyle: 'bold' } },
@@ -2509,10 +2510,10 @@ const GeneratePrescription = () => {
                                     r.action || '—'
                                 ]),
                                 columnStyles: {
-                                    0: { cellWidth: tw * 0.05 },
+                                    0: { cellWidth: tw * 0.06},
                                     1: { cellWidth: tw * 0.32 },
                                     2: { cellWidth: tw * 0.13 },
-                                    3: { cellWidth: tw * 0.28 },
+                                    3: { cellWidth: tw * 0.27 },
                                     4: { cellWidth: tw * 0.22 },
                                 },
                                 didDrawPage: (hookData) => {
@@ -2627,14 +2628,14 @@ const GeneratePrescription = () => {
                         theme: 'grid',
                         rowPageBreak: 'avoid',
                         showHead: 'everyPage',
-                        styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
+                        styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' ,fontStyle: 'bold'},
                         headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
-                        head: [['#', ...colNames]],
+                        head: [['S.No', ...colNames]],
                         body: tRows.map((row, i) => [
                             { content: i + 1, styles: { halign: 'center' } },
                             ...colNames.map(name => row[name] || '—')
                         ]),
-                        columnStyles: { 0: { cellWidth: 25 } },
+                        columnStyles: { 0: { cellWidth: 35 } },
                         didDrawPage: (hookData) => {
                             if (hookData.pageNumber > 1) {
                                 doc.setFillColor(cr, cg, cb);
@@ -2679,9 +2680,9 @@ const GeneratePrescription = () => {
             curY += 18;
         }
 
-        doc.setFont('times', 'normal');
+        doc.setFont('times', 'bold');
         doc.setFontSize(9);
-        doc.setTextColor(100, 116, 139);
+        doc.setTextColor(0, 0, 0);
         const regText = `Reg. No: ${clinicProfileData?.regNumber || design?.regNo || '—'}`;
         const regWidth = doc.getTextWidth(regText);
         doc.text(regText, sigCenterX - regWidth / 2, curY);
@@ -2751,8 +2752,9 @@ const GeneratePrescription = () => {
         setSaving(true);
         try {
             const doc = await buildPdfDoc(design, patient, formStructure, clinicProfile);
-            // await persistPrescription(doc);       // ✅ NEW — turant DB save
+            await persistPrescription(doc);       // ✅ NEW — turant DB save
 
+            
             setPreviewPdfDoc(doc);
             setPreviewOpen(true);
         } catch (err) { console.error(err); alert("Error generating PDF: " + err.message); }
@@ -3196,7 +3198,7 @@ const GeneratePrescription = () => {
 
                             {/* Action Buttons */}
                             <div className="rx-action-grid" style={{ padding: '16px 8px 48px' }}>
-                                <button className="rx-btn-print"
+                                {/* <button className="rx-btn-print"
                                     onClick={async () => {
                                         const { design: d, patient: p, formStructure: fs } = masterData;
                                         if (!p || !d) return alert("Patient/Design data missing!");
@@ -3247,7 +3249,7 @@ const GeneratePrescription = () => {
                                         : <Printer size={15} />
                                     }
                                     {printingOnly ? 'Preparing...' : 'Print Only'}
-                                </button>
+                                </button> */}
                                 <button className="rx-btn-save" onClick={handleSave} disabled={saving}>
                                     {saving ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Eye size={15} />}
                                     {saving ? 'Building...' : 'Save & Share'}
