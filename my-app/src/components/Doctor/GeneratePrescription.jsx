@@ -1638,6 +1638,34 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onPersist, onSaveExit,
         };
     };
 
+
+    const handlePrint = () => {
+    if (!pdfBlobUrl) return;
+    setPrinting(true);
+    
+    // ✅ New approach: open PDF in new tab for printing
+    const printWindow = window.open(pdfBlobUrl, '_blank');
+    if (printWindow) {
+        printWindow.onload = () => {
+            printWindow.focus();
+            printWindow.print();
+            setTimeout(() => {
+                setPrinting(false);
+            }, 2000);
+        };
+        // fallback if onload doesn't fire
+        setTimeout(() => {
+            setPrinting(false);
+        }, 5000);
+    } else {
+        // popup blocked fallback — download kar lo
+        const link = document.createElement('a');
+        link.href = pdfBlobUrl;
+        link.download = `Prescription_${patient?.name || 'Doc'}.pdf`;
+        link.click();
+        setPrinting(false);
+    }
+};
     const handleSaveExit = async () => {
         setWaSaveExiting(true);
         try { await onSaveExit(); } finally { setWaSaveExiting(false); }
@@ -2340,7 +2368,7 @@ const GeneratePrescription = () => {
                             curY = checkPageBreak(curY, 50);
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['S.No', 'Medicine', 'Dose', 'Freq', 'Route', 'Timing', 'Instruction', 'Duration']], body: filledMeds.map((m, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: m.brandName || m.name, styles: { fontStyle: 'bold' } }, m.unit_per_Dose || '—', m.strength || '—', m.route || '—', m.timing || '—', m.instructions || '—', m.duration || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } } });
+                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid',rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['S.No', 'Medicine', 'Dose', 'Freq', 'Route', 'Timing', 'Instruction', 'Duration']], body: filledMeds.map((m, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: m.brandName || m.name, styles: { fontStyle: 'bold' } }, m.unit_per_Dose || '—', m.strength || '—', m.route || '—', m.timing || '—', m.instructions || '—', m.duration || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } } });
                             curY = doc.lastAutoTable.finalY + 30;
                         }
                         break;
@@ -2351,7 +2379,7 @@ const GeneratePrescription = () => {
                             curY = checkPageBreak(curY, 50);
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
-                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 100 }, 3: { cellWidth: 120 } } });
+                            autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid',rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 100 }, 3: { cellWidth: 120 } } });
                             curY = doc.lastAutoTable.finalY + 30;
                         }
                         break;
