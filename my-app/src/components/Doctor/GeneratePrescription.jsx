@@ -983,7 +983,8 @@ const calculateValidityUpto = (patientCreatedAt, appointmentValidity) => {
 
 const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 590;
 const USABLE_W = MARGIN_R - MARGIN_L; const HEADER_BOTTOM_PT = 270;
-const FOOTER_TOP_PT = A4_H - 80; const PAGE2_START_Y = 50;
+const FOOTER_TOP_PT = A4_H - 62; // 841.89 - 62 = 779.89pt
+ const PAGE2_START_Y = 50;
 
 const EMPTY_MED = { name: '', brandName: '', strength: '', unit_per_Dose: '', timing: '', duration: '', action: '', instructions: '', category: '', saltComposition: '' };
 const EMPTY_INV = { testName: '', category: '', action: '' };
@@ -2426,7 +2427,7 @@ const GeneratePrescription = () => {
                                     3: { cellWidth: tableWidth * 0.25 }
                                 }
                             });
-                            curY = doc.lastAutoTable.finalY + 10;
+                            curY = doc.lastAutoTable.finalY + 20;
                         }
                         break;
                     }
@@ -2477,7 +2478,7 @@ const GeneratePrescription = () => {
                                 }
                             });
                             // ✅ Use +6 instead of +10 to reduce gap after reports
-                            curY = doc.lastAutoTable.finalY + 6;
+                            curY = doc.lastAutoTable.finalY + 16;
                         }
                         break;
                     }
@@ -2500,14 +2501,10 @@ const GeneratePrescription = () => {
                     // If no fields are filled, skip the entire section
                     if (filledFields.length > 0) {
                         const rowCount = Math.ceil(filledFields.length / 2);
-                        const estimatedSectionHeight = 40 + 15 + (rowCount * 25) + 20;
-                        if (curY + estimatedSectionHeight > FOOTER_TOP_PT) {
-                            curY = addContinuationPage();
-                        } else if (curY + 60 > FOOTER_TOP_PT) {
-                            // ✅ Agar sirf thoda sa space bacha hai toh bhi next page
+                        // Only break if literally not enough space for title + 1 row
+                        if (curY + 50 > FOOTER_TOP_PT) {
                             curY = addContinuationPage();
                         }
-
                         doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
                         curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                         let fieldY = curY + 15;
