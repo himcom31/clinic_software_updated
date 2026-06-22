@@ -1621,22 +1621,7 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onPersist, onSaveExit,
         finally { emailSendingRef.current = false; setEmailSending(false); }
     };
 
-    const handlePrint = () => {
-        if (!pdfBlobUrl) return;
-        setPrinting(true);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = pdfBlobUrl;
-        document.body.appendChild(iframe);
-        iframe.onload = () => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-                setPrinting(false);
-            }, 2000);
-        };
-    };
+    
 
 
     const handlePrint = () => {
