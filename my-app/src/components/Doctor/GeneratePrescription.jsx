@@ -1106,6 +1106,58 @@ const buildRenderOrder = (formStructure) => {
     items.sort((a, b) => a.position - b.position);
     return items;
 };
+const DraftRestoreModal = ({ modal, onClose }) => {
+    if (!modal.open) return null;
+    return (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 420, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+
+                <div style={{ background: '#1976D2', padding: '18px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <RefreshCw size={20} color="#fff" />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>An unsaved draft was found.</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>Last save: {modal.savedTime}</div>
+                    </div>
+                </div>
+
+                <div style={{ padding: '20px 20px 8px' }}>
+                    <div style={{ background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', padding: '14px 16px', marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>This data is available in the draft.</div>
+                        {[
+                            { icon: <Stethoscope size={15} color="#1976D2" />, text: 'Symptoms, medicines, investigations' },
+                            { icon: <Syringe size={15} color="#1976D2" />, text: 'Vaccinations & reports' },
+                            { icon: <Table2 size={15} color="#1976D2" />, text: 'Custom form fields & table data' },
+                        ].map((row, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < 2 ? 8 : 0 }}>
+                                {row.icon}
+                                <span style={{ fontSize: 13, color: '#475569' }}>{row.text}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ background: '#fff8e1', border: '1px solid #fbbf24', borderRadius: 6, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20 }}>
+                        <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+                        <span style={{ fontSize: 12, color: '#92400e', lineHeight: 1.6 }}>Restoring the draft will overwrite the current form data. This action cannot be undone.</span>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, padding: '0 20px 20px' }}>
+                    <button
+                        onClick={() => { modal.resolve(false); onClose(); }}
+                        style={{ flex: 1, padding: 11, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f1f5f9', color: '#475569', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                        Discard
+                    </button>
+                    <button
+                        onClick={() => { modal.resolve(true); onClose(); }}
+                        style={{ flex: 2, padding: 11, border: 'none', borderRadius: 8, background: '#1976D2', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <RefreshCw size={14} /> Restore Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 /* ─── AddToDBModal ───────────────────────────────────────────────────────────── */
 const AddToDBModal = ({ isOpen, onClose, onSave, title, fields, saving }) => {
@@ -1268,12 +1320,12 @@ const TableCellInput = ({ col, colIndex, row, slug, collectionName, onUpdate, on
 
 /* ─── DynamicTableField ──────────────────────────────────────────────────────── */
 const normalizeKey = (str) =>
-        str.toLowerCase().trim().replace(/\./g, '_').replace(/\s+/g, '_');
+    str.toLowerCase().trim().replace(/\./g, '_').replace(/\s+/g, '_');
 
 const DynamicTableField = ({ field, rows, slug, onChange, onOpenAddToDB }) => {
     const columns = field.columns || [];
     const collectionName = field.collectionName || null;
-    
+
     const [noMatchInfo, setNoMatchInfo] = useState({ show: false, val: '', rowId: null });
 
     // ✅ NEW: Top search bar state
@@ -1733,6 +1785,7 @@ const PreviewModal = ({ isOpen, onClose, pdfDoc, patient, onPersist, onSaveExit,
 
 /* ─── Main Component ─────────────────────────────────────────────────────────── */
 const GeneratePrescription = () => {
+
     const { slug, appointmentId } = useParams();
     const navigate = useNavigate();
     const printRef = useRef(null);
@@ -1795,6 +1848,95 @@ const GeneratePrescription = () => {
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewPdfDoc, setPreviewPdfDoc] = useState(null);
     const [printingOnly, setPrintingOnly] = useState(false);
+    const [draftModal, setDraftModal] = useState({ open: false, savedTime: '', resolve: null });
+
+
+    // ─── Draft Key ──────────────────────────────────────────────────────────────
+    const DRAFT_KEY = `rx_draft_${slug}_${appointmentId || 'search'}`;
+
+    // ─── Save Draft to localStorage ─────────────────────────────────────────────
+    const saveDraftToLocal = useCallback(() => {
+        try {
+            const draft = {
+                symptomsHtml,
+                medicines,
+                investigations,
+                vaccinations,
+                reports,
+                dynamicValues,
+                tableRows,
+                appointmentId: appointmentId || null,  // ✅ add karo
+
+                savedAt: new Date().toISOString(),
+            };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch (e) {
+            console.warn('Draft save failed:', e);
+        }
+    }, [symptomsHtml, medicines, investigations, vaccinations, reports, dynamicValues, tableRows, DRAFT_KEY]);
+
+    // ─── Auto-save on every change (debounced 2s) ────────────────────────────────
+    const draftSaveTimerRef = useRef(null);
+    useEffect(() => {
+        if (!masterData.patient) return; // jab tak patient load na ho, save mat karo
+        clearTimeout(draftSaveTimerRef.current);
+        draftSaveTimerRef.current = setTimeout(saveDraftToLocal, 2000);
+        return () => clearTimeout(draftSaveTimerRef.current);
+    }, [saveDraftToLocal, masterData.patient]);
+
+    // ─── Restore Draft on Patient Load ──────────────────────────────────────────
+    const restoreDraftIfAvailable = useCallback(async () => {
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return false;
+            const draft = JSON.parse(raw);
+
+            // 4 ghante se purana draft ignore karo
+            const age = Date.now() - new Date(draft.savedAt).getTime();
+            if (age > 10 * 60 * 60 * 1000) {
+
+                localStorage.removeItem(DRAFT_KEY);
+                return false;
+            }
+
+            // ✅ NEW: appointmentId match nahi karta toh draft ignore karo
+            if (draft.appointmentId && appointmentId && draft.appointmentId !== appointmentId) {
+                localStorage.removeItem(DRAFT_KEY);
+                return false;
+            }
+
+            // Confirm karo user se
+            const savedTime = new Date(draft.savedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const ok = await new Promise((resolve) => {
+                setDraftModal({ open: true, savedTime, resolve });
+            });
+
+            if (!ok) {
+                localStorage.removeItem(DRAFT_KEY);
+                return false;
+            }
+
+            // Restore all state
+            if (draft.symptomsHtml) setSymptomsHtml(draft.symptomsHtml);
+            if (draft.medicines?.length) setMedicines(draft.medicines);
+            if (draft.investigations?.length) setInvestigations(draft.investigations);
+            if (draft.vaccinations?.length) setVaccinations(draft.vaccinations);
+            if (draft.reports?.length) setReports(draft.reports);
+            if (draft.dynamicValues) setDynamicValues(draft.dynamicValues);
+            if (draft.tableRows) setTableRows(draft.tableRows);
+
+            return true;
+        } catch (e) {
+            console.warn('Draft restore failed:', e);
+            return false;
+        }
+    }, [DRAFT_KEY]);
+
+    // ─── Clear Draft on Successful Save ─────────────────────────────────────────
+    const clearDraft = useCallback(() => {
+        localStorage.removeItem(DRAFT_KEY);
+    }, [DRAFT_KEY]);
+
 
 
     useEffect(() => {
@@ -1907,6 +2049,8 @@ const GeneratePrescription = () => {
                     await initTableRows(formStructure, {}, patient?._id);
                     prefillDefaultFileValues(formStructure);
                 }
+                // Slight delay taaki state settle ho jaye
+                setTimeout(() => restoreDraftIfAvailable(), 300);
             }
         } catch (err) { alert("Automation error: " + (err.response?.data?.message || "Backend issue")); }
         finally { setSearching(false); }
@@ -2510,7 +2654,7 @@ const GeneratePrescription = () => {
                                     r.action || '—'
                                 ]),
                                 columnStyles: {
-                                    0: { cellWidth: tw * 0.06},
+                                    0: { cellWidth: tw * 0.06 },
                                     1: { cellWidth: tw * 0.32 },
                                     2: { cellWidth: tw * 0.13 },
                                     3: { cellWidth: tw * 0.27 },
@@ -2545,19 +2689,25 @@ const GeneratePrescription = () => {
 
                     // If no fields are filled, skip the entire section
                     if (filledFields.length > 0) {
-                        const rowCount = Math.ceil(filledFields.length / 2);
-                        // Estimate full section height: title(20) + line(5) + each row(25) + gap(20)
-                        const estSectionHeight = 20 + 5 + (rowCount * 25) + 20;
-                        if (curY + estSectionHeight > FOOTER_TOP_PT) {
+
+                        if (curY + 45 > FOOTER_TOP_PT) {
                             curY = addContinuationPage();
                         }
+
                         doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(section.sectionTitle, MARGIN_L, curY);
                         curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                         let fieldY = curY + 15;
 
                         for (let i = 0; i < filledFields.length; i += 2) {
-                            if (fieldY + 25 > FOOTER_TOP_PT) {
+                            if (fieldY + 20 > FOOTER_TOP_PT) {
                                 fieldY = addContinuationPage();
+                                // Same section ka header dobara next page pe
+                                doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
+                                doc.text(`${section.sectionTitle} (contd.)`, MARGIN_L, fieldY);
+                                fieldY += 3;
+                                doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                                doc.line(MARGIN_L, fieldY, MARGIN_R, fieldY);
+                                fieldY += 15;
                             }
                             const rowStartY = fieldY;
                             let maxRowHeight = 20;
@@ -2628,7 +2778,7 @@ const GeneratePrescription = () => {
                         theme: 'grid',
                         rowPageBreak: 'avoid',
                         showHead: 'everyPage',
-                        styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' ,fontStyle: 'bold'},
+                        styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle', fontStyle: 'bold' },
                         headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
                         head: [['S.No', ...colNames]],
                         body: tRows.map((row, i) => [
@@ -2744,6 +2894,9 @@ const GeneratePrescription = () => {
             investigations: filledInvs, vaccinations: filledVacs,
             reports: filledReports, tableData: tableDataForPrescription,
         });
+
+        // ✅ Successfully save hua — draft clear karo
+        clearDraft();
     };
 
     const handleSave = async () => {
@@ -2754,7 +2907,7 @@ const GeneratePrescription = () => {
             const doc = await buildPdfDoc(design, patient, formStructure, clinicProfile);
             await persistPrescription(doc);       // ✅ NEW — turant DB save
 
-            
+
             setPreviewPdfDoc(doc);
             setPreviewOpen(true);
         } catch (err) { console.error(err); alert("Error generating PDF: " + err.message); }
@@ -3294,6 +3447,10 @@ const GeneratePrescription = () => {
 
                 navigate={navigate}
                 slug={slug}
+            />
+            <DraftRestoreModal
+                modal={draftModal}
+                onClose={() => setDraftModal({ open: false, savedTime: '', resolve: null })}
             />
         </div>
     );
