@@ -984,7 +984,7 @@ const calculateValidityUpto = (patientCreatedAt, appointmentValidity) => {
 const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 590;
 const USABLE_W = MARGIN_R - MARGIN_L; const HEADER_BOTTOM_PT = 270;
 const FOOTER_TOP_PT = A4_H - 62; // 841.89 - 62 = 779.89pt
- const PAGE2_START_Y = 50;
+const PAGE2_START_Y = 50;
 
 const EMPTY_MED = { name: '', brandName: '', strength: '', unit_per_Dose: '', timing: '', duration: '', action: '', instructions: '', category: '', saltComposition: '' };
 const EMPTY_INV = { testName: '', category: '', action: '' };
@@ -2356,9 +2356,9 @@ const GeneratePrescription = () => {
                     case 'medicines_block': {
                         const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
                         if (filledMeds.length) {
-                            // Estimate: title+line ~20 + header row ~22 + 2 rows minimum ~44 = ~86
-                            const estMedHeight = 20 + 22 + (Math.min(filledMeds.length, 2) * 22);
-                            if (curY + estMedHeight > FOOTER_TOP_PT) {
+                            // Estimate FULL table height: title(20) + line(5) + header(22) + all rows(22 each) + gap(10)
+                            const estTableHeight = 20 + 5 + 22 + (filledMeds.length * 22) + 10;
+                            if (curY + estTableHeight > FOOTER_TOP_PT) {
                                 curY = addContinuationPage();
                             }
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
@@ -2367,9 +2367,9 @@ const GeneratePrescription = () => {
                                 startY: curY + 6,
                                 margin: { left: MARGIN_L, right: MARGIN_L },
                                 theme: 'grid',
-                                // NO rowPageBreak: 'avoid' — let rows flow naturally across pages
-                                showHead: 'everyPage',    // repeat header on each page
-                                styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
+                                rowPageBreak: 'avoid',
+                                showHead: 'everyPage',
+                                styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
                                 head: [['S.No', 'Medicine', 'Dose', 'Freq', 'Route', 'Timing', 'Instruction', 'Duration']],
                                 body: filledMeds.map((m, i) => [
@@ -2384,58 +2384,103 @@ const GeneratePrescription = () => {
                                 ]),
                                 columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } },
                                 didDrawPage: (hookData) => {
-                                    // Re-draw top color bar on continuation pages
                                     if (hookData.pageNumber > 1) {
                                         doc.setFillColor(cr, cg, cb);
                                         doc.rect(0, 0, A4_W, 14, 'F');
                                     }
                                 }
                             });
-                            curY = doc.lastAutoTable.finalY + 20;
+                            curY = doc.lastAutoTable.finalY + 22;
                         }
                         break;
                     }
                     case 'investigations_block': {
                         const filledInvs = investigations.filter(inv => inv.testName?.trim());
                         if (filledInvs.length) {
-                            curY = checkPageBreak(curY, 50);
+                            const estTableHeight = 20 + 5 + 22 + (filledInvs.length * 22) + 10;
+                            if (curY + estTableHeight > FOOTER_TOP_PT) {
+                                curY = addContinuationPage();
+                            }
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
-                                startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Test Name', 'Category', 'Action']], body: filledInvs.map((inv, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: inv.testName || '—', styles: { fontStyle: 'bold' } }, inv.category || '—', inv.action || '—']), columnStyles: {
+                                startY: curY + 6,
+                                margin: { left: MARGIN_L, right: MARGIN_L },
+                                theme: 'grid',
+                                rowPageBreak: 'avoid',
+                                showHead: 'everyPage',
+                                styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
+                                headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
+                                head: [['#', 'Test Name', 'Category', 'Action']],
+                                body: filledInvs.map((inv, i) => [
+                                    { content: i + 1, styles: { halign: 'center' } },
+                                    { content: inv.testName || '—', styles: { fontStyle: 'bold' } },
+                                    inv.category || '—',
+                                    inv.action || '—'
+                                ]),
+                                columnStyles: {
                                     0: { cellWidth: 25 },
                                     1: { cellWidth: tableWidth * 0.40 },
                                     2: { cellWidth: tableWidth * 0.25 },
                                     3: { cellWidth: tableWidth * 0.25 }
+                                },
+                                didDrawPage: (hookData) => {
+                                    if (hookData.pageNumber > 1) {
+                                        doc.setFillColor(cr, cg, cb);
+                                        doc.rect(0, 0, A4_W, 14, 'F');
+                                    }
                                 }
                             });
-                            curY = doc.lastAutoTable.finalY + 20;
+                            curY = doc.lastAutoTable.finalY + 22;
                         }
                         break;
                     }
                     case 'vaccinations_block': {
                         const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
                         if (filledVacs.length) {
-                            curY = checkPageBreak(curY, 50);
+                            const estTableHeight = 20 + 5 + 22 + (filledVacs.length * 22) + 10;
+                            if (curY + estTableHeight > FOOTER_TOP_PT) {
+                                curY = addContinuationPage();
+                            }
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
-                                startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', rowPageBreak: 'avoid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', 'Vaccination Name', 'Note', 'Action']], body: filledVacs.map((vac, i) => [{ content: i + 1, styles: { halign: 'center' } }, { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } }, vac.note || '—', vac.action || '—']), columnStyles: {
+                                startY: curY + 6,
+                                margin: { left: MARGIN_L, right: MARGIN_L },
+                                theme: 'grid',
+                                rowPageBreak: 'avoid',
+                                showHead: 'everyPage',
+                                styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
+                                headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
+                                head: [['#', 'Vaccination Name', 'Note', 'Action']],
+                                body: filledVacs.map((vac, i) => [
+                                    { content: i + 1, styles: { halign: 'center' } },
+                                    { content: vac.vaccineName || '—', styles: { fontStyle: 'bold' } },
+                                    vac.note || '—',
+                                    vac.action || '—'
+                                ]),
+                                columnStyles: {
                                     0: { cellWidth: 25 },
                                     1: { cellWidth: tableWidth * 0.35 },
                                     2: { cellWidth: tableWidth * 0.30 },
                                     3: { cellWidth: tableWidth * 0.25 }
+                                },
+                                didDrawPage: (hookData) => {
+                                    if (hookData.pageNumber > 1) {
+                                        doc.setFillColor(cr, cg, cb);
+                                        doc.rect(0, 0, A4_W, 14, 'F');
+                                    }
                                 }
                             });
-                            curY = doc.lastAutoTable.finalY + 20;
+                            curY = doc.lastAutoTable.finalY + 22;
                         }
                         break;
                     }
                     case 'reports_block': {
                         const filledReports = reports.filter(r => r.reportName?.trim());
                         if (filledReports.length) {
-                            const estRepHeight = 20 + 22 + (Math.min(filledReports.length, 2) * 22);
-                            if (curY + estRepHeight > FOOTER_TOP_PT) {
+                            const estTableHeight = 20 + 5 + 22 + (filledReports.length * 22) + 10;
+                            if (curY + estTableHeight > FOOTER_TOP_PT) {
                                 curY = addContinuationPage();
                             }
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
@@ -2450,10 +2495,10 @@ const GeneratePrescription = () => {
                                 startY: curY + 6,
                                 margin: { left: MARGIN_L, right: MARGIN_L },
                                 theme: 'grid',
+                                rowPageBreak: 'avoid',
                                 showHead: 'everyPage',
-                                // NO rowPageBreak: 'avoid'
                                 tableWidth: tw,
-                                styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
+                                styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
                                 head: [['#', 'Report Name', 'Date', 'Impression', 'Action']],
                                 body: filledReports.map((r, i) => [
@@ -2477,8 +2522,7 @@ const GeneratePrescription = () => {
                                     }
                                 }
                             });
-                            // ✅ Use +6 instead of +10 to reduce gap after reports
-                            curY = doc.lastAutoTable.finalY + 16;
+                            curY = doc.lastAutoTable.finalY + 22;
                         }
                         break;
                     }
@@ -2565,12 +2609,39 @@ const GeneratePrescription = () => {
                 tableFields.forEach(tField => {
                     const tRows = (tableRows[tField.id] || []).filter(r => Object.entries(r).some(([k, v]) => k !== '_rowId' && v !== ''));
                     if (tRows.length === 0) return;
-                    curY = checkPageBreak(curY, 50);
-                    doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text(tField.label || tField.tableName || 'Custom Table', MARGIN_L, curY);
+
+                    // Estimate full table height — shift entire table to next page if doesn't fit
+                    const estTableHeight = 20 + 5 + 22 + (tRows.length * 22) + 10;
+                    if (curY + estTableHeight > FOOTER_TOP_PT) {
+                        curY = addContinuationPage();
+                    }
+
+                    doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
+                    doc.text(tField.label || tField.tableName || 'Custom Table', MARGIN_L, curY);
                     curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                     const colNames = (tField.columns || []).map(c => c.name);
-                    autoTable(doc, { startY: curY + 6, margin: { left: MARGIN_L, right: MARGIN_L }, theme: 'grid', styles: { fontSize: 8, cellPadding: 6, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' }, headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' }, head: [['#', ...colNames]], body: tRows.map((row, i) => [{ content: i + 1, styles: { halign: 'center' } }, ...colNames.map(name => row[name] || '—')]), columnStyles: { 0: { cellWidth: 25 } } });
-                    curY = doc.lastAutoTable.finalY + 20;
+                    autoTable(doc, {
+                        startY: curY + 6,
+                        margin: { left: MARGIN_L, right: MARGIN_L },
+                        theme: 'grid',
+                        rowPageBreak: 'avoid',
+                        showHead: 'everyPage',
+                        styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
+                        headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
+                        head: [['#', ...colNames]],
+                        body: tRows.map((row, i) => [
+                            { content: i + 1, styles: { halign: 'center' } },
+                            ...colNames.map(name => row[name] || '—')
+                        ]),
+                        columnStyles: { 0: { cellWidth: 25 } },
+                        didDrawPage: (hookData) => {
+                            if (hookData.pageNumber > 1) {
+                                doc.setFillColor(cr, cg, cb);
+                                doc.rect(0, 0, A4_W, 14, 'F');
+                            }
+                        }
+                    });
+                    curY = doc.lastAutoTable.finalY + 22;
                 });
                 // curY += 10;
             }
