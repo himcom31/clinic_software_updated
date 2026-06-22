@@ -110,6 +110,8 @@ const PatientManagement = () => {
   const [rxDate, setRxDate] = useState('');
   const [rxUploading, setRxUploading] = useState(false);
   const [rxError, setRxError] = useState('');
+  const [patientPrescriptions, setPatientPrescriptions] = useState([]);
+const [prescLoading, setPrescLoading] = useState(false);
 
   const initialFormState = { name: '', mobile: '', age: '', gender: 'Male', address: '', notes: '' };
   const [currentPatient, setCurrentPatient] = useState(initialFormState);
@@ -130,6 +132,27 @@ const PatientManagement = () => {
   };
 
   useEffect(() => { fetchPatients(); }, [searchQuery, filterGender]);
+  useEffect(() => {
+    if (!viewPatient) {
+        setPatientPrescriptions([]);
+        return;
+    }
+    const fetchPrescriptions = async () => {
+        setPrescLoading(true);
+        try {
+            const res = await axios.get(
+                `${API_BAS}/api/appointments/${slug}/patient/${viewPatient._id}/prescriptions`
+            );
+            setPatientPrescriptions(res.data.data || []);
+        } catch (err) {
+            console.error('Prescriptions fetch error:', err);
+            setPatientPrescriptions([]);
+        } finally {
+            setPrescLoading(false);
+        }
+    };
+    fetchPrescriptions();
+}, [viewPatient]);
 
   const totalPages = Math.ceil(patients.length / ITEMS_PER_PAGE);
   const paginatedPatients = patients.slice(
@@ -796,7 +819,7 @@ const PatientManagement = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
                       {[
                         { label: 'Weight', value: viewPatient.weight ? `${viewPatient.weight} kg` : '—' },
-                        { label: 'Height', value: viewPatient.height ? `${viewPatient.height} cm` : '—' },
+                        { label: 'Height', value: viewPatient.height ? `${viewPatient.height} ft` : '—' },
                         { label: 'BMI', value: viewPatient.bmi ? Number(viewPatient.bmi).toFixed(1) : '—', warn: viewPatient.bmi > 30 },
                       ].map(c => (
                         <div key={c.label} className="pm-vital-card">
@@ -927,7 +950,7 @@ const PatientManagement = () => {
                   {(!viewPatient.prescriptionHistory || viewPatient.prescriptionHistory.length === 0) ? (
                     <div style={{ padding: '24px 14px', textAlign: 'center' }}>
                       <FileText size={20} color={T.text3} style={{ display: 'block', margin: '0 auto 8px', opacity: 0.4 }} />
-                      <span style={{ fontSize: 12, color: T.text3, fontWeight: 600 }}>Koi purana prescription upload nahi hua abhi</span>
+                      <span style={{ fontSize: 12, color: T.text3, fontWeight: 600 }}>NULL</span>
                     </div>
                   ) : (
                     viewPatient.prescriptionHistory
@@ -977,6 +1000,87 @@ const PatientManagement = () => {
                       ))
                   )}
                 </div>
+
+                {/* ── DocEdge Generated Prescriptions ── */}
+<div className="pm-detail-panel" style={{ marginTop: 16 }}>
+    <div className="pm-section-header" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <FileText size={12} /> DocEdge Prescriptions (Generated)
+    </div>
+
+    {prescLoading ? (
+        <div style={{ padding: '24px 14px', textAlign: 'center' }}>
+            <Loader2 size={18} color={T.brand} style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 8px' }} />
+            <span style={{ fontSize: 12, color: T.text3 }}>Loading prescriptions...</span>
+        </div>
+    ) : patientPrescriptions.length === 0 ? (
+        <div style={{ padding: '24px 14px', textAlign: 'center' }}>
+            <FileText size={20} color={T.text3} style={{ display: 'block', margin: '0 auto 8px', opacity: 0.4 }} />
+            <span style={{ fontSize: 12, color: T.text3, fontWeight: 600 }}>
+                NULL
+            </span>
+        </div>
+    ) : (
+        patientPrescriptions.map((appt) => (
+            appt.prescriptions.map((rx) => (
+                <div key={rx._id} className="pm-rx-item">
+                    {/* Icon */}
+                    <div style={{
+                        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                        background: T.brandLt,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <FileText size={14} color={T.brandDk} />
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: T.text1 }}>
+                            {appt.visitType === 'Revisit Patient' ? 'Revisit' : 'New Patient'} — Token #{appt.tokenNumber || '—'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                            <Calendar size={10} color={T.text3} />
+                            <span style={{ fontSize: 10, color: T.text3, fontFamily: '"DM Mono", monospace' }}>
+                                {appt.appointmentDate
+                                    ? new Date(appt.appointmentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                                    : '—'}
+                            </span>
+                            <span style={{
+                                fontSize: 10, fontWeight: 700,
+                                color: appt.status === 'Completed' ? T.success : T.warn,
+                                background: appt.status === 'Completed' ? T.successLt : T.warnLt,
+                                padding: '1px 6px', borderRadius: 4,
+                            }}>
+                                {appt.status}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Download PDF button */}
+                    {rx.pdfBinary ? (
+                        <button
+                            className="pm-btn-ghost brand"
+                            title="View / Download PDF"
+                            onClick={() => {
+                                // pdfBinary base64 string hai — open in new tab
+                                const byteStr = atob(rx.pdfBinary.split(',')[1] || rx.pdfBinary);
+                                const ab = new ArrayBuffer(byteStr.length);
+                                const ia = new Uint8Array(ab);
+                                for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+                                const blob = new Blob([ab], { type: 'application/pdf' });
+                                const url = URL.createObjectURL(blob);
+                                window.open(url, '_blank');
+                            }}
+                        >
+                            <Download size={14} strokeWidth={2.2} />
+                        </button>
+                    ) : (
+                        <span style={{ fontSize: 10, color: T.text3, fontStyle: 'italic' }}>No PDF</span>
+                    )}
+                </div>
+            ))
+        ))
+    )}
+</div>
               </div>
 
             </div>

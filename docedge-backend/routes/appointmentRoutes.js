@@ -12,6 +12,10 @@ router.get('/search-billing/:slug', appointmentController.searchAppointmentForBi
 
 // Route: GET /api/appointments/:slug/find-first-visit
 router.get('/:slug/check-status/:mobile', appointmentController.getPatientStatusAndLatest);
+
+// Patient ke saare prescriptions
+router.get('/:slug/patient/:patientId/prescriptions', appointmentController.getPatientPrescriptions);
+
 router.get('/:slug/all',            appointmentController.getAllAppointments);      // GET  /appointments/:slug/all
 router.get('/:slug/:id/view',       appointmentController.viewAppointment);         // GET  /appointments/:slug/:id/view
 router.get('/:slug/:id/fetch',      appointmentController.fetchAppointment);        // GET  /appointments/:slug/:id/fetch

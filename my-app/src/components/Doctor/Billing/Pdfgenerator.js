@@ -52,6 +52,7 @@ export const fmtNum = (n) => {
 };
 
 const pdfRs = (n) => `Rs. ${fmtNum(n)}`;
+const pdparcentage =(n)=> `${fmtNum(n)}`
 
 const ddmmyyyy = (dateVal) => {
   const d = new Date(dateVal);
@@ -295,7 +296,7 @@ autoTable(doc, {
 
   const summaryRows = [
     { label: 'Subtotal, INR:',   value: pdfRs(inv.subTotal),   bold: false, color: DARK   },
-    { label: 'Discount, INR:',   value: pdfRs(inv.discount),   bold: false, color: MID    },
+    { label: 'Discount, %:',   value: pdparcentage(inv.discount),   bold: false, color: MID    },
   ];
 
   doc.setFontSize(9);

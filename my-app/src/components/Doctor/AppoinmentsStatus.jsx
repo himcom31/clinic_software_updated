@@ -284,7 +284,7 @@ function ViewModal({ appt, onClose }) {
               <div className="space-y-1">
                 <SectionLabel>Vitals Index & Environment</SectionLabel>
                 <InfoRow icon={<Activity size={12} className="text-slate-500" />} label="Recorded Weight" value={weight != null ? `${weight} kg` : null} />
-                <InfoRow icon={<Activity size={12} className="text-slate-500" />} label="Recorded Height" value={height != null ? `${height} cm` : null} />
+                <InfoRow icon={<Activity size={12} className="text-slate-500" />} label="Recorded Height" value={height != null ? `${height} ft` : null} />
                 <InfoRow icon={<Activity size={12} className="text-slate-500" />} label="Computed BMI Matrix" value={bmi != null ? `${bmi}` : null} />
                 <InfoRow icon={<AlertCircle size={12} className="text-red-500" />} label="Allergies / Contraindications" value={allergies} />
               </div>

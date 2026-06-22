@@ -944,3 +944,36 @@ exports.searchPatients = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// Patient ke saare prescriptions (appointment-wise) fetch karo
+exports.getPatientPrescriptions = async (req, res) => {
+    try {
+        const { slug, patientId } = req.params;
+
+        // Is patient ke saare appointments dhundo jisme prescription ho
+        const appointments = await Appointment.find({
+            clinicSlug: slug,
+            patientId: patientId,
+            prescriptions: { $exists: true, $not: { $size: 0 } }
+        })
+        .select('appointmentDate tokenNumber visitType status prescriptions createdAt')
+        .populate({
+            path: 'prescriptions',
+            select: 'pdfBinary symptomsHtml medicines createdAt'
+        })
+        .sort({ createdAt: -1 })
+        .lean();
+
+        // Sirf wahi appointments jo actually prescription rakhte hain
+        const filtered = appointments.filter(a => a.prescriptions && a.prescriptions.length > 0);
+
+        res.status(200).json({
+            success: true,
+            data: filtered
+        });
+
+    } catch (err) {
+        console.error("getPatientPrescriptions Error:", err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
