@@ -18,7 +18,7 @@ const clinicProfileSchema = new mongoose.Schema({
     // ── Single Doctor Details ─────────────────────────────────────────────────
     doctorName: {
         type: String,
-        required: true
+        default: ''
     },
     degree: {
         type: String,

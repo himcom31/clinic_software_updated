@@ -27,12 +27,12 @@ exports.upsertClinicProfile = async (req, res) => {
         }
 
         // ── Validate doctor name ──────────────────────────────────────────────
-        if (!data.doctorName || !data.doctorName.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Doctor name is required."
-            });
-        }
+        // if (!data.doctorName || !data.doctorName.trim()) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Doctor name is required."
+        //     });
+        // }
 
         // ── Validate clinic name ──────────────────────────────────────────────
         if (!data.clinicName || !data.clinicName.trim()) {

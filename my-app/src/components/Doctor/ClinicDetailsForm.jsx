@@ -107,18 +107,18 @@ const ClinicDetailsForm = () => {
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!formData.doctorName.trim()) {
-      alert("Doctor name is required.");
-      return;
-    }
-    if (!formData.clinicName.trim()) {
-      alert("Clinic name is required.");
-      return;
-    }
-    if (!formData.doctorId) {
-      alert("Session expired. Please log in again.");
-      return;
-    }
+    // if (!formData.doctorName.trim()) {
+    //   alert("Doctor name is required.");
+    //   return;
+    // }
+    // if (!formData.clinicName.trim()) {
+    //   alert("Clinic name is required.");
+    //   return;
+    // }
+    // if (!formData.doctorId) {
+    //   alert("Session expired. Please log in again.");
+    //   return;
+    // }
 
     setLoading(true);
     const data = new FormData();
