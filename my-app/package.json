@@ -22,6 +22,8 @@
     "dom-to-image-more": "^3.7.2",
     "dotenv": "^17.4.2",
     "html2canvas": "^1.4.1",
+    "html2pdf": "^0.0.11",
+    "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lodash": "^4.18.1",

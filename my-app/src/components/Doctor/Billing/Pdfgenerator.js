@@ -1,29 +1,31 @@
 /**
  * pdfGenerator.js
  * ─────────────────────────────────────────────────────────────────────────────
- * Builds jsPDF invoices matching the "template.pdf" layout:
- *   • Logo top-left  |  "Invoice" title top-right (orange)
- *   • From block (clinic) left  |  Invoice meta right
- *   • To block (patient) right
- *   • Orange-header items table
- *   • Subtotal / Discount / Total / Paid / Due summary
- *   • Footer band (teal, from existing design) with thank-you note
+ * Builds jsPDF invoices matching "Docedge" template.pdf layout EXACTLY:
+ *   • Thin navy top strip
+ *   • Circle logo (cross icon) + Clinic name + tagline  |  "INVOICE" title (right, navy, blue underline)
+ *   • Invoice No. / Invoice Date (right)
+ *   • Address / Phone / Email (left, with bullet icons)
+ *   • BILL TO (left) | CONSULTATION DETAILS (right)
+ *   • Navy-header items table: # | DESCRIPTION | QTY | UNIT PRICE | AMOUNT (₹)
+ *   • NOTES (left) | Subtotal / Discount / Tax / TOTAL AMOUNT box (right)
+ *   • Amount in Words
+ *   • Navy footer band: "THANK YOU FOR YOUR TRUST IN US" + "We Wish You Good Health!"
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-/* ── Colour palette ─────────────────────────────────────────────────────── */
-const ORANGE   = [230, 126, 14];   // #E67E0E  — template accent
-const TEAL     = [15, 118, 110];   // #0F766E  — footer band (existing design)
-const TEAL_ALT = [180, 255, 240];  // subtle tint for footer sub-text
-const CREAM    = [255, 248, 235];  // alternating row tint (warm, matches orange)
-const DARK     = [30,  30,  30];
-const MID      = [80,  80,  80];
-const LIGHT    = [140, 140, 140];
-const RED      = [220, 38, 38];
-const GREEN    = [22, 163, 74];
+/* ── Colour palette (matched to template) ──────────────────────────────── */
+const NAVY      = [22, 41, 74];     // #16294A — headers, footer band, titles
+const NAVY_DARK = [15, 28, 51];     // #0F1C33 — very top strip
+const BLUE      = [41, 128, 195];   // #2980C3 — icons, underline accent
+const GRAY      = [110, 118, 130];  // secondary text
+const LIGHT_GRAY= [245, 247, 250];  // alternating row tint
+const WHITE     = [255, 255, 255];
+const RED       = [200, 40, 40];    // discount
+const TOTAL_BG  = [232, 242, 250];  // light blue highlight for total row
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 export const safePdfStr = (str) => {
@@ -52,320 +54,340 @@ export const fmtNum = (n) => {
 };
 
 const pdfRs = (n) => `Rs. ${fmtNum(n)}`;
-const pdparcentage =(n)=> `${fmtNum(n)}`
 
-const ddmmyyyy = (dateVal) => {
+const ddmmyyyyStr = (dateVal) => {
   const d = new Date(dateVal);
-  return [
-    d.getDate().toString().padStart(2, '0'),
-    (d.getMonth() + 1).toString().padStart(2, '0'),
-    d.getFullYear(),
-  ].join('/');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 
-const mmddyyyy = (dateVal) => {
-  const d = new Date(dateVal);
-  return [
-    (d.getMonth() + 1).toString().padStart(2, '0'),
-    d.getDate().toString().padStart(2, '0'),
-    d.getFullYear(),
-  ].join('.');
+/* ── Number → Words (Indian numbering system) ──────────────────────────── */
+const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+  'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen',
+  'Eighteen', 'Nineteen'];
+const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+function twoDigits(n) {
+  if (n < 20) return ONES[n];
+  const t = Math.floor(n / 10), o = n % 10;
+  return TENS[t] + (o ? ' ' + ONES[o] : '');
+}
+function threeDigits(n) {
+  const h = Math.floor(n / 100), r = n % 100;
+  let out = '';
+  if (h) out += ONES[h] + ' Hundred' + (r ? ' ' : '');
+  if (r) out += twoDigits(r);
+  return out;
+}
+export const numberToWordsINR = (amount) => {
+  let num = Math.round(Number(amount || 0));
+  if (num === 0) return 'Zero Only';
+  const crore = Math.floor(num / 10000000); num %= 10000000;
+  const lakh  = Math.floor(num / 100000);    num %= 100000;
+  const thousand = Math.floor(num / 1000);   num %= 1000;
+  const hundred = num;
+
+  let parts = [];
+  if (crore)    parts.push(threeDigits(crore) + ' Crore');
+  if (lakh)     parts.push(threeDigits(lakh) + ' Lakh');
+  if (thousand) parts.push(threeDigits(thousand) + ' Thousand');
+  if (hundred)  parts.push(threeDigits(hundred));
+  return parts.join(' ').trim() + ' Only';
 };
 
-/* ── Main PDF builder ───────────────────────────────────────────────────── */
-/**
- * @param {object} inv       — invoice data object
- * @param {object} clinicInfo — { clinicName, doctorName, email, mobile, address, logoBase64 }
- */
+/* ── Small decorative shapes (icons are hand-drawn, no external assets) ── */
+function drawHeart(doc, cx, cy, size, color) {
+  doc.setFillColor(...color);
+  const r = size / 2.6;
+  doc.circle(cx - r * 0.6, cy - r * 0.3, r, 'F');
+  doc.circle(cx + r * 0.6, cy - r * 0.3, r, 'F');
+  doc.triangle(
+    cx - r * 1.5, cy - r * 0.1,
+    cx + r * 1.5, cy - r * 0.1,
+    cx, cy + r * 1.6,
+    'F'
+  );
+}
+
+function drawLogo(doc, x, y, d, logoBase64) {
+  if (logoBase64) {
+    try {
+      const mimeMatch = logoBase64.match(/^data:image\/(\w+);base64,/);
+      const imgFormat = mimeMatch ? mimeMatch[1].toUpperCase().replace('JPG', 'JPEG') : 'JPEG';
+      doc.addImage(logoBase64, imgFormat, x, y, d, d);
+      return;
+    } catch {
+      /* fall through to drawn placeholder */
+    }
+  }
+  // Circle badge with a cross — matches the template's default logo mark
+  const cx = x + d / 2, cy = y + d / 2, r = d / 2;
+  doc.setFillColor(230, 236, 244).circle(cx, cy, r, 'F');
+  doc.setFillColor(...NAVY);
+  const armW = d * 0.16, armL = d * 0.52;
+  doc.roundedRect(cx - armW / 2, cy - armL / 2, armW, armL, 0.6, 0.6, 'F');
+  doc.roundedRect(cx - armL / 2, cy - armW / 2, armL, armW, 0.6, 0.6, 'F');
+}
+
+function bulletLine(doc, x, y, text, color = BLUE) {
+  doc.setFillColor(...color).circle(x + 1, y - 1.3, 1, 'F');
+  doc.text(text, x + 5, y);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MAIN PDF BUILDER
+   @param {object} inv        — invoice data
+   @param {object} clinicInfo — { clinicName, tagline, doctorName, email, mobile, address, logoBase64 }
+═══════════════════════════════════════════════════════════════════════ */
 export const buildPDF = (inv, clinicInfo = {}) => {
   const doc = new jsPDF({ putOnlyUsedFonts: true, compress: true });
   doc.setFont('helvetica');
 
   const {
-    clinicName  = 'Clinic',
-    doctorName  = '',
-    email       = '',
-    mobile      = '',
-    address     = '',
-    logoBase64  = null,
+    clinicName = 'Clinic',
+    tagline    = 'Compassionate Care, Trusted Health',
+    doctorName = '',
+    email      = '',
+    mobile     = '',
+    address    = '',
+    logoBase64 = null,
   } = clinicInfo;
 
-  const isRevisit  = inv.visitType === 'Revisit' || inv.isRevisit;
-  const billDate   = new Date(inv.createdAt || inv.billingDate || Date.now());
-  const dueDateStr = mmddyyyy(billDate);  // template shows MM.DD.YYYY
+  const isRevisit = inv.visitType === 'Revisit' || inv.isRevisit;
+  const billDate  = new Date(inv.createdAt || inv.billingDate || Date.now());
+  const visitDate = new Date(inv.visitDate || billDate);
 
-  /* ── PAGE MARGINS ── */
-  const ML = 14;   // margin-left
-  const MR = 196;  // margin-right (210 - 14)
-  const W  = MR - ML;
+  const ML = 14, MR = 196, W = MR - ML;
 
-  /* ═══════════════════════════════════════════════════════════════════════
-     SECTION 1 — Header row: Logo left | "Invoice" right
-  ═══════════════════════════════════════════════════════════════════════ */
-  const LOGO_X = ML;
-  const LOGO_Y = 10;
-  const LOGO_W = 38;
-  const LOGO_H = 28;
+  /* ── Top navy strip ── */
+  doc.setFillColor(...NAVY_DARK).rect(0, 0, 210, 4, 'F');
 
-  if (logoBase64) {
-    try {
-      // Auto-detect format from the data URL prefix: "data:image/jpeg;base64,…"
-      // jsPDF accepts 'JPEG', 'PNG', 'WEBP' — default to 'JPEG' if unrecognised
-      const mimeMatch  = logoBase64.match(/^data:image\/(\w+);base64,/);
-      const imgFormat  = mimeMatch
-        ? mimeMatch[1].toUpperCase().replace('JPG', 'JPEG')
-        : 'JPEG';
-      doc.addImage(logoBase64, imgFormat, LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
-    } catch {
-      // fallback placeholder box
-      doc.setFillColor(220, 220, 220).rect(LOGO_X, LOGO_Y, LOGO_W, LOGO_H, 'F');
-      doc.setTextColor(...LIGHT).setFontSize(8).setFont('helvetica', 'bold');
-      doc.text('LOGO', LOGO_X + LOGO_W / 2, LOGO_Y + LOGO_H / 2 + 3, { align: 'center' });
-    }
-  } else {
-    doc.setFillColor(220, 220, 220).rect(LOGO_X, LOGO_Y, LOGO_W, LOGO_H, 'F');
-    doc.setTextColor(...LIGHT).setFontSize(8).setFont('helvetica', 'bold');
-    doc.text('LOGO', LOGO_X + LOGO_W / 2, LOGO_Y + LOGO_H / 2 + 3, { align: 'center' });
-  }
+  /* ═══ SECTION 1 — Logo + clinic name (left) | INVOICE title (right) ═══ */
+  drawLogo(doc, ML, 12, 34, logoBase64);
 
-  // "Invoice" large title — right aligned, orange
-  doc.setFontSize(34).setFont('helvetica', 'bold').setTextColor(...ORANGE);
-  doc.text('Invoice', MR, 26, { align: 'right' });
+  doc.setFontSize(21).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text(safePdfStr(clinicName).toUpperCase(), ML + 40, 26);
 
-  /* ═══════════════════════════════════════════════════════════════════════
-     SECTION 2 — Invoice meta (right side, below title)
-  ═══════════════════════════════════════════════════════════════════════ */
-  const metaLabelX = 140;
-  const metaValueX = MR;
-  let metaY = 36;
+  doc.setFontSize(9).setFont('helvetica', 'italic').setTextColor(...GRAY);
+  doc.text(safePdfStr(tagline), ML + 40, 33);
 
-  const metaRows = [
-    ['Invoice no.:', safePdfStr(inv.invoiceNo || '001')],
-    ['Invoice date:', ddmmyyyy(billDate)],
-    ['Due:', dueDateStr],
-  ];
+  doc.setFontSize(26).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text('INVOICE', MR, 24, { align: 'right' });
+  doc.setDrawColor(...BLUE).setLineWidth(1);
+  doc.line(MR - 42, 27, MR, 27);
 
-  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(...MID);
-  metaRows.forEach(([label, value]) => {
-    doc.text(label, metaLabelX, metaY);
-    doc.setFont('helvetica', 'normal').setTextColor(...DARK);
-    doc.text(value, metaValueX, metaY, { align: 'right' });
-    doc.setTextColor(...MID);
-    metaY += 6;
-  });
+  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(...GRAY);
+  doc.text('Invoice No.', MR - 42, 35);
+  doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text(safePdfStr(inv.invoiceNo || '001'), MR, 35, { align: 'right' });
 
-  /* ═══════════════════════════════════════════════════════════════════════
-     SECTION 3 — From / To blocks
-  ═══════════════════════════════════════════════════════════════════════ */
-  let addrY = 55;
+  doc.setFont('helvetica', 'normal').setTextColor(...GRAY);
+  doc.text('Invoice Date', MR - 42, 41);
+  doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text(ddmmyyyyStr(billDate), MR, 41, { align: 'right' });
 
-  // "From" — left column
-  doc.setFontSize(9).setFont('helvetica', 'bold').setTextColor(...DARK);
-  doc.text('From', ML, addrY);
-  addrY += 5;
+  /* ═══ SECTION 2 — Address / Phone / Email ═══ */
+  let contactY = 54;
+  doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(...NAVY);
+  if (address) { bulletLine(doc, ML, contactY, safePdfStr(address)); contactY += 6; }
+  if (mobile)  { bulletLine(doc, ML, contactY, safePdfStr(mobile));  contactY += 6; }
+  if (email)   { bulletLine(doc, ML, contactY, safePdfStr(email));   contactY += 6; }
 
-  doc.setFontSize(11).setFont('helvetica', 'bold').setTextColor(...DARK);
-  doc.text(safePdfStr(clinicName), ML, addrY);
-  addrY += 6;
+  /* Separator */
+  let sepY = contactY + 4;
+  doc.setDrawColor(...BLUE).setLineWidth(0.4).line(ML, sepY, MR, sepY);
 
-  const fromLines = [
-    doctorName ? `Dr. ${safePdfStr(doctorName)}` : null,
-    email      ? safePdfStr(email)               : null,
-    mobile     ? safePdfStr(mobile)              : null,
-    address    ? safePdfStr(address)             : null,
-  ].filter(Boolean);
+  /* ═══ SECTION 3 — BILL TO | CONSULTATION DETAILS ═══ */
+  let colY = sepY + 10;
 
-  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(...MID);
-  fromLines.forEach((line) => {
-    doc.text(line, ML, addrY);
-    addrY += 5;
-  });
+  doc.setFontSize(13).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text('BILL TO', ML, colY);
+  doc.text('CONSULTATION DETAILS', MR, colY, { align: 'right' });
+  colY += 7;
 
-  // "To" — right column (aligned to right margin, vertically starts same as "From")
-  let toY = 55;
-  doc.setFontSize(9).setFont('helvetica', 'bold').setTextColor(...DARK);
-  doc.text('To', MR, toY, { align: 'right' });
-  toY += 5;
-
-  doc.setFontSize(11).setFont('helvetica', 'bold').setTextColor(...DARK);
-  doc.text(safePdfStr(inv.patientName || ''), MR, toY, { align: 'right' });
-  toY += 6;
-
-  const toLines = [
-    inv.email       ? safePdfStr(inv.email)                       : null,
-    inv.mobile      ? safePdfStr(inv.mobile)                      : null,
-    inv.paymentMode ? `Payment: ${safePdfStr(inv.paymentMode)}`   : null,
-    isRevisit ? 'Revisit Patient' : 'New Patient',
-  ].filter(Boolean);
-
-  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(...MID);
-  toLines.forEach((line) => {
-    doc.text(line, MR, toY, { align: 'right' });
-    toY += 5;
-  });
-
-  /* Revisit badge (orange pill, matches template's visual language) */
-  if (isRevisit) {
-    doc.setFillColor(...ORANGE).roundedRect(MR - 30, toY, 30, 6, 2, 2, 'F');
-    doc.setTextColor(255).setFontSize(6.5).setFont('helvetica', 'bold');
-    doc.text('REVISIT', MR - 15, toY + 4, { align: 'center' });
-    toY += 10;
-  }
-
-  /* ── Appointment fee notice (if any) ── */
-  let sectionY = Math.max(addrY, toY) + 8;
-
-  if (inv.appointmentFee) {
-    doc.setFillColor(255, 243, 220)
-       .roundedRect(ML, sectionY - 4, W, 10, 2, 2, 'F');
-    doc.setTextColor(...ORANGE).setFontSize(8).setFont('helvetica', 'bold');
-    doc.text(
-      `Appointment Fee Collected at Registration: ${pdfRs(inv.appointmentFee)}`,
-      ML + 3, sectionY + 2.5
-    );
-    sectionY += 14;
-  }
-
-  /* ═══════════════════════════════════════════════════════════════════════
-     SECTION 4 — Items table  (orange header, cream alternate rows)
-  ═══════════════════════════════════════════════════════════════════════ */
-
-autoTable(doc, {
-  startY: sectionY,
-  head: [['DESCRIPTION', 'RATE', 'QTY', 'AMOUNT']],
-  body: (inv.items || []).map((item) => [
-    safePdfStr(item.name),
-    pdfRs(item.price),
-    item.qty || 1,
-    pdfRs(item.price * (item.qty || 1)),
-  ]),
-  headStyles: {
-    fillColor: ORANGE,
-    textColor: [255, 255, 255],
-    fontStyle: 'bold',
-    fontSize: 8.5,
-    font: 'helvetica',
-    cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
-  },
-  bodyStyles: {
-    fontSize: 9,
-    font: 'helvetica',
-    textColor: DARK,
-    cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
-  },
-  alternateRowStyles: { fillColor: CREAM },
-  theme: 'plain',
-  tableWidth: 182,
-  margin: { left: ML, right: ML },
-  columnStyles: {
-    0: { cellWidth: 88,  halign: 'left'   },
-    1: { cellWidth: 38,  halign: 'right'  },
-    2: { cellWidth: 28,  halign: 'center' },
-    3: { cellWidth: 36,  halign: 'right'  },
-  },
-  // ← THIS is the actual fix — forces alignment on header cells too
-  didParseCell: (data) => {
-    if (data.section === 'head') {
-      const aligns = ['left', 'right', 'center', 'right'];
-      data.cell.styles.halign = aligns[data.column.index];
-    }
-  },
-});
-  /* ═══════════════════════════════════════════════════════════════════════
-     SECTION 5 — Summary (right-aligned totals block)
-     Left: Payment instruction  |  Right: totals
-  ═══════════════════════════════════════════════════════════════════════ */
-  const tableEndY = doc.lastAutoTable.finalY;
-  let sumY = tableEndY + 8;
-
-  /* Thin separator line */
-  doc.setDrawColor(210, 210, 210).setLineWidth(0.3).line(ML, sumY - 2, MR, sumY - 2);
-
-  /* Payment instruction block (left) */
-  doc.setFontSize(9).setFont('helvetica', 'bold').setTextColor(...DARK);
-  doc.text('Payment instruction', ML, sumY + 5);
-  doc.setFontSize(8).setFont('helvetica', 'normal').setTextColor(...MID);
-  doc.text(
-    `Mode: ${safePdfStr(inv.paymentMode || 'Cash')}`,
-    ML, sumY + 11
-  );
-
-  /* Summary rows (right side) */
-  const summaryLabelX = 138;
-  const summaryValueX = MR;
-
-  const summaryRows = [
-    { label: 'Subtotal, INR:',   value: pdfRs(inv.subTotal),   bold: false, color: DARK   },
-    { label: 'Discount, %:',   value: pdparcentage(inv.discount),   bold: false, color: MID    },
-  ];
+  doc.setFontSize(11.5).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text(safePdfStr(inv.patientName || ''), ML, colY);
 
   doc.setFontSize(9);
-  summaryRows.forEach(({ label, value, color }) => {
-    doc.setFont('helvetica', 'normal').setTextColor(...MID);
-    doc.text(label, summaryLabelX, sumY + 5);
-    doc.setTextColor(...color);
-    doc.text(value, summaryValueX, sumY + 5, { align: 'right' });
-    sumY += 7;
+  const docLabel = 'Doctor Name : ';
+  const docValue = doctorName ? `Dr. ${safePdfStr(doctorName)}` : '';
+  doc.setFont('helvetica', 'bold');
+  const docValueW = doc.getTextWidth(docValue);
+  doc.setFont('helvetica', 'bold').setTextColor(...GRAY);
+  const docLabelW = doc.getTextWidth(docLabel);
+  const docLabelX = MR - docValueW - docLabelW;
+  doc.setTextColor(...GRAY);
+  doc.text(docLabel, docLabelX, colY - 0.5);
+  doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text(docValue, MR, colY - 0.5, { align: 'right' });
+  colY += 6;
+
+  doc.setFontSize(9).setFont('helvetica', 'bold').setTextColor(...GRAY);
+doc.text('Mobile', ML, colY);
+doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+doc.text(`: ${safePdfStr(inv.mobile || '')}`, ML + 22, colY);
+colY += 6;
+
+  doc.setFont('helvetica', 'bold').setTextColor(...GRAY);
+  doc.text('Visit Type', ML, colY);
+  doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text(isRevisit ? ': Revisit' : ': New', ML + 22, colY);
+  colY += 6;
+
+  doc.setFont('helvetica', 'bold').setTextColor(...GRAY);
+  doc.text('Visit Date', ML, colY);
+  doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text(': ' + ddmmyyyyStr(visitDate), ML + 22, colY);
+  colY += 10;
+
+  /* ═══ SECTION 4 — Items table ═══ */
+  const items = inv.items || [];
+  autoTable(doc, {
+    startY: colY,
+    head: [['#', 'DESCRIPTION', 'QTY', 'UNIT PRICE', 'AMOUNT (Rs.)']],
+    body: items.map((item, i) => [
+      String(i + 1),
+      safePdfStr(item.name),
+      item.qtyLabel ? safePdfStr(item.qtyLabel) : String(item.qty || 1),
+      fmtNum(item.price),
+      fmtNum(item.price * (item.qty || 1)),
+    ]),
+    headStyles: {
+      fillColor: NAVY,
+      textColor: WHITE,
+      fontStyle: 'bold',
+      fontSize: 8.5,
+      font: 'helvetica',
+      cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+    },
+    bodyStyles: {
+      fontSize: 9,
+      font: 'helvetica',
+      textColor: NAVY,
+      cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+    },
+    alternateRowStyles: { fillColor: LIGHT_GRAY },
+    theme: 'plain',
+    tableWidth: W,
+    margin: { left: ML, right: ML },
+    columnStyles: {
+      0: { cellWidth: 10,  halign: 'left'   },
+      1: { cellWidth: 76,  halign: 'left'   },
+      2: { cellWidth: 28,  halign: 'center' },
+      3: { cellWidth: 32,  halign: 'right'  },
+      4: { cellWidth: 36,  halign: 'right'  },
+    },
+    didParseCell: (data) => {
+      if (data.section === 'head') {
+        const aligns = ['left', 'left', 'center', 'right', 'right'];
+        data.cell.styles.halign = aligns[data.column.index];
+      }
+    },
   });
 
-  /* Separator before Total */
+  /* ═══ SECTION 5 — NOTES (left) | Summary box (right) ═══ */
+  const tableEndY = doc.lastAutoTable.finalY;
+  let notesY = tableEndY + 12;
+
+  doc.setFontSize(10).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text('NOTES', ML, notesY);
+  notesY += 6;
+
+  const notes = inv.notes && inv.notes.length ? inv.notes : [
+    'Please carry this invoice for your next visit.',
+    'Medicines once sold will not be returned.',
+    'Report any adverse reaction to medication immediately.',
+    `Thank you for choosing ${safePdfStr(clinicName)}.`,
+  ];
+
+  doc.setFontSize(8.2).setFont('helvetica', 'normal').setTextColor(...GRAY);
+  const noteWidth = 100;
+  notes.forEach((n) => {
+    const lines = doc.splitTextToSize(`•  ${safePdfStr(n)}`, noteWidth);
+    doc.text(lines, ML, notesY);
+    notesY += 4.6 * lines.length;
+  });
+
+  /* Summary box (right) */
+  const subTotal = inv.subTotal != null ? inv.subTotal
+    : items.reduce((s, it) => s + it.price * (it.qty || 1), 0);
+  const discountAmt = inv.discountAmount != null ? inv.discountAmount
+    : (inv.discount ? subTotal * (inv.discount / 100) : 0);
+  const taxPercent = inv.taxPercent != null ? inv.taxPercent : 0;
+  const taxAmt = inv.taxAmount != null ? inv.taxAmount
+    : (subTotal - discountAmt) * (taxPercent / 100);
+  const grandTotal = inv.grandTotal != null ? inv.grandTotal
+    : subTotal - discountAmt + taxAmt;
+
+  const sLabelX = 138, sValueX = MR;
+  let sumY = tableEndY + 12;
+
+  doc.setFontSize(9);
+  const rows = [
+    ['Subtotal', pdfRs(subTotal), NAVY],
+    ['Discount', discountAmt ? `- Rs. ${fmtNum(discountAmt)}` : 'Rs. 0.00', RED],
+  ];
+  if (taxPercent || taxAmt) {
+    rows.push([`Tax (${fmtNum(taxPercent).replace(/\.00$/, '')}%)`, pdfRs(taxAmt), NAVY]);
+  }
+
+  rows.forEach(([label, value, color]) => {
+    doc.setFont('helvetica', 'normal').setTextColor(...GRAY);
+    doc.text(label, sLabelX, sumY);
+    doc.setFont('helvetica', 'normal').setTextColor(...color);
+    doc.text(value, sValueX, sumY, { align: 'right' });
+    sumY += 6.5;
+  });
+
   sumY += 2;
-  doc.setDrawColor(210, 210, 210).line(summaryLabelX, sumY, MR, sumY);
-  sumY += 5;
-
-  /* Total row — bold, slightly larger */
-  doc.setFontSize(10.5).setFont('helvetica', 'bold').setTextColor(...DARK);
-  doc.text('Total :', summaryLabelX, sumY);
-  doc.text(pdfRs(inv.grandTotal), summaryValueX, sumY, { align: 'right' });
-  sumY += 8;
-
-  /* Amount paid */
-  doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(...MID);
-  doc.text('Amount paid:', summaryLabelX, sumY);
-  doc.setTextColor(...GREEN);
-  doc.text(pdfRs(inv.paidAmount), summaryValueX, sumY, { align: 'right' });
+  doc.setFillColor(...TOTAL_BG).rect(sLabelX - 4, sumY - 5, MR - sLabelX + 8, 11, 'F');
+  doc.setFontSize(11).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text('TOTAL AMOUNT', sLabelX, sumY + 2);
+  doc.text(pdfRs(grandTotal), sValueX, sumY + 2, { align: 'right' });
   sumY += 10;
 
-  /* Balance Due — highlighted row (cream background) */
-  doc.setFillColor(255, 243, 220).rect(summaryLabelX - 4, sumY - 5, MR - summaryLabelX + 8, 11, 'F');
-  doc.setFontSize(10).setFont('helvetica', 'bold').setTextColor(...DARK);
-  doc.text('Balance Due:', summaryLabelX, sumY + 2);
-  const dueColor = (inv.dueAmount || 0) > 0 ? RED : GREEN;
-  doc.setTextColor(...dueColor);
-  doc.text(pdfRs(inv.dueAmount || 0), summaryValueX, sumY + 2, { align: 'right' });
-  sumY += 14;
+  const paidAmount = inv.paidAmount != null ? inv.paidAmount : 0;
+  const dueAmount  = inv.dueAmount != null ? inv.dueAmount : Math.max(grandTotal - paidAmount, 0);
 
-  /* ═══════════════════════════════════════════════════════════════════════
-     SECTION 6 — Footer band (teal, from existing design)
-  ═══════════════════════════════════════════════════════════════════════ */
-  const footerY = Math.max(sumY + 10, 262);
+  doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(...GRAY);
+  doc.text('Amount paid', sLabelX, sumY);
+  doc.setFont('helvetica', 'bold').setTextColor(22, 163, 74);
+  doc.text(pdfRs(paidAmount), sValueX, sumY, { align: 'right' });
+  sumY += 7;
 
-  /* Top line */
-  doc.setDrawColor(...TEAL).setLineWidth(0.5).line(0, footerY, 210, footerY);
+  doc.setFont('helvetica', 'normal').setTextColor(...GRAY);
+  doc.text('Balance Due', sLabelX, sumY);
+  const dueColor = dueAmount > 0 ? RED : [22, 163, 74];
+  doc.setFont('helvetica', 'bold').setTextColor(...dueColor);
+  doc.text(pdfRs(dueAmount), sValueX, sumY, { align: 'right' });
+  sumY += 10;
 
-  /* Teal band */
-  doc.setFillColor(...TEAL).rect(0, footerY, 210, 18, 'F');
+  doc.setFontSize(8).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  doc.text('Amount in Words:', sLabelX, sumY);
+  sumY += 5;
+  doc.setFont('helvetica', 'italic').setTextColor(...GRAY);
+  const wordsLines = doc.splitTextToSize(numberToWordsINR(grandTotal), MR - sLabelX);
+  doc.text(wordsLines, sLabelX, sumY);
+  sumY += 4.6 * wordsLines.length;
 
-  /* Thank-you text */
-  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(255, 255, 255);
-  doc.text(
-    'Thank you for choosing our clinic. Get well soon!',
-    105, footerY + 7, { align: 'center' }
-  );
+  /* ═══ SECTION 6 — Footer band (navy) ═══ */
+  const footerH = 20;
+  const footerY = Math.max(notesY, sumY) + 12;
+  const bandTop = Math.max(footerY, 262);
 
-  /* Generated-on timestamp */
-  const now = new Date();
-  const nowStr = [
-    now.getDate().toString().padStart(2, '0'),
-    (now.getMonth() + 1).toString().padStart(2, '0'),
-    now.getFullYear(),
-  ].join('/') + ' ' + [
-    now.getHours().toString().padStart(2, '0'),
-    now.getMinutes().toString().padStart(2, '0'),
-  ].join(':');
+  doc.setFillColor(...NAVY).rect(0, bandTop, 210, footerH, 'F');
 
-  doc.setFontSize(7.5).setTextColor(...TEAL_ALT);
-  doc.text(`Generated on ${nowStr}`, 105, footerY + 13, { align: 'center' });
+  doc.setFontSize(11).setFont('helvetica', 'bold').setTextColor(255, 255, 255);
+  const thankYouText = 'THANK YOU FOR YOUR TRUST IN US';
+  const thankYouW = doc.getTextWidth(thankYouText);
+  doc.text(thankYouText, 105, bandTop + 11, { align: 'center' });
+
+  const heartGap = 8;
+  drawHeart(doc, 105 - thankYouW / 2 - heartGap, bandTop + 9, 4, [235, 245, 255]);
+  drawHeart(doc, 105 + thankYouW / 2 + heartGap, bandTop + 9, 4, [235, 245, 255]);
+
+  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(210, 224, 240);
+  doc.text('We Wish You Good Health!', 105, bandTop + 17, { align: 'center' });
 
   return doc;
 };
