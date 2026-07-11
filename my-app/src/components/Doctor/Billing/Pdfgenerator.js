@@ -145,7 +145,7 @@ export const buildPDF = (inv, clinicInfo = {}) => {
 
   const {
     clinicName = 'Clinic',
-    doctorName = '',
+    degree = '', 
     email      = '',
     mobile     = '',
     address    = '',
@@ -210,7 +210,7 @@ colY += 6;
 
   doc.setFontSize(9);
   const docLabel = 'Doctor Name : ';
-  const docValue = doctorName ? `Dr. ${safePdfStr(degree)}` : '';
+  const docValue = degree ? `Dr. ${safePdfStr(degree)}` : '';
   doc.setFont('helvetica', 'bold');
   const docValueW = doc.getTextWidth(docValue);
   doc.setFont('helvetica', 'bold').setTextColor(...GRAY);
