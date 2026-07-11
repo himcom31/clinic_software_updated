@@ -203,8 +203,8 @@ export const buildPDF = (inv, clinicInfo = {}) => {
 
   doc.setFontSize(11.5).setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text(safePdfStr(inv.patientName || ''), ML, colY);
-  
-doc.setFontSize(11.5).setFont('helvetica', 'bold').setTextColor(...NAVY);
+
+  doc.setFontSize(11.5).setFont('helvetica', 'bold').setTextColor(...NAVY);
 doc.text(safePdfStr(clinicName || inv.clinicName || ''), MR, colY, { align: 'right' });
 colY += 6;
 
