@@ -12,40 +12,40 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 
 const ClinicDetailsForm = () => {
   const { slug } = useParams();
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [success, setSuccess]   = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const [logoPreview, setLogoPreview] = useState(null);
-  const [sigPreview, setSigPreview]   = useState(null);
-  const [logoFile, setLogoFile]       = useState(null);
-  const [sigFile, setSigFile]         = useState(null);
+  const [sigPreview, setSigPreview] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
+  const [sigFile, setSigFile] = useState(null);
 
   const [formData, setFormData] = useState({
-    doctorId:            '',
-    clinicName:          '',
-    doctorName:          '',
-    degree:              '',
-    specialization:      '',
-    regNumber:           '',
-    mobile:              '',
-    email:               '',
-    website:             '',
-    address:             '',
-    themeColor:          '#2563eb',
-    openAt:              '',
-    closeAt:             '',
-    weeklyOff:           'No Weekly Off',
-    branchName:          'Main Branch',
-    isMainBranch:        true,
-    consultationFee:     '',
+    doctorId: '',
+    clinicName: '',
+    doctorName: '',
+    degree: '',
+    specialization: '',
+    regNumber: '',
+    mobile: '',
+    email: '',
+    website: '',
+    address: '',
+    themeColor: '#2563eb',
+    openAt: '',
+    closeAt: '',
+    weeklyOff: 'No Weekly Off',
+    branchName: 'Main Branch',
+    isMainBranch: true,
+    consultationFee: '',
     appointmentValidity: ''
   });
 
   // ── Load existing profile ─────────────────────────────────────────────────
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('doctorInfo'));
-    const dId  = user?.id || user?._id;
+    const dId = user?.id || user?._id;
 
     const fetchProfile = async () => {
       setFetching(true);
@@ -56,27 +56,27 @@ const ClinicDetailsForm = () => {
           const p = res.data.data;
 
           setFormData({
-            doctorId:            dId || p.doctorId || '',
-            clinicName:          p.clinicName || '',
-            doctorName:          p.doctorName || '',
-            degree:              p.degree || '',
-            specialization:      p.specialization || '',
-            regNumber:           p.regNumber || '',
-            mobile:              p.mobile || '',
-            email:               p.email || '',
-            website:             p.website || '',
-            address:             p.address || '',
-            themeColor:          p.themeColor || '#2563eb',
-            openAt:              p.timing?.openAt || '',
-            closeAt:             p.timing?.closeAt || '',
-            weeklyOff:           p.timing?.weeklyOff || 'No Weekly Off',
-            branchName:          p.branchName || 'Main Branch',
-            isMainBranch:        p.isMainBranch ?? true,
-            consultationFee:     p.consultationFee ?? '',
+            doctorId: dId || p.doctorId || '',
+            clinicName: p.clinicName || '',
+            doctorName: p.doctorName || '',
+            degree: p.degree || '',
+            specialization: p.specialization || '',
+            regNumber: p.regNumber || '',
+            mobile: p.mobile || '',
+            email: p.email || '',
+            website: p.website || '',
+            address: p.address || '',
+            themeColor: p.themeColor || '#2563eb',
+            openAt: p.timing?.openAt || '',
+            closeAt: p.timing?.closeAt || '',
+            weeklyOff: p.timing?.weeklyOff || 'No Weekly Off',
+            branchName: p.branchName || 'Main Branch',
+            isMainBranch: p.isMainBranch ?? true,
+            consultationFee: p.consultationFee ?? '',
             appointmentValidity: p.appointmentValidity ?? ''
           });
 
-          if (p.logo)      setLogoPreview(`${BASE_URL}${p.logo}`);
+          if (p.logo) setLogoPreview(`${BASE_URL}${p.logo}`);
           if (p.signature) setSigPreview(`${BASE_URL}${p.signature}`);
         } else {
           if (dId) setFormData(prev => ({ ...prev, doctorId: dId }));
@@ -98,7 +98,7 @@ const ClinicDetailsForm = () => {
 
   // ── Image helpers ─────────────────────────────────────────────────────────
   const clearLogo = (e) => { e.stopPropagation(); setLogoPreview(null); setLogoFile(null); };
-  const clearSig  = (e) => { e.stopPropagation(); setSigPreview(null);  setSigFile(null); };
+  const clearSig = (e) => { e.stopPropagation(); setSigPreview(null); setSigFile(null); };
 
   const handleFileChange = (setter, previewSetter) => (e) => {
     const file = e.target.files[0];
@@ -126,7 +126,7 @@ const ClinicDetailsForm = () => {
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
 
     if (logoFile) data.append('logo', logoFile);
-    if (sigFile)  data.append('signature', sigFile);
+    if (sigFile) data.append('signature', sigFile);
 
     try {
       const res = await axios.post(
@@ -149,9 +149,9 @@ const ClinicDetailsForm = () => {
   };
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const inputStyle       = "w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 pl-11 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-sm";
-  const labelStyle       = "text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5 block ml-1";
-  const sectionTitle     = "text-sm font-black text-slate-800 uppercase tracking-tight flex items-center gap-2 mb-5";
+  const inputStyle = "w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 pl-11 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-sm";
+  const labelStyle = "text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5 block ml-1";
+  const sectionTitle = "text-sm font-black text-slate-800 uppercase tracking-tight flex items-center gap-2 mb-5";
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
   if (fetching) {
@@ -305,10 +305,52 @@ const ClinicDetailsForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
             {/* Contact Card */}
-            
+            {/* Contact Card */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+              <h2 className={sectionTitle}><Phone className="text-blue-600" size={18} /> Contact Details</h2>
+
+              <div className="relative">
+                <label className={labelStyle}>Mobile Number</label>
+                <Phone className="absolute left-4 top-[38px] text-slate-400" size={16} />
+                <input
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  className={inputStyle}
+                  value={formData.mobile}
+                  onChange={e => setFormData({ ...formData, mobile: e.target.value })}
+                />
+              </div>
+
+              <div className="relative">
+                <label className={labelStyle}>Email Address</label>
+                <Mail className="absolute left-4 top-[38px] text-slate-400" size={16} />
+                <input
+                  type="email"
+                  placeholder="e.g. clinic@example.com"
+                  className={inputStyle}
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+
+              
+
+              <div className="relative">
+                <label className={labelStyle}>Clinic Address</label>
+                <MapPin className="absolute left-4 top-[38px] text-slate-400" size={16} />
+                <textarea
+                  rows={3}
+                  placeholder="Full clinic address..."
+                  className={inputStyle + " pl-11 resize-none h-auto pt-2.5"}
+                  value={formData.address}
+                  onChange={e => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+            </div>
 
 
-            
+
             {/* Timing Card */}
             {/* <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
