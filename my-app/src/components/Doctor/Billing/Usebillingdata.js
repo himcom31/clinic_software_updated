@@ -71,7 +71,7 @@ const useBillingData = (slug) => {
     /* ── Clinic & Doctor Info ── */
     const [clinicInfo, setClinicInfo] = useState({
         clinicName: '',
-        doctorName: '',
+        degree: '',
         email: '',
         mobile: '',
         address: '',
@@ -210,18 +210,7 @@ const useBillingData = (slug) => {
                 const clinicData = clinicRes.data?.data || {};
 
                 // Step 2: Doctor profile try karo — 401 aaye to silently skip karo
-                let docData = {};
-                try {
-                    const doctorToken = localStorage.getItem('doctorToken') || '';
-                    if (doctorToken) {
-                        const docRes = await axios.get(`${API_BASE}/api/doctors/${slug}/profileDoc`, {
-                            headers: { Authorization: `Bearer ${doctorToken}` },
-                        });
-                        docData = docRes.data?.data || docRes.data || {};
-                    }
-                } catch {
-                    // Staff login hai — doctor endpoint skip, sirf clinicData use karenge
-                }
+              
 
                 // Step 3: Logo fetch
                 let logoBase64 = null;
@@ -241,16 +230,16 @@ const useBillingData = (slug) => {
 
                 // Step 4: clinicData se hi sab fill karo as fallback
                 const info = {
-                    clinicName: docData.clinicName || clinicData.clinicName || slug,
-                    doctorName: docData.doctorName || docData.name || clinicData.doctorName || '',
-                    email: docData.email || clinicData.email || '',
-                    mobile: docData.mobile || docData.phone || clinicData.mobile || '',
-                    address: docData.location || docData.address || clinicData.address || '',
-                    logoBase64,
-                };
+    clinicName: clinicData.clinicName || slug,
+    degree: clinicData.degree || '',
+    email:      clinicData.email || '',
+    mobile:     clinicData.mobile || '',
+    address:    clinicData.address || '',
+    logoBase64,
+};
 
-                setClinicInfo(info);
-                clinicInfoRef.current = info;
+setClinicInfo(info);
+clinicInfoRef.current = info;
 
             } catch (err) {
                 console.error('Clinic info fetch error:', err);

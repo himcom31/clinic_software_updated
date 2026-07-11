@@ -100,10 +100,14 @@ const ClinicDetailsForm = () => {
   const clearLogo = (e) => { e.stopPropagation(); setLogoPreview(null); setLogoFile(null); };
   const clearSig = (e) => { e.stopPropagation(); setSigPreview(null); setSigFile(null); };
 
-  const handleFileChange = (setter, previewSetter) => (e) => {
-    const file = e.target.files[0];
-    if (file) { setter(file); previewSetter(URL.createObjectURL(file)); }
-  };
+ const handleFileChange = (setter, previewSetter) => (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setter(file);
+  const reader = new FileReader();
+  reader.onloadend = () => previewSetter(reader.result); // base64 string — kabhi expire nahi hoti
+  reader.readAsDataURL(file);
+};
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
