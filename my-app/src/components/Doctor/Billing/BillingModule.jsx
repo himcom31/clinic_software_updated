@@ -1107,14 +1107,15 @@ const BillingModule = () => {
   const [previewPdf, setPreviewPdf] = React.useState(null);
   const [previewInv, setPreviewInv] = React.useState(null);
 
-  const handlePdfAction = React.useCallback((action, inv) => {
+  const handlePdfAction = React.useCallback((action, inv, freshClinicInfo) => {
+    const info = freshClinicInfo || d.clinicInfo;
     if (action === 'print') {
-      const doc = buildPDF(inv, d.clinicInfo);
+      const doc = buildPDF(inv, info);
       setPreviewPdf(doc);
       setPreviewInv(inv);
       setPreviewOpen(true);
     } else {
-      downloadPDF(inv, d.clinicInfo);
+      downloadPDF(inv, info);
     }
   }, [d.clinicInfo]);
 

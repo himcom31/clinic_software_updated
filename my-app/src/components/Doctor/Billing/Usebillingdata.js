@@ -117,6 +117,8 @@ const useBillingData = (slug) => {
     /* ── PDF / download loading ── */
     const [pdfLoading, setPdfLoading] = useState(null);
     const [downloadLoading, setDownloadLoading] = useState(null);
+    const clinicInfoRef = useRef(null); // ADD THIS
+
 
     /* ══════════════════════════════════════════════════════════════════════════
        DERIVED VALUES
@@ -128,8 +130,8 @@ const useBillingData = (slug) => {
 
     const subTotal = items.reduce((acc, i) => acc + i.price * (i.qty || 1), 0);
     const discountAmount = (subTotal * Number(discount)) / 100;
-const grandTotal = subTotal - discountAmount;
-const due = grandTotal - Number(paidAmount);
+    const grandTotal = subTotal - discountAmount;
+    const due = grandTotal - Number(paidAmount);
 
     /* ── Active date range ── */
     const activeDateRange = useMemo(() => {
@@ -241,14 +243,16 @@ const due = grandTotal - Number(paidAmount);
                     } catch { /* logo unreachable — silently skip, PDF shows placeholder */ }
                 }
 
-                setClinicInfo({
+                const info = {
                     clinicName: docData.clinicName || clinicData.clinicName || slug,
                     doctorName: docData.doctorName || docData.name || clinicData.doctorName || '',
                     email: docData.email || clinicData.email || '',
                     mobile: docData.mobile || docData.phone || clinicData.mobile || '',
                     address: docData.location || docData.address || clinicData.address || '',
                     logoBase64,
-                });
+                };
+                setClinicInfo(info);
+                clinicInfoRef.current = info; // ref mein bhi save karo
             } catch (err) {
                 console.error('Clinic/doctor info fetch error:', err);
             }
@@ -402,6 +406,22 @@ const due = grandTotal - Number(paidAmount);
        BILLING ACTIONS
     ══════════════════════════════════════════════════════════════════════════ */
 
+    // Fresh clinicInfo guaranteed return karta hai
+    const getClinicInfoFresh = useCallback(async () => {
+        if (clinicInfoRef.current?.clinicName) return clinicInfoRef.current;
+        // Agar abhi tak load nahi hua toh wait karo max 4 seconds
+        return new Promise((resolve) => {
+            let attempts = 0;
+            const interval = setInterval(() => {
+                attempts++;
+                if (clinicInfoRef.current?.clinicName || attempts > 40) {
+                    clearInterval(interval);
+                    resolve(clinicInfoRef.current || clinicInfo);
+                }
+            }, 100);
+        });
+    }, [clinicInfo]);
+
     const handleCreateBilling = (appt) => {
         resetForm();
         setSelectedPatient({
@@ -443,7 +463,8 @@ const due = grandTotal - Number(paidAmount);
                 { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } }
             );
             if (res.data.success && res.data.data.length > 0) {
-                onPdfAction('download', res.data.data[0]);
+                onPdfAction('download', res.data.data[0], freshClinicInfo); // ADD freshClinicInfo
+
             } else {
                 alert(`No invoice found to download (patientId: ${pid}).`);
             }
@@ -459,6 +480,8 @@ const due = grandTotal - Number(paidAmount);
             return alert('Select patient and add at least one item.');
         }
         setFormLoading(true);
+        const freshClinicInfo = await getClinicInfoFresh(); // ADD
+
         try {
             const payload = {
                 patientId: getPatientId(selectedPatient),
@@ -482,7 +505,8 @@ const due = grandTotal - Number(paidAmount);
             const res = await axios.post(`${API_BASE}/api/billings/${slug}/create`, payload);
 
             if (res.data.success) {
-                onPdfAction('print', res.data.data);
+                onPdfAction('print', res.data.data, freshClinicInfo); // ADD freshClinicInfo
+
                 resetForm();
                 clearCache();
                 fetchQueue(true);
@@ -498,6 +522,7 @@ const due = grandTotal - Number(paidAmount);
     const handleUpdateAndPrint = async (onPdfAction) => {
         if (!editInvoiceId) return;
         setFormLoading(true);
+        const freshClinicInfo = await getClinicInfoFresh(); // ADD
         try {
             const payload = {
                 items,
@@ -515,7 +540,8 @@ const due = grandTotal - Number(paidAmount);
             );
 
             if (res.data.success) {
-                onPdfAction('print', res.data.data);
+                onPdfAction('print', res.data.data, freshClinicInfo); // ADD freshClinicInfo
+
                 setAllHistory(prev =>
                     prev.map(inv => inv._id === res.data.data._id ? res.data.data : inv)
                 );
@@ -592,6 +618,8 @@ const due = grandTotal - Number(paidAmount);
         handleDownloadForAppt,
         handleGenerateInvoice,
         handleUpdateAndPrint,
+        getClinicInfoFresh, // ADD
+
     };
 };
 
