@@ -210,7 +210,7 @@ colY += 6;
 
   doc.setFontSize(9);
   const docLabel = 'Doctor Name : ';
-  const docValue = degree ? `Dr. ${safePdfStr(degree)}` : '';
+  const docValue = degree ? ` ${safePdfStr(degree)}` : '';
   doc.setFont('helvetica', 'bold');
   const docValueW = doc.getTextWidth(docValue);
   doc.setFont('helvetica', 'bold').setTextColor(...GRAY);
