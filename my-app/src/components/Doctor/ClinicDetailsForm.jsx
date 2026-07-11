@@ -20,6 +20,8 @@ const ClinicDetailsForm = () => {
   const [sigPreview, setSigPreview] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [sigFile, setSigFile] = useState(null);
+  const [originalLogo, setOriginalLogo] = useState(null);
+  const [originalSig, setOriginalSig] = useState(null);
 
   const [formData, setFormData] = useState({
     doctorId: '',
@@ -76,8 +78,16 @@ const ClinicDetailsForm = () => {
             appointmentValidity: p.appointmentValidity ?? ''
           });
 
-          if (p.logo) setLogoPreview(`${BASE_URL}${p.logo}`);
-          if (p.signature) setSigPreview(`${BASE_URL}${p.signature}`);
+          if (p.logo) {
+            const url = `${BASE_URL}${p.logo}`;
+            setLogoPreview(url);
+            setOriginalLogo(url);
+          }
+          if (p.signature) {
+            const url = `${BASE_URL}${p.signature}`;
+            setSigPreview(url);
+            setOriginalSig(url);
+          }
         } else {
           if (dId) setFormData(prev => ({ ...prev, doctorId: dId }));
         }
@@ -97,17 +107,19 @@ const ClinicDetailsForm = () => {
   }, [slug]);
 
   // ── Image helpers ─────────────────────────────────────────────────────────
-  const clearLogo = (e) => { e.stopPropagation(); setLogoPreview(null); setLogoFile(null); };
-  const clearSig = (e) => { e.stopPropagation(); setSigPreview(null); setSigFile(null); };
+  const clearLogo = (e) => { e.stopPropagation(); setLogoPreview(originalLogo); setLogoFile(null); };
+const clearSig = (e) => { e.stopPropagation(); setSigPreview(originalSig); setSigFile(null); };
 
- const handleFileChange = (setter, previewSetter) => (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  setter(file);
-  const reader = new FileReader();
-  reader.onloadend = () => previewSetter(reader.result); // base64 string — kabhi expire nahi hoti
-  reader.readAsDataURL(file);
-};
+  const handleFileChange = (setter, previewSetter) => (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setter(file);
+    const reader = new FileReader();
+    reader.onloadend = () => previewSetter(reader.result); // base64 string — kabhi expire nahi hoti
+    reader.readAsDataURL(file);
+      e.target.value = ''; // ← ADD THIS
+
+  };
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -338,7 +350,7 @@ const ClinicDetailsForm = () => {
                 />
               </div>
 
-              
+
 
               <div className="relative">
                 <label className={labelStyle}>Clinic Address</label>
