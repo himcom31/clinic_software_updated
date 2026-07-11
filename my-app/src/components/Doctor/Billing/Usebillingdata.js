@@ -201,38 +201,34 @@ const useBillingData = (slug) => {
     useEffect(() => {
         if (!slug) return;
 
+
+
         const fetchClinicInfo = async () => {
             try {
-                /* ── Clinic data ──────────────────────────────────────────────────
-                   ClinicProfile confirms the shape is:
-                     res.data          → { data: { clinicName, logo, email, … } }
-                   So the real payload lives at res.data.data
-                ──────────────────────────────────────────────────────────────────── */
+                // Step 1: Clinic data fetch karo — yeh always work karta hai, no auth needed
                 const clinicRes = await axios.get(`${API_BASE}/api/clinic/${slug}/clinicData`);
-                const clinicData = clinicRes.data?.data || {};   // ← .data.data, matching ClinicProfile
+                const clinicData = clinicRes.data?.data || {};
 
-                /* ── Doctor profile ───────────────────────────────────────────────
-                   Route: GET /:slug/profileDoc  (protected)
-                   Expected keys from that route: clinicName, doctorName, email,
-                   mobile, location (same model fields used in ClinicProfile)
-                ──────────────────────────────────────────────────────────────────── */
-                const docRes = await axios.get(`${API_BASE}/api/doctors/${slug}/profileDoc`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('doctorToken') || ''}` },
-                });
-                const docData = docRes.data?.data || docRes.data || {};
+                // Step 2: Doctor profile try karo — 401 aaye to silently skip karo
+                let docData = {};
+                try {
+                    const doctorToken = localStorage.getItem('doctorToken') || '';
+                    if (doctorToken) {
+                        const docRes = await axios.get(`${API_BASE}/api/doctors/${slug}/profileDoc`, {
+                            headers: { Authorization: `Bearer ${doctorToken}` },
+                        });
+                        docData = docRes.data?.data || docRes.data || {};
+                    }
+                } catch {
+                    // Staff login hai — doctor endpoint skip, sirf clinicData use karenge
+                }
 
-                /* ── Logo ─────────────────────────────────────────────────────────
-                   ClinicProfile renders: `${API_BAS}${clinic.data.logo}`
-                   So clinic.data.logo is a relative path like "/uploads/logo.png".
-                   We must prepend API_BASE before fetching it as an image.
-                ──────────────────────────────────────────────────────────────────── */
+                // Step 3: Logo fetch
                 let logoBase64 = null;
-                const logoPath = clinicData.logo || null;   // relative path from server
+                const logoPath = clinicData.logo || null;
                 if (logoPath) {
-                    // Build the full absolute URL exactly as ClinicProfile does
-                    const fullLogoUrl = `${API_BASE}${logoPath}`;
                     try {
-                        const imgRes = await fetch(fullLogoUrl);
+                        const imgRes = await fetch(`${API_BASE}${logoPath}`);
                         const blob = await imgRes.blob();
                         logoBase64 = await new Promise((resolve, reject) => {
                             const reader = new FileReader();
@@ -240,9 +236,10 @@ const useBillingData = (slug) => {
                             reader.onerror = reject;
                             reader.readAsDataURL(blob);
                         });
-                    } catch { /* logo unreachable — silently skip, PDF shows placeholder */ }
+                    } catch { /* logo unreachable */ }
                 }
 
+                // Step 4: clinicData se hi sab fill karo as fallback
                 const info = {
                     clinicName: docData.clinicName || clinicData.clinicName || slug,
                     doctorName: docData.doctorName || docData.name || clinicData.doctorName || '',
@@ -251,13 +248,14 @@ const useBillingData = (slug) => {
                     address: docData.location || docData.address || clinicData.address || '',
                     logoBase64,
                 };
+
                 setClinicInfo(info);
-                clinicInfoRef.current = info; // ref mein bhi save karo
+                clinicInfoRef.current = info;
+
             } catch (err) {
-                console.error('Clinic/doctor info fetch error:', err);
+                console.error('Clinic info fetch error:', err);
             }
         };
-
         fetchClinicInfo();
     }, [slug]);
 

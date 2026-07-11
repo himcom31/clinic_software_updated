@@ -145,7 +145,6 @@ export const buildPDF = (inv, clinicInfo = {}) => {
 
   const {
     clinicName = 'Clinic',
-    tagline    = 'Compassionate Care, Trusted Health',
     doctorName = '',
     email      = '',
     mobile     = '',
@@ -165,12 +164,9 @@ export const buildPDF = (inv, clinicInfo = {}) => {
   /* ═══ SECTION 1 — Logo + clinic name (left) | INVOICE title (right) ═══ */
   drawLogo(doc, ML, 12, 34, logoBase64);
 
-  doc.setFontSize(21).setFont('helvetica', 'bold').setTextColor(...NAVY);
-  doc.text(safePdfStr(clinicName).toUpperCase(), ML + 40, 26);
+  
 
-  doc.setFontSize(9).setFont('helvetica', 'italic').setTextColor(...GRAY);
-  doc.text(safePdfStr(tagline), ML + 40, 33);
-
+  
   doc.setFontSize(26).setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text('INVOICE', MR, 24, { align: 'right' });
   doc.setDrawColor(...BLUE).setLineWidth(1);
@@ -202,11 +198,15 @@ export const buildPDF = (inv, clinicInfo = {}) => {
 
   doc.setFontSize(13).setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text('BILL TO', ML, colY);
-  doc.text('CONSULTATION DETAILS', MR, colY, { align: 'right' });
+  doc.text('Billed From', MR, colY, { align: 'right' });
   colY += 7;
 
   doc.setFontSize(11.5).setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text(safePdfStr(inv.patientName || ''), ML, colY);
+  
+doc.setFontSize(11.5).setFont('helvetica', 'bold').setTextColor(...NAVY);
+doc.text(safePdfStr(clinicName || inv.clinicName || ''), MR, colY, { align: 'right' });
+colY += 6;
 
   doc.setFontSize(9);
   const docLabel = 'Doctor Name : ';
