@@ -210,7 +210,7 @@ const useBillingData = (slug) => {
                 const clinicData = clinicRes.data?.data || {};
 
                 // Step 2: Doctor profile try karo — 401 aaye to silently skip karo
-              
+
 
                 // Step 3: Logo fetch
                 let logoBase64 = null;
@@ -230,16 +230,16 @@ const useBillingData = (slug) => {
 
                 // Step 4: clinicData se hi sab fill karo as fallback
                 const info = {
-    clinicName: clinicData.clinicName || slug,
-    degree: clinicData.degree || '',
-    email:      clinicData.email || '',
-    mobile:     clinicData.mobile || '',
-    address:    clinicData.address || '',
-    logoBase64,
-};
+                    clinicName: clinicData.clinicName || slug,
+                    degree: clinicData.degree || '',
+                    email: clinicData.email || '',
+                    mobile: clinicData.mobile || '',
+                    address: clinicData.address || '',
+                    logoBase64,
+                };
 
-setClinicInfo(info);
-clinicInfoRef.current = info;
+                setClinicInfo(info);
+                clinicInfoRef.current = info;
 
             } catch (err) {
                 console.error('Clinic info fetch error:', err);
@@ -450,8 +450,8 @@ clinicInfoRef.current = info;
                 { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } }
             );
             if (res.data.success && res.data.data.length > 0) {
-                onPdfAction('download', res.data.data[0], freshClinicInfo); // ADD freshClinicInfo
-
+                const fresh = await getClinicInfoFresh();
+                onPdfAction('download', res.data.data[0], fresh);
             } else {
                 alert(`No invoice found to download (patientId: ${pid}).`);
             }
