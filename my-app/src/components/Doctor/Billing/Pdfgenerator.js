@@ -152,6 +152,11 @@ export const buildPDF = (inv, clinicInfo = {}) => {
     logoBase64 = null,
   } = clinicInfo;
 
+  const cleanDegree = degree
+  .replace(/^(Dr\.\s*)+/i, '')   // sab "Dr." prefix hata do
+  .trim();
+const doctorDisplay = cleanDegree ? `Dr. ${cleanDegree}` : '';  // sirf ek "Dr." lagao
+
   const isRevisit = inv.visitType === 'Revisit' || inv.isRevisit;
   const billDate  = new Date(inv.createdAt || inv.billingDate || Date.now());
   const visitDate = new Date(inv.visitDate || billDate);
@@ -210,7 +215,8 @@ colY += 6;
 
   doc.setFontSize(9);
   const docLabel = 'Doctor Name : ';
-  const docValue = degree ? ` ${safePdfStr(degree)}` : '';
+  const docValue = doctorDisplay ? ` ${safePdfStr(doctorDisplay)}` : '';
+
   doc.setFont('helvetica', 'bold');
   const docValueW = doc.getTextWidth(docValue);
   doc.setFont('helvetica', 'bold').setTextColor(...GRAY);
