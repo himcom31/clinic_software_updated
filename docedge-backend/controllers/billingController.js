@@ -139,40 +139,47 @@ exports.getInvoiceById = async (req, res) => {
 //      immediately use it for PDF generation without a second fetch.
 //    - Sets no-cache headers so any subsequent fetch also gets fresh data.
 // ─────────────────────────────────────────────────────────────────────────────
+// BAAD MEIN (FIXED):
 exports.update = async (req, res) => {
     try {
         const { slug, invoiceId } = req.params;
         const Bill = getBillingModel(slug);
-        const { paidAmount, paymentMode, discount } = req.body;
+        const { items, subTotal, paidAmount, paymentMode, discount, grandTotal, dueAmount } = req.body;
 
         const inv = await Bill.findById(invoiceId);
         if (!inv)
             return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-        const grandTotal = inv.subTotal - Number(discount);
-const dueAmount = Math.max(0, grandTotal - Number(paidAmount));
+        // Frontend se calculated values seedha use karo
+        const finalGrandTotal = grandTotal != null 
+            ? Number(grandTotal) 
+            : Number(subTotal) - (Number(subTotal) * Number(discount || 0) / 100);
+        
+        const finalDue = dueAmount != null 
+            ? Number(dueAmount) 
+            : Math.max(0, finalGrandTotal - Number(paidAmount));
 
-        const status = dueAmount <= 0 ? 'Paid'
-            : paidAmount > 0 ? 'Partially Paid'
-                : 'Unpaid';
+        const status = finalDue <= 0 ? 'Paid'
+            : Number(paidAmount) > 0 ? 'Partially Paid'
+            : 'Unpaid';
 
-        // findByIdAndUpdate with { new: true } returns the fully updated document
         const updated = await Bill.findByIdAndUpdate(
             invoiceId,
             {
                 $set: {
+                    items: items || inv.items,        // ← items bhi update karo
+                    subTotal: Number(subTotal) || inv.subTotal,
                     paidAmount: Number(paidAmount),
                     paymentMode,
-                    discount: Number(discount),
-                    grandTotal,
-                    dueAmount,
+                    discount: Number(discount || 0),
+                    grandTotal: finalGrandTotal,
+                    dueAmount: finalDue,
                     status
                 }
             },
-            { new: true }   // returns the updated doc, not the old one
+            { new: true }
         );
 
-        // No-cache so any subsequent fetch also gets fresh data
         res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.set('Pragma', 'no-cache');
 

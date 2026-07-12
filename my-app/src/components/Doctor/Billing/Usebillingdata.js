@@ -419,50 +419,53 @@ const useBillingData = (slug) => {
     };
 
     const handleUpdateBilling = async (appt) => {
-        const pid = getPatientId(appt);
-        try {
-            const res = await axios.get(`${API_BASE}/api/billings/${slug}/history/${pid}`);
-            if (res.data.success && res.data.data.length > 0) {
-                const inv = res.data.data[0];
-                email: appt.email || appt.patientId?.email || '',  // ← ADD THIS
+    const pid = getPatientId(appt);
+    try {
+        const res = await axios.get(`${API_BASE}/api/billings/${slug}/history/${pid}`);
+        if (res.data.success && res.data.data.length > 0) {
+            const inv = res.data.data[0];
 
-                    resetForm();
-                setSelectedPatient(appt);
-                setItems(inv.items || []);
-                setDiscount(inv.discount || 0);
-                setPaidAmount(inv.paidAmount || 0);
-                setPaymentMode(inv.paymentMode || 'Cash');
-                setEditMode(true);
-                setEditInvoiceId(inv._id);
-                setView('form');
-            } else {
-                alert('No existing invoice found. Please create one first.');
-            }
-        } catch (e) { alert('Error fetching invoice: ' + e.message); }
-    };
+            resetForm();
 
-    const handleDownloadForAppt = async (appt, onPdfAction) => {
-        const pid = getPatientId(appt);
-        setDownloadLoading(appt._id);
-        try {
-            const res = await axios.get(
-                `${API_BASE}/api/billings/${slug}/history/${pid}`,
-                { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } }
-            );
-            if (res.data.success && res.data.data.length > 0) {
-                const fresh = await getClinicInfoFresh();
-                onPdfAction('download', res.data.data[0], fresh);
-            } else {
-                alert(`No invoice found to download (patientId: ${pid}).`);
-            }
-        } catch (e) {
-            alert('Download failed: ' + e.message);
-        } finally {
-            setDownloadLoading(null);
+            setSelectedPatient({
+                ...appt,
+                email: appt.email || appt.patientId?.email || inv.email || '',
+            });
+            setItems(inv.items || []);
+            setDiscount(inv.discount || 0);
+            setPaidAmount(inv.paidAmount || 0);
+            setPaymentMode(inv.paymentMode || 'Cash');
+            setEditMode(true);
+            setEditInvoiceId(inv._id);
+            setView('form');
+        } else {
+            alert('No existing invoice found. Please create one first.');
         }
-    };
+    } catch (e) { alert('Error fetching invoice: ' + e.message); }
+};
+    
+const handleDownloadForAppt = async (appt, onPdfAction) => {
+    const pid = getPatientId(appt);
+    setDownloadLoading(appt._id);
+    try {
+        const res = await axios.get(
+            `${API_BASE}/api/billings/${slug}/history/${pid}`,
+            { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } }
+        );
+        if (res.data.success && res.data.data.length > 0) {
+            const fresh = await getClinicInfoFresh();
+            onPdfAction('download', res.data.data[0], fresh);
+        } else {
+            alert(`No invoice found to download (patientId: ${pid}).`);
+        }
+    } catch (e) {
+        alert('Download failed: ' + e.message);
+    } finally {
+        setDownloadLoading(null);
+    }
+};
 
-    const handleGenerateInvoice = async (onPdfAction) => {
+const handleGenerateInvoice = async (onPdfAction) => {
         if (!selectedPatient || items.length === 0) {
             return alert('Select patient and add at least one item.');
         }

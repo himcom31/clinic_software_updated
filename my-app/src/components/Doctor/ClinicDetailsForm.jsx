@@ -22,6 +22,8 @@ const ClinicDetailsForm = () => {
   const [sigFile, setSigFile] = useState(null);
   const [originalLogo, setOriginalLogo] = useState(null);
   const [originalSig, setOriginalSig] = useState(null);
+  const [existingLogoPath, setExistingLogoPath] = useState('');
+  const [existingSigPath, setExistingSigPath] = useState('');
 
   const [formData, setFormData] = useState({
     doctorId: '',
@@ -82,11 +84,13 @@ const ClinicDetailsForm = () => {
             const url = `${BASE_URL}${p.logo}`;
             setLogoPreview(url);
             setOriginalLogo(url);
+            setExistingLogoPath(p.logo); // ← server path save karo
           }
           if (p.signature) {
             const url = `${BASE_URL}${p.signature}`;
             setSigPreview(url);
             setOriginalSig(url);
+            setExistingSigPath(p.signature); // ← server path save karo
           }
         } else {
           if (dId) setFormData(prev => ({ ...prev, doctorId: dId }));
@@ -108,7 +112,7 @@ const ClinicDetailsForm = () => {
 
   // ── Image helpers ─────────────────────────────────────────────────────────
   const clearLogo = (e) => { e.stopPropagation(); setLogoPreview(originalLogo); setLogoFile(null); };
-const clearSig = (e) => { e.stopPropagation(); setSigPreview(originalSig); setSigFile(null); };
+  const clearSig = (e) => { e.stopPropagation(); setSigPreview(originalSig); setSigFile(null); };
 
   const handleFileChange = (setter, previewSetter) => (e) => {
     const file = e.target.files[0];
@@ -117,7 +121,7 @@ const clearSig = (e) => { e.stopPropagation(); setSigPreview(originalSig); setSi
     const reader = new FileReader();
     reader.onloadend = () => previewSetter(reader.result); // base64 string — kabhi expire nahi hoti
     reader.readAsDataURL(file);
-      e.target.value = ''; // ← ADD THIS
+    e.target.value = ''; // ← ADD THIS
 
   };
 
@@ -140,9 +144,18 @@ const clearSig = (e) => { e.stopPropagation(); setSigPreview(originalSig); setSi
     const data = new FormData();
 
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
+// BAAD MEIN:
+if (logoFile) {
+  data.append('logo', logoFile);        // naya file upload
+} else {
+  data.append('logo', existingLogoPath); // purana path bhejo
+}
 
-    if (logoFile) data.append('logo', logoFile);
-    if (sigFile) data.append('signature', sigFile);
+if (sigFile) {
+  data.append('signature', sigFile);        // naya file upload
+} else {
+  data.append('signature', existingSigPath); // purana path bhejo
+}
 
     try {
       const res = await axios.post(

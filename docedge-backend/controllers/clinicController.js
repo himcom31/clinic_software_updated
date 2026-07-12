@@ -42,43 +42,46 @@ exports.upsertClinicProfile = async (req, res) => {
             });
         }
 
-        // ── Handle file uploads ───────────────────────────────────────────────
-        let logoPath = data.logo || '';
-        let sigPath  = data.signature || '';
+        const existing = await ClinicModel.findOne({
+            doctorId: new mongoose.Types.ObjectId(data.doctorId)
+        }).lean();
+
+        let logoPath = data.logo || existing?.logo || '';
+        let sigPath = data.signature || existing?.signature || '';
         if (req.files) {
-            if (req.files['logo'])      logoPath = `/uploads/logos/${req.files['logo'][0].filename}`;
-            if (req.files['signature']) sigPath  = `/uploads/signatures/${req.files['signature'][0].filename}`;
+            if (req.files['logo']) logoPath = `/uploads/logos/${req.files['logo'][0].filename}`;
+            if (req.files['signature']) sigPath = `/uploads/signatures/${req.files['signature'][0].filename}`;
         }
 
         // ── Build profile payload ─────────────────────────────────────────────
         const profileData = {
-            doctorId:       new mongoose.Types.ObjectId(data.doctorId),
-            clinicName:     data.clinicName.trim(),
-            doctorName:     data.doctorName.trim(),
-            degree:         (data.degree || '').trim(),
+            doctorId: new mongoose.Types.ObjectId(data.doctorId),
+            clinicName: data.clinicName.trim(),
+            doctorName: data.doctorName.trim(),
+            degree: (data.degree || '').trim(),
             specialization: (data.specialization || '').trim(),
-            regNumber:      data.regNumber  || '',
-            mobile:         data.mobile     || '',
-            email:          data.email      || '',
-            website:        data.website    || '',
-            address:        data.address    || '',
-            logo:           logoPath,
-            signature:      sigPath,
-            themeColor:     data.themeColor || '#2563eb',
+            regNumber: data.regNumber || '',
+            mobile: data.mobile || '',
+            email: data.email || '',
+            website: data.website || '',
+            address: data.address || '',
+            logo: logoPath,
+            signature: sigPath,
+            themeColor: data.themeColor || '#2563eb',
             timing: {
-                openAt:    data.openAt    || '',
-                closeAt:   data.closeAt   || '',
+                openAt: data.openAt || '',
+                closeAt: data.closeAt || '',
                 weeklyOff: data.weeklyOff || ''
             },
-            consultationFee:     Number(data.consultationFee)     || 0,
+            consultationFee: Number(data.consultationFee) || 0,
             appointmentValidity: Number(data.appointmentValidity) || 7,
-            branchName:   data.branchName   || 'Main Branch',
+            branchName: data.branchName || 'Main Branch',
             isMainBranch: data.isMainBranch === 'true' || data.isMainBranch === true,
-            updatedAt:    Date.now()
+            updatedAt: Date.now()
         };
 
         const filter = {
-            doctorId:   profileData.doctorId,
+            doctorId: profileData.doctorId,
             branchName: profileData.branchName
         };
 
@@ -123,12 +126,16 @@ exports.getClinicProfile = async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                consultationFee:     profile.consultationFee,
+                consultationFee: profile.consultationFee,
                 appointmentValidity: profile.appointmentValidity,
-                clinicName:          profile.clinicName,
-                doctorName:          profile.doctorName  || '',
-                degree:              profile.degree       || '',
-                specialization:      profile.specialization || ''
+                clinicName: profile.clinicName,
+                doctorName: profile.doctorName || '',
+                degree: profile.degree || '',
+                specialization: profile.specialization || '',
+                logo: profile.logo || '',
+                mobile: profile.mobile || '',
+                email: profile.email || '',
+                address: profile.address || '',
             }
         });
 
