@@ -2479,6 +2479,7 @@ const GeneratePrescription = () => {
                 ],
             ],
             columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 120 }, 2: { cellWidth: 56 }, 3: { cellWidth: 170 }, 4: { cellWidth: 55 }, 5: { cellWidth: 'auto' } }
+
         });
         doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.7); doc.line(MARGIN_L, doc.lastAutoTable.finalY, doc.internal.pageSize.width - MARGIN_L, doc.lastAutoTable.finalY);
         curY = doc.lastAutoTable.finalY + 20;
@@ -2490,7 +2491,7 @@ const GeneratePrescription = () => {
                 switch (item.type) {
                     case 'symptoms_block': {
                         if (symptomsHtml && symptomsHtml.trim() && symptomsHtml.trim() !== '<br>') {
-                             curY += 14;
+                            curY += 14;
                             curY = checkPageBreak(curY, 40);
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Symptoms", MARGIN_L, curY);
                             curY += 4; doc.setDrawColor(30, 78, 121); doc.setLineWidth(1); doc.line(MARGIN_L, curY, MARGIN_R, curY); curY += 14;
@@ -2503,18 +2504,20 @@ const GeneratePrescription = () => {
                         const filledMeds = medicines.filter(m => m.name?.trim() || m.brandName?.trim());
                         if (filledMeds.length) {
                             // Estimate FULL table height: title(20) + line(5) + header(22) + all rows(22 each) + gap(10)
-                            const estTableHeight = 20 + 5 + 22 + (filledMeds.length * 22) + 10;
-                            if (curY + estTableHeight > FOOTER_TOP_PT) {
-                                curY = addContinuationPage();
-                            }
+                            // const estTableHeight = 20 + 5 + 22 + (filledMeds.length * 22) + 10;
+                            // if (curY + estTableHeight > FOOTER_TOP_PT) {
+                            //     curY = addContinuationPage();
+                            // }
                             curY += 14; // ✅ ADD KARO YAHAN
+                            curY = checkPageBreak(curY, 60); // sirf title+line ke liye
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Medicines", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
                                 startY: curY + 6,
-                                margin: { left: MARGIN_L, right: MARGIN_L },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62 }, // ✅ ADD
+
                                 theme: 'grid',
-                                rowPageBreak: 'avoid',
+                                rowPageBreak: 'auto',
                                 showHead: 'everyPage',
                                 styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
@@ -2530,10 +2533,18 @@ const GeneratePrescription = () => {
                                     m.duration || '—'
                                 ]),
                                 columnStyles: { 0: { cellWidth: 35 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 60 }, 3: { cellWidth: 40 }, 4: { cellWidth: 40 }, 5: { cellWidth: 50 }, 6: { cellWidth: 70 }, 7: { cellWidth: 50 } },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62, top: PAGE2_START_Y + 28 },
+
                                 didDrawPage: (hookData) => {
+                                    doc.setFillColor(cr, cg, cb);
+                                    doc.rect(0, 0, A4_W, 14, 'F');
                                     if (hookData.pageNumber > 1) {
-                                        doc.setFillColor(cr, cg, cb);
-                                        doc.rect(0, 0, A4_W, 14, 'F');
+                                        doc.setFontSize(11); doc.setFont("times", "bold");
+                                        doc.setTextColor(30, 78, 121);
+                                        doc.text("Medicines (contd.)", MARGIN_L, PAGE2_START_Y + 10);
+                                        doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                                        doc.line(MARGIN_L, PAGE2_START_Y + 13, MARGIN_R, PAGE2_START_Y + 13);
+                                        hookData.settings.margin.top = PAGE2_START_Y + 24; // ✅ YEH ADD KARO
                                     }
                                 }
                             });
@@ -2544,18 +2555,20 @@ const GeneratePrescription = () => {
                     case 'investigations_block': {
                         const filledInvs = investigations.filter(inv => inv.testName?.trim());
                         if (filledInvs.length) {
-                            const estTableHeight = 20 + 5 + 22 + (filledInvs.length * 22) + 10;
-                            if (curY + estTableHeight > FOOTER_TOP_PT) {
-                                curY = addContinuationPage();
-                            }
+                            // const estTableHeight = 20 + 5 + 22 + (filledInvs.length * 22) + 10;
+                            // if (curY + estTableHeight > FOOTER_TOP_PT) {
+                            //     curY = addContinuationPage();
+                            // }
                             curY += 14; // ✅ ADD KARO YAHAN
+                            curY = checkPageBreak(curY, 60); // sirf title+line ke liye
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Investigations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
                                 startY: curY + 6,
-                                margin: { left: MARGIN_L, right: MARGIN_L },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62 }, // ✅ ADD
+
                                 theme: 'grid',
-                                rowPageBreak: 'avoid',
+                                rowPageBreak: 'auto',
                                 showHead: 'everyPage',
                                 styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
@@ -2572,10 +2585,18 @@ const GeneratePrescription = () => {
                                     2: { cellWidth: tableWidth * 0.25 },
                                     3: { cellWidth: tableWidth * 0.25 }
                                 },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62, top: PAGE2_START_Y + 28 },
+
                                 didDrawPage: (hookData) => {
+                                    doc.setFillColor(cr, cg, cb);
+                                    doc.rect(0, 0, A4_W, 14, 'F');
                                     if (hookData.pageNumber > 1) {
-                                        doc.setFillColor(cr, cg, cb);
-                                        doc.rect(0, 0, A4_W, 14, 'F');
+                                        doc.setFontSize(11); doc.setFont("times", "bold");
+                                        doc.setTextColor(30, 78, 121);
+                                        doc.text("Investigations (contd.)", MARGIN_L, PAGE2_START_Y + 10);
+                                        doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                                        doc.line(MARGIN_L, PAGE2_START_Y + 13, MARGIN_R, PAGE2_START_Y + 13);
+                                        hookData.settings.margin.top = PAGE2_START_Y + 24; // ✅ YEH ADD KARO
                                     }
                                 }
                             });
@@ -2586,18 +2607,20 @@ const GeneratePrescription = () => {
                     case 'vaccinations_block': {
                         const filledVacs = vaccinations.filter(vac => vac.vaccineName?.trim());
                         if (filledVacs.length) {
-                            const estTableHeight = 20 + 5 + 22 + (filledVacs.length * 22) + 10;
-                            if (curY + estTableHeight > FOOTER_TOP_PT) {
-                                curY = addContinuationPage();
-                            }
+                            // const estTableHeight = 20 + 5 + 22 + (filledVacs.length * 22) + 10;
+                            // if (curY + estTableHeight > FOOTER_TOP_PT) {
+                            //     curY = addContinuationPage();
+                            // }
                             curY += 14; // ✅ ADD KARO YAHAN
+                            curY = checkPageBreak(curY, 60); // sirf title+line ke liye
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121); doc.text("Vaccinations", MARGIN_L, curY);
                             curY += 3; doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8); doc.line(MARGIN_L, curY, MARGIN_R, curY);
                             autoTable(doc, {
                                 startY: curY + 6,
-                                margin: { left: MARGIN_L, right: MARGIN_L },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62 }, // ✅ ADD
+
                                 theme: 'grid',
-                                rowPageBreak: 'avoid',
+                                rowPageBreak: 'auto',
                                 showHead: 'everyPage',
                                 styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
                                 headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
@@ -2614,10 +2637,18 @@ const GeneratePrescription = () => {
                                     2: { cellWidth: tableWidth * 0.30 },
                                     3: { cellWidth: tableWidth * 0.25 }
                                 },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62, top: PAGE2_START_Y + 28 },
+
                                 didDrawPage: (hookData) => {
+                                    doc.setFillColor(cr, cg, cb);
+                                    doc.rect(0, 0, A4_W, 14, 'F');
                                     if (hookData.pageNumber > 1) {
-                                        doc.setFillColor(cr, cg, cb);
-                                        doc.rect(0, 0, A4_W, 14, 'F');
+                                        doc.setFontSize(11); doc.setFont("times", "bold");
+                                        doc.setTextColor(30, 78, 121);
+                                        doc.text("Vaccinations (contd.)", MARGIN_L, PAGE2_START_Y + 10);
+                                        doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                                        doc.line(MARGIN_L, PAGE2_START_Y + 13, MARGIN_R, PAGE2_START_Y + 13);
+                                        hookData.settings.margin.top = PAGE2_START_Y + 24; // ✅ YEH ADD KARO
                                     }
                                 }
                             });
@@ -2628,11 +2659,12 @@ const GeneratePrescription = () => {
                     case 'reports_block': {
                         const filledReports = reports.filter(r => r.reportName?.trim());
                         if (filledReports.length) {
-                            const estTableHeight = 20 + 5 + 22 + (filledReports.length * 22) + 10;
-                            if (curY + estTableHeight > FOOTER_TOP_PT) {
-                                curY = addContinuationPage();
-                            }
-                                curY += 14; // ✅ ADD KARO YAHAN
+                            // const estTableHeight = 20 + 5 + 22 + (filledReports.length * 22) + 10;
+                            // if (curY + estTableHeight > FOOTER_TOP_PT) {
+                            //     curY = addContinuationPage();
+                            // }
+                            curY += 14; // ✅ ADD KARO YAHAN
+                            curY = checkPageBreak(curY, 60); // sirf title+line ke liye
 
                             doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
                             doc.text("Available Reports", MARGIN_L, curY);
@@ -2644,9 +2676,10 @@ const GeneratePrescription = () => {
 
                             autoTable(doc, {
                                 startY: curY + 6,
-                                margin: { left: MARGIN_L, right: MARGIN_L },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62 }, // ✅ ADD
+
                                 theme: 'grid',
-                                rowPageBreak: 'avoid',
+                                rowPageBreak: 'auto',
                                 showHead: 'everyPage',
                                 tableWidth: tw,
                                 styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle' },
@@ -2666,10 +2699,18 @@ const GeneratePrescription = () => {
                                     3: { cellWidth: tw * 0.27 },
                                     4: { cellWidth: tw * 0.22 },
                                 },
+                                margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62, top: PAGE2_START_Y + 28 },
+
                                 didDrawPage: (hookData) => {
+                                    doc.setFillColor(cr, cg, cb);
+                                    doc.rect(0, 0, A4_W, 14, 'F');
                                     if (hookData.pageNumber > 1) {
-                                        doc.setFillColor(cr, cg, cb);
-                                        doc.rect(0, 0, A4_W, 14, 'F');
+                                        doc.setFontSize(11); doc.setFont("times", "bold");
+                                        doc.setTextColor(30, 78, 121);
+                                        doc.text("Available Reports (contd.)", MARGIN_L, PAGE2_START_Y + 10);
+                                        doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                                        doc.line(MARGIN_L, PAGE2_START_Y + 13, MARGIN_R, PAGE2_START_Y + 13);
+                                        hookData.settings.margin.top = PAGE2_START_Y + 24; // ✅ YEH ADD KARO
                                     }
                                 }
                             });
@@ -2698,7 +2739,7 @@ const GeneratePrescription = () => {
 
                         const ROW_H = 20;
                         const HEADER_H = 18;
-                            curY += 14; // ✅ ADD KARO YAHAN — check se pehle
+                        curY += 14; // ✅ ADD KARO YAHAN — check se pehle
 
 
                         // ✅ Header + kam se kam 1 row fit nahi hoti toh next page
@@ -2781,11 +2822,12 @@ const GeneratePrescription = () => {
                     if (tRows.length === 0) return;
 
                     // Estimate full table height — shift entire table to next page if doesn't fit
-                    const estTableHeight = 20 + 5 + 22 + (tRows.length * 22) + 10;
-                    if (curY + estTableHeight > FOOTER_TOP_PT) {
-                        curY = addContinuationPage();
-                    }
-                        curY += 14; // ✅ ADD KARO YAHAN
+                    // const estTableHeight = 20 + 5 + 22 + (tRows.length * 22) + 10;
+                    // if (curY + estTableHeight > FOOTER_TOP_PT) {
+                    //     curY = addContinuationPage();
+                    // }
+                    curY += 14; // ✅ ADD KARO YAHAN
+                    curY = checkPageBreak(curY, 60); // sirf title+line ke liye
 
 
                     doc.setFontSize(11); doc.setFont("times", "bold"); doc.setTextColor(30, 78, 121);
@@ -2794,9 +2836,10 @@ const GeneratePrescription = () => {
                     const colNames = (tField.columns || []).map(c => c.name);
                     autoTable(doc, {
                         startY: curY + 6,
-                        margin: { left: MARGIN_L, right: MARGIN_L },
+                        margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62 }, // ✅ ADD
+
                         theme: 'grid',
-                        rowPageBreak: 'avoid',
+                        rowPageBreak: 'auto',
                         showHead: 'everyPage',
                         styles: { fontSize: 8, cellPadding: 8, lineColor: [203, 213, 225], lineWidth: 0.5, valign: 'middle', fontStyle: 'bold' },
                         headStyles: { fillColor: [240, 247, 255], textColor: [30, 78, 121], fontSize: 8, fontStyle: 'bold' },
@@ -2806,10 +2849,18 @@ const GeneratePrescription = () => {
                             ...colNames.map(name => row[name] || '—')
                         ]),
                         columnStyles: { 0: { cellWidth: 35 } },
+                        margin: { left: MARGIN_L, right: MARGIN_L, bottom: 62, top: PAGE2_START_Y + 28 },
+
                         didDrawPage: (hookData) => {
+                            doc.setFillColor(cr, cg, cb);
+                            doc.rect(0, 0, A4_W, 14, 'F');
                             if (hookData.pageNumber > 1) {
-                                doc.setFillColor(cr, cg, cb);
-                                doc.rect(0, 0, A4_W, 14, 'F');
+                                doc.setFontSize(11); doc.setFont("times", "bold");
+                                doc.setTextColor(30, 78, 121);
+                                doc.text(`${tField.label || tField.tableName || 'Custom Table'} (contd.)`, MARGIN_L, PAGE2_START_Y + 10);
+                                doc.setDrawColor(30, 78, 121); doc.setLineWidth(0.8);
+                                doc.line(MARGIN_L, PAGE2_START_Y + 13, MARGIN_R, PAGE2_START_Y + 13);
+                                hookData.settings.margin.top = PAGE2_START_Y + 24; // ✅ YEH ADD KARO
                             }
                         }
                     });
