@@ -167,39 +167,41 @@ const doctorDisplay = cleanDegree ? `Dr. ${cleanDegree}` : '';  // sirf ek "Dr."
   doc.setFillColor(...NAVY_DARK).rect(0, 0, 210, 4, 'F');
 
   /* ═══ SECTION 1 — Logo + clinic name (left) | INVOICE title (right) ═══ */
-  drawLogo(doc, ML, 12, 34, logoBase64);
+  // drawLogo(doc, ML, 12, 34, logoBase64);
+  drawLogo(doc, ML, 12, 20, logoBase64)
 
   
 
   
   doc.setFontSize(26).setFont('helvetica', 'bold').setTextColor(...NAVY);
-  doc.text('INVOICE', MR, 24, { align: 'right' });
-  doc.setDrawColor(...BLUE).setLineWidth(1);
-  doc.line(MR - 42, 27, MR, 27);
+doc.text('INVOICE', MR, 14, { align: 'right' });
+doc.setDrawColor(...BLUE).setLineWidth(1);
+doc.line(MR - 42, 17, MR, 17);
 
-  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(...GRAY);
-  doc.text('Invoice No.', MR - 42, 35);
-  doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
-  doc.text(safePdfStr(inv.invoiceNo || '001'), MR, 35, { align: 'right' });
+doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(...GRAY);
+doc.text('Invoice No.', MR - 42, 23);
+doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+doc.text(safePdfStr(inv.invoiceNo || '001'), MR, 23, { align: 'right' });
 
-  doc.setFont('helvetica', 'normal').setTextColor(...GRAY);
-  doc.text('Invoice Date', MR - 42, 41);
-  doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
-  doc.text(ddmmyyyyStr(billDate), MR, 41, { align: 'right' });
+doc.setFont('helvetica', 'normal').setTextColor(...GRAY);
+doc.text('Invoice Date', MR - 42, 29);
+doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
+doc.text(ddmmyyyyStr(billDate), MR, 29, { align: 'right' });
 
   /* ═══ SECTION 2 — Address / Phone / Email ═══ */
-  let contactY = 54;
-  doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(...NAVY);
-  if (address) { bulletLine(doc, ML, contactY, safePdfStr(address)); contactY += 6; }
-  if (mobile)  { bulletLine(doc, ML, contactY, safePdfStr(mobile));  contactY += 6; }
-  if (email)   { bulletLine(doc, ML, contactY, safePdfStr(email));   contactY += 6; }
-
+  const contactX = ML + 22; // logo width 34 + 6mm gap
+let contactY = 18;             // logo ke top se thoda neeche
+doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(...NAVY);
+if (address) { bulletLine(doc, contactX, contactY, safePdfStr(address)); contactY += 7; }
+if (mobile)  { bulletLine(doc, contactX, contactY, safePdfStr(mobile));  contactY += 7; }
+if (email)   { bulletLine(doc, contactX, contactY, safePdfStr(email));   contactY += 7; }
   /* Separator */
-  let sepY = contactY + 4;
+  let sepY = 36;
   doc.setDrawColor(...BLUE).setLineWidth(0.4).line(ML, sepY, MR, sepY);
+  let colY = sepY + 8;
 
   /* ═══ SECTION 3 — BILL TO | CONSULTATION DETAILS ═══ */
-  let colY = sepY + 10;
+  
 
   doc.setFontSize(13).setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text('BILL TO', ML, colY);
@@ -226,7 +228,7 @@ colY += 6;
   doc.text(docLabel, docLabelX, colY - 0.5);
   doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text(docValue, MR, colY - 0.5, { align: 'right' });
-  colY += 6;
+  colY += 0;
 
   doc.setFontSize(9).setFont('helvetica', 'bold').setTextColor(...GRAY);
 doc.text('Mobile', ML, colY);
@@ -244,7 +246,7 @@ colY += 6;
   doc.text('Visit Date', ML, colY);
   doc.setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text(': ' + ddmmyyyyStr(visitDate), ML + 22, colY);
-  colY += 10;
+  colY += 2;
 
   /* ═══ SECTION 4 — Items table ═══ */
   const items = inv.items || [];
@@ -264,13 +266,13 @@ colY += 6;
       fontStyle: 'bold',
       fontSize: 8.5,
       font: 'helvetica',
-      cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
+      cellPadding: { top: 1, bottom: 1, left: 1, right: 1 },
     },
     bodyStyles: {
       fontSize: 9,
       font: 'helvetica',
       textColor: NAVY,
-      cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
+      cellPadding: { top: 1, bottom: 1, left: 1, right: 1 },
     },
     alternateRowStyles: { fillColor: LIGHT_GRAY },
     theme: 'plain',
@@ -293,7 +295,7 @@ colY += 6;
 
   /* ═══ SECTION 5 — NOTES (left) | Summary box (right) ═══ */
   const tableEndY = doc.lastAutoTable.finalY;
-  let notesY = tableEndY + 12;
+  let notesY = tableEndY + 6;
 
   doc.setFontSize(10).setFont('helvetica', 'bold').setTextColor(...NAVY);
   doc.text('NOTES', ML, notesY);
@@ -326,7 +328,7 @@ colY += 6;
     : subTotal - discountAmt + taxAmt;
 
   const sLabelX = 138, sValueX = MR;
-  let sumY = tableEndY + 12;
+  let sumY = tableEndY + 5;
 
   doc.setFontSize(9);
   const rows = [
@@ -368,32 +370,32 @@ colY += 6;
   doc.text(pdfRs(dueAmount), sValueX, sumY, { align: 'right' });
   sumY += 10;
 
-  doc.setFontSize(8).setFont('helvetica', 'bold').setTextColor(...NAVY);
-  doc.text('Amount in Words:', sLabelX, sumY);
-  sumY += 5;
-  doc.setFont('helvetica', 'italic').setTextColor(...GRAY);
-  const wordsLines = doc.splitTextToSize(numberToWordsINR(grandTotal), MR - sLabelX);
-  doc.text(wordsLines, sLabelX, sumY);
-  sumY += 4.6 * wordsLines.length;
+  // doc.setFontSize(8).setFont('helvetica', 'bold').setTextColor(...NAVY);
+  // doc.text('Amount in Words:', sLabelX, sumY);
+  // sumY += 5;
+  // doc.setFont('helvetica', 'italic').setTextColor(...GRAY);
+  // const wordsLines = doc.splitTextToSize(numberToWordsINR(grandTotal), MR - sLabelX);
+  // doc.text(wordsLines, sLabelX, sumY);
+  // sumY += 4.6 * wordsLines.length;
 
   /* ═══ SECTION 6 — Footer band (navy) ═══ */
-  const footerH = 20;
-  const footerY = Math.max(notesY, sumY) + 12;
-  const bandTop = Math.max(footerY, 262);
+  // const footerH = 20;
+  // const footerY = Math.max(notesY, sumY) + 12;
+  // const bandTop = Math.max(footerY, 262);
 
-  doc.setFillColor(...NAVY).rect(0, bandTop, 210, footerH, 'F');
+  // doc.setFillColor(...NAVY).rect(0, bandTop, 210, footerH, 'F');
 
-  doc.setFontSize(11).setFont('helvetica', 'bold').setTextColor(255, 255, 255);
-  const thankYouText = 'THANK YOU FOR YOUR TRUST IN US';
-  const thankYouW = doc.getTextWidth(thankYouText);
-  doc.text(thankYouText, 105, bandTop + 11, { align: 'center' });
+  // doc.setFontSize(11).setFont('helvetica', 'bold').setTextColor(255, 255, 255);
+  // const thankYouText = 'THANK YOU FOR YOUR TRUST IN US';
+  // const thankYouW = doc.getTextWidth(thankYouText);
+  // doc.text(thankYouText, 105, bandTop + 11, { align: 'center' });
 
-  const heartGap = 8;
-  drawHeart(doc, 105 - thankYouW / 2 - heartGap, bandTop + 9, 4, [235, 245, 255]);
-  drawHeart(doc, 105 + thankYouW / 2 + heartGap, bandTop + 9, 4, [235, 245, 255]);
+  // const heartGap = 8;
+  // drawHeart(doc, 105 - thankYouW / 2 - heartGap, bandTop + 9, 4, [235, 245, 255]);
+  // drawHeart(doc, 105 + thankYouW / 2 + heartGap, bandTop + 9, 4, [235, 245, 255]);
 
-  doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(210, 224, 240);
-  doc.text('We Wish You Good Health!', 105, bandTop + 17, { align: 'center' });
+  // doc.setFontSize(8.5).setFont('helvetica', 'normal').setTextColor(210, 224, 240);
+  // doc.text('We Wish You Good Health!', 105, bandTop + 17, { align: 'center' });
 
   return doc;
 };
