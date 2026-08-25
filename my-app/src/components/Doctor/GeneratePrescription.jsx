@@ -971,14 +971,37 @@ const hexToRgb = (hex) => {
     return r ? [parseInt(r[1], 16), parseInt(r[2], 16), parseInt(r[3], 16)] : [236, 72, 153];
 };
 
-const calculateValidityUpto = (patientCreatedAt, appointmentValidity) => {
+const calculateValidityUpto = (patientCreatedAt, appointmentValidity, lastVisitDate = null) => {
     if (!patientCreatedAt || !appointmentValidity) return '—';
-    const createdDate = new Date(patientCreatedAt);
     const validityDays = Number(appointmentValidity);
-    if (isNaN(createdDate.getTime()) || isNaN(validityDays)) return '—';
-    const validUpto = new Date(createdDate);
-    validUpto.setDate(validUpto.getDate() + validityDays);
-    return validUpto.toLocaleDateString('en-GB');
+    if (isNaN(validityDays)) return '—';
+
+    const firstVisit = new Date(patientCreatedAt);
+    if (isNaN(firstVisit.getTime())) return '—';
+
+    // Pehli validity = createdAt + validityDays
+    const firstValidityUpto = new Date(firstVisit);
+    firstValidityUpto.setDate(firstValidityUpto.getDate() + validityDays);
+
+    // Koi lastVisitDate nahi → first visit case
+    if (!lastVisitDate) {
+        return firstValidityUpto.toLocaleDateString('en-GB');
+    }
+
+    const lastVisit = new Date(lastVisitDate);
+    if (isNaN(lastVisit.getTime())) {
+        return firstValidityUpto.toLocaleDateString('en-GB');
+    }
+
+    // Last visit pehli validity ke ANDAR tha → validity same rahegi
+    if (lastVisit <= firstValidityUpto) {
+        return firstValidityUpto.toLocaleDateString('en-GB');
+    }
+
+    // Last visit validity EXPIRE hone ke BAAD tha → naya validity lastVisit se
+    const newValidityUpto = new Date(lastVisit);
+    newValidityUpto.setDate(newValidityUpto.getDate() + validityDays);
+    return newValidityUpto.toLocaleDateString('en-GB');
 };
 
 const A4_H = 841.89; const A4_W = 595.28; const MARGIN_L = 17; const MARGIN_R = 578;
@@ -2034,7 +2057,17 @@ const GeneratePrescription = () => {
         try {
             const res = await axios.get(`${API_BAS}/api/appointments/context/${appointmentId}`);
             if (res.data.success) {
-                const { patient, lastPrescription, design, formStructure, isRevisit: revisitFlag } = res.data;
+                const {
+                    patient, lastPrescription, design,
+                    formStructure, isRevisit: revisitFlag,
+                    lastVisitDate  // ✅ naya field
+                } = res.data;
+
+                // ✅ patient object mein attach karo
+                if (lastVisitDate && patient) {
+                    patient.lastVisitDate = lastVisitDate;
+                }
+
                 setMasterData({ design: design || null, patient: patient || null, formStructure: formStructure || null });
                 setIsRevisit(!!revisitFlag);
 
@@ -2452,7 +2485,13 @@ const GeneratePrescription = () => {
                     { content: 'Date:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
                     { content: new Date().toLocaleDateString('en-GB') },
                     { content: 'Valid Upto:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
-                    { content: calculateValidityUpto(patient.createdAt, clinicProfileData?.appointmentValidity) },
+                    {
+                        content: calculateValidityUpto(
+                            patient.createdAt,
+                            clinicProfileData?.appointmentValidity,
+                            patient.lastVisitDate  // ✅ naya 3rd param
+                        )
+                    },
                 ],
 
                 // Row 3: Weight | BMI | Address

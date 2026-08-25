@@ -582,14 +582,16 @@ exports.getAppointmentContext = async (req, res) => {
 
         const isRevisit = appointment.visitType === 'Revisit Patient';
         let lastPrescription = null;
+        let lastVisitDate = null; // ✅ NAYA
 
-        // ✅ FIX: Pehle is appointment ki OWN prescription check karo
+        // ✅ Pehle is appointment ki OWN prescription check karo
         if (appointment.prescriptions && appointment.prescriptions.length > 0) {
             const ownPrescription = await Prescription.findById(
                 appointment.prescriptions[0]
             ).lean();
 
             if (ownPrescription) {
+                lastVisitDate = ownPrescription.createdAt || null; // ✅
                 lastPrescription = {
                     consultationResponses: ownPrescription.consultationResponses || [],
                     medicines:             ownPrescription.medicines             || [],
@@ -599,17 +601,18 @@ exports.getAppointmentContext = async (req, res) => {
                     vaccinations:          ownPrescription.vaccinations          || [],
                     reports:               ownPrescription.reports               || [],
                     tableData:             ownPrescription.tableData             || {},
+                    createdAt:             ownPrescription.createdAt             || null, // ✅
                 };
             }
         }
-        // ✅ Agar own prescription nahi mili AND revisit hai
-        // toh patient ki previous prescription load karo
+        // ✅ Own prescription nahi mili AND revisit hai → previous prescription load karo
         else if (isRevisit && appointment.patientId?._id) {
             const prevPrescription = await Prescription.findOne({
                 patientId: appointment.patientId._id
             }).sort({ createdAt: -1 }).lean();
 
             if (prevPrescription) {
+                lastVisitDate = prevPrescription.createdAt || null; // ✅
                 lastPrescription = {
                     consultationResponses: prevPrescription.consultationResponses || [],
                     medicines:             prevPrescription.medicines             || [],
@@ -619,18 +622,20 @@ exports.getAppointmentContext = async (req, res) => {
                     vaccinations:          prevPrescription.vaccinations          || [],
                     reports:               prevPrescription.reports               || [],
                     tableData:             prevPrescription.tableData             || {},
+                    createdAt:             prevPrescription.createdAt             || null, // ✅
                 };
             }
         }
 
         res.json({
             success: true,
-            patient: appointment.patientId,
-            design: designData,
+            patient:       appointment.patientId,
+            design:        designData,
             formStructure: formData || { sections: [] },
-            vitals: appointment.vitals,
+            vitals:        appointment.vitals,
             lastPrescription,
-            isRevisit: isRevisit || !!(appointment.prescriptions?.length > 0),
+            isRevisit:     isRevisit || !!(appointment.prescriptions?.length > 0),
+            lastVisitDate, // ✅ NAYA FIELD — frontend validity calculation ke liye
         });
 
     } catch (err) {
