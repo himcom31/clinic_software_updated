@@ -2486,11 +2486,13 @@ const GeneratePrescription = () => {
                     { content: new Date().toLocaleDateString('en-GB') },
                     { content: 'Valid Upto:', styles: { fontStyle: 'bold', textColor: [30, 78, 121] } },
                     {
-                        content: calculateValidityUpto(
-                            patient.createdAt,
-                            clinicProfileData?.appointmentValidity,
-                            patient.lastVisitDate  // ✅ naya 3rd param
-                        )
+                        content: patient.consultationFee?.validUpto
+                            ? new Date(patient.consultationFee.validUpto).toLocaleDateString('en-GB')
+                            : calculateValidityUpto(
+                                patient.createdAt,
+                                clinicProfileData?.appointmentValidity,
+                                patient.lastVisitDate
+                            )
                     },
                 ],
 

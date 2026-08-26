@@ -583,7 +583,7 @@ exports.getAppointmentContext = async (req, res) => {
         const isRevisit = appointment.visitType === 'Revisit Patient';
         let lastPrescription = null;
 
-        // ─── Step 1: Form data ke liye prescription load karo ────────────────
+        // ─── Step 1: Prescription load karo ──────────────────────────────────
         if (appointment.prescriptions && appointment.prescriptions.length > 0) {
             const ownPrescription = await Prescription.findById(
                 appointment.prescriptions[0]
@@ -622,8 +622,25 @@ exports.getAppointmentContext = async (req, res) => {
             }
         }
 
-        // ─── Step 2: Validity = current appointment ki date ──────────────────
-        const lastVisitDate = appointment.createdAt;
+        // ─── Step 2: lastVisitDate = current appointment se PEHLE wali prescription ──
+        // ✅ Current appointment exclude karo — woh abhi create ho rahi hai
+        // ✅ Agar patient ki koi purani prescription hai toh uski date use karo
+        // ✅ Agar nahi hai → null return karo (first visit samjho)
+        let lastVisitDate = null;
+
+        if (appointment.patientId?._id) {
+            const prevPrescription = await Prescription.findOne({
+                patientId: appointment.patientId._id,
+                // Current appointment ki prescription exclude karo
+                ...(appointment.prescriptions?.length > 0 && {
+                    _id: { $nin: appointment.prescriptions }
+                })
+            }).sort({ createdAt: -1 }).lean();
+
+            if (prevPrescription) {
+                lastVisitDate = prevPrescription.createdAt;
+            }
+        }
 
         res.json({
             success: true,
@@ -633,7 +650,7 @@ exports.getAppointmentContext = async (req, res) => {
             vitals:        appointment.vitals,
             lastPrescription,
             isRevisit:     isRevisit || !!(appointment.prescriptions?.length > 0),
-            lastVisitDate,
+            lastVisitDate, // ✅ Purani prescription ki date — ya null agar first visit
         });
 
     } catch (err) {
