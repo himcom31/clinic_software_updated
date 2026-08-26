@@ -2488,11 +2488,7 @@ const GeneratePrescription = () => {
                     {
                         content: patient.consultationFee?.validUpto
                             ? new Date(patient.consultationFee.validUpto).toLocaleDateString('en-GB')
-                            : calculateValidityUpto(
-                                patient.createdAt,
-                                clinicProfileData?.appointmentValidity,
-                                patient.lastVisitDate
-                            )
+                            : '—'
                     },
                 ],
 
