@@ -582,14 +582,16 @@ exports.getAppointmentContext = async (req, res) => {
 
         const isRevisit = appointment.visitType === 'Revisit Patient';
         let lastPrescription = null;
+        let lastVisitDate = null; // ✅ NAYA
 
-        // ─── Step 1: Prescription load karo ──────────────────────────────────
+        // ✅ Pehle is appointment ki OWN prescription check karo
         if (appointment.prescriptions && appointment.prescriptions.length > 0) {
             const ownPrescription = await Prescription.findById(
                 appointment.prescriptions[0]
             ).lean();
 
             if (ownPrescription) {
+                lastVisitDate = ownPrescription.createdAt || null; // ✅
                 lastPrescription = {
                     consultationResponses: ownPrescription.consultationResponses || [],
                     medicines:             ownPrescription.medicines             || [],
@@ -599,15 +601,18 @@ exports.getAppointmentContext = async (req, res) => {
                     vaccinations:          ownPrescription.vaccinations          || [],
                     reports:               ownPrescription.reports               || [],
                     tableData:             ownPrescription.tableData             || {},
-                    createdAt:             ownPrescription.createdAt             || null,
+                    createdAt:             ownPrescription.createdAt             || null, // ✅
                 };
             }
-        } else if (isRevisit && appointment.patientId?._id) {
+        }
+        // ✅ Own prescription nahi mili AND revisit hai → previous prescription load karo
+        else if (isRevisit && appointment.patientId?._id) {
             const prevPrescription = await Prescription.findOne({
                 patientId: appointment.patientId._id
             }).sort({ createdAt: -1 }).lean();
 
             if (prevPrescription) {
+                lastVisitDate = prevPrescription.createdAt || null; // ✅
                 lastPrescription = {
                     consultationResponses: prevPrescription.consultationResponses || [],
                     medicines:             prevPrescription.medicines             || [],
@@ -617,28 +622,8 @@ exports.getAppointmentContext = async (req, res) => {
                     vaccinations:          prevPrescription.vaccinations          || [],
                     reports:               prevPrescription.reports               || [],
                     tableData:             prevPrescription.tableData             || {},
-                    createdAt:             prevPrescription.createdAt             || null,
+                    createdAt:             prevPrescription.createdAt             || null, // ✅
                 };
-            }
-        }
-
-        // ─── Step 2: lastVisitDate = current appointment se PEHLE wali prescription ──
-        // ✅ Current appointment exclude karo — woh abhi create ho rahi hai
-        // ✅ Agar patient ki koi purani prescription hai toh uski date use karo
-        // ✅ Agar nahi hai → null return karo (first visit samjho)
-        let lastVisitDate = null;
-
-        if (appointment.patientId?._id) {
-            const prevPrescription = await Prescription.findOne({
-                patientId: appointment.patientId._id,
-                // Current appointment ki prescription exclude karo
-                ...(appointment.prescriptions?.length > 0 && {
-                    _id: { $nin: appointment.prescriptions }
-                })
-            }).sort({ createdAt: -1 }).lean();
-
-            if (prevPrescription) {
-                lastVisitDate = prevPrescription.createdAt;
             }
         }
 
@@ -650,7 +635,7 @@ exports.getAppointmentContext = async (req, res) => {
             vitals:        appointment.vitals,
             lastPrescription,
             isRevisit:     isRevisit || !!(appointment.prescriptions?.length > 0),
-            lastVisitDate, // ✅ Purani prescription ki date — ya null agar first visit
+            lastVisitDate, // ✅ NAYA FIELD — frontend validity calculation ke liye
         });
 
     } catch (err) {
@@ -658,6 +643,8 @@ exports.getAppointmentContext = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+
 exports.getAllAppointments = async (req, res) => {
     try {
         const { slug } = req.params;
