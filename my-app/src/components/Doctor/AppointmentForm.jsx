@@ -115,41 +115,28 @@ const AppointmentForm = () => {
     };
 
     const selectPatient = async (patient) => {
-        setShowSuggestions(false);
-        setPatientSuggestions([]);
+    setShowSuggestions(false);
+    setPatientSuggestions([]);
 
-        // Check their last appointment for revisit/validity
-        const res = await axios.get(
-            `${API_BAS}/api/appointments/${slug}/check-status/${patient.mobile}`
+    const res = await axios.get(
+        `${API_BAS}/api/appointments/${slug}/check-status/${patient.mobile}`
+    );
+
+    const fee = clinicConfig.currentFee || 0;
+
+    // ✅ Height parse pehle karo
+    const rawH = patient?.height || '';
+    const parts = String(rawH).split('.');
+
+    if (res.data.success && res.data.appointment) {
+        const appt = res.data.appointment;
+        const lastDate = new Date(appt.appointmentDate);
+        const diffDays = Math.ceil(
+            Math.abs(new Date() - lastDate) / (1000 * 60 * 60 * 24)
         );
+        const isValid = diffDays <= (parseInt(clinicConfig.currentValidity) || 7);
 
-        const fee = clinicConfig.currentFee || 0;
-        let visitType = 'New Patient';
-        let expirChecker = 'New Patient';
-        let consultFeeStatus = 'Yes';
-        let paidAmount = fee;
-
-        if (res.data.success && res.data.appointment) {
-            const appt = res.data.appointment;
-            const lastDate = new Date(appt.appointmentDate);
-            const diffDays = Math.ceil(
-                Math.abs(new Date() - lastDate) / (1000 * 60 * 60 * 24)
-            );
-            const isValid = diffDays <= (parseInt(clinicConfig.currentValidity) || 7);
-
-            visitType = isValid ? 'Revisit Patient' : 'New Patient';
-            expirChecker = isValid ? 'Within Validity' : 'Validity Expired';
-            consultFeeStatus = isValid ? 'No' : 'Yes';
-            paidAmount = isValid ? 0 : fee;
-            setIsNewPatient(false);
-        } else {
-            setIsNewPatient(true);
-        }
-
-        // ── Height parse: "5.9" → ft=5, in=9 ──
-        const rawH = patient?.height || '';
-        const parts = String(rawH).split('.');
-
+        setIsNewPatient(false);
         setFormData(prev => ({
             ...prev,
             mobile: patient.mobile || '',
@@ -160,23 +147,53 @@ const AppointmentForm = () => {
             gender: patient.gender || 'Male',
             bloodGroup: patient.bloodGroup || '',
             weight: patient.weight || '',
-            heightFt: parts[0] || '',   // ← ft
-            heightIn: parts[1] || '',   // ← inch
+            heightFt: parts[0] || '',
+            heightIn: parts[1] || '',
             bmi: patient.bmi || '',
             address: patient.address || '',
             allergies: patient.allergies || '',
             reference: patient.referenceType || 'Self',
             refName: patient.referenceName || '',
             refMobile: patient.referenceMobile || '',
-            visitType,
-            expirChecker,
-            consultFeeStatus,
+            visitType: isValid ? 'Revisit Patient' : 'New Patient',
+            expirChecker: isValid ? 'Within Validity' : 'Validity Expired',
+            consultFeeStatus: isValid ? 'No' : 'Yes',
             consultationFee: fee,
-            paidAmount,
+            paidAmount: isValid ? 0 : fee,
+            validUpto: isValid
+                ? (appt.validUpto || calculateExpiry(new Date(), clinicConfig.currentValidity))
+                : calculateExpiry(new Date(), clinicConfig.currentValidity)
+        }));
+
+    } else {
+        setIsNewPatient(true);
+        setFormData(prev => ({
+            ...prev,
+            mobile: patient.mobile || '',
+            name: patient.name || '',
+            emMobile: patient.emMobile || '',
+            email: patient.email || '',
+            age: patient.age || '',
+            gender: patient.gender || 'Male',
+            bloodGroup: patient.bloodGroup || '',
+            weight: patient.weight || '',
+            heightFt: parts[0] || '',
+            heightIn: parts[1] || '',
+            bmi: patient.bmi || '',
+            address: patient.address || '',
+            allergies: patient.allergies || '',
+            reference: patient.referenceType || 'Self',
+            refName: patient.referenceName || '',
+            refMobile: patient.referenceMobile || '',
+            visitType: 'New Patient',
+            expirChecker: 'New Patient',
+            consultFeeStatus: 'Yes',
+            consultationFee: fee,
+            paidAmount: fee,
             validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
         }));
-    };
-
+    }
+};
     // Helper: Expiry Date Calculate
     const calculateExpiry = (startDate, days) => {
         const date = new Date(startDate);
@@ -237,7 +254,9 @@ const AppointmentForm = () => {
                         consultFeeStatus: isValid ? 'No' : 'Yes',
                         consultationFee: fee,
                         paidAmount: isValid ? 0 : fee,
-                        validUpto: calculateExpiry(new Date(), clinicConfig.currentValidity)
+                        validUpto: isValid
+                            ? appt.validUpto  // DB se purani date
+                            : calculateExpiry(new Date(), clinicConfig.currentValidity)
                     }));
 
                 } else {
